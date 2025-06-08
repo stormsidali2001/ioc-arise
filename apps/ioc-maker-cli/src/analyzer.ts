@@ -1,7 +1,7 @@
 import { readFileSync } from 'fs';
 import { glob } from 'glob';
 import { join, relative, dirname } from 'path';
-import { ClassInfo, AnalyzerOptions } from './types';
+import { ClassInfo, AnalyzerOptions, ConstructorParameter } from './types';
 import { ts } from '@ast-grep/napi';
 
 export class ProjectAnalyzer {
@@ -66,17 +66,20 @@ export class ProjectAnalyzer {
           if (!pattern.test(interfaceName)) continue;
         }
         
-        const dependencies = this.extractConstructorDependencies(classNode);
+        const constructorParams = this.extractConstructorParameters(classNode);
+        const dependencies = constructorParams.map(param => param.type).filter(type => /^[A-Z]\w*$/.test(type));
         const importPath = this.generateImportPath(filePath, className);
         
         console.log(`Processing class: ${className}`);
         console.log(`Interface for ${className}:`, interfaceName);
+        console.log(`Constructor params for ${className}:`, constructorParams);
         console.log(`Dependencies for ${className}:`, dependencies);
         
         classes.push({
           name: className,
           filePath,
           dependencies,
+          constructorParams,
           interfaceName,
           importPath
         });
@@ -90,67 +93,75 @@ export class ProjectAnalyzer {
 
 
 
-  private extractConstructorDependencies(classNode: any): string[] {
-    const dependencies: string[] = [];
+  private extractConstructorParameters(classNode: any): ConstructorParameter[] {
+    const parameters: ConstructorParameter[] = [];
     
     try {
-      // Find constructor within the class using a simpler pattern
+      // Find constructor within the class
       const constructorNodes = classNode.findAll({
-        rule:{
-
-          kind:'method_definition',
-          pattern:"$NAME",
-          regex:"^constructor"
-
+        rule: {
+          kind: 'method_definition',
+          pattern: "$NAME",
+          regex: "^constructor"
         }
       });
-      console.log(constructorNodes.map((t:any,index:number)=>`\n (${index}) ------${t.text()}---------\n`).join(','))
-
       
       console.log(`Found ${constructorNodes.length} constructor nodes`);
       
       if (constructorNodes.length === 0) {
-        return dependencies;
+        return parameters;
       }
       
       const constructorNode = constructorNodes[0];
-      const constructorText = constructorNode.text();
-      console.log('Constructor text:', constructorText);
       
-      // Extract parameters using regex from the full constructor text
-      const paramMatch = constructorText.match(/constructor\s*\(([^)]+)\)/);
-      if (!paramMatch || !paramMatch[1]) {
-        console.log('No parameters found in constructor');
-        return dependencies;
+      // Find formal parameters within the constructor
+      const parameterNodes = constructorNode.findAll({
+        rule: {
+          kind: 'formal_parameters'
+        }
+      });
+      
+      if (parameterNodes.length === 0) {
+        return parameters;
       }
       
-      const paramsText = paramMatch[1];
-      console.log('Parameters text:', paramsText);
-      // Split by comma and process each parameter
-      const params = paramsText.split(',');
+      const formalParams = parameterNodes[0];
       
-      for (const param of params) {
-        const trimmedParam = param.trim();
-        if (trimmedParam) {
-          console.log('Processing parameter:', trimmedParam);
-          // Match patterns like "private userRepo: UserRepository" or "userRepo: UserRepository"
-          const typeMatch = trimmedParam.match(/(?:private|public|protected)?\s*\w+\s*:\s*(\w+)/);
-          if (typeMatch && typeMatch[1]) {
-            const typeName = typeMatch[1].trim();
-            console.log('Found type:', typeName);
-            if (typeName && /^[A-Z]\w*$/.test(typeName)) { // Only class-like types
-              dependencies.push(typeName);
-              console.log('Added dependency:', typeName);
-            }
-          }
+      // Find individual parameters
+      const paramNodes = formalParams.findAll({
+        rule: {
+          kind: 'required_parameter'
+        }
+      });
+      
+      console.log(`Found ${paramNodes.length} parameter nodes`);
+      
+      for (const paramNode of paramNodes) {
+        const paramText = paramNode.text();
+        console.log('Parameter text:', paramText);
+        
+        // Parse parameter using regex to extract details
+        const paramMatch = paramText.match(/(?:(private|public|protected)\s+)?(\w+)\s*:\s*(\w+)(\?)?/);
+        
+        if (paramMatch) {
+          const [, accessModifier, name, type, optional] = paramMatch;
+          
+          parameters.push({
+            name: name.trim(),
+            type: type.trim(),
+            isOptional: !!optional,
+            accessModifier: accessModifier as 'private' | 'public' | 'protected' | undefined
+          });
+          
+          console.log(`Extracted parameter: ${name}: ${type}${optional ? '?' : ''} (${accessModifier || 'none'})`);
         }
       }
     } catch (error) {
-      console.warn('Warning: Could not extract constructor dependencies:', error);
+      console.warn('Warning: Could not extract constructor parameters:', error);
     }
     
-    console.log('Final dependencies:', dependencies);
-    return dependencies;
+    console.log('Final parameters:', parameters);
+    return parameters;
   }
 
   private generateImportPath(filePath: string, className: string): string {

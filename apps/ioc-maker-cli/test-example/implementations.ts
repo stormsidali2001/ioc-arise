@@ -1,7 +1,11 @@
 import { IUserRepository, IEmailService, IUserService, User, CreateUserData } from './interfaces';
 
 export class Sidali{
-  constructor(private age:number,private name:string){}
+  constructor(private age:number,private name:string, private date:Date){
+    this.age = age;
+    this.name = name;
+    this.date = date;
+  }
 
 }
 export class UserRepository implements IUserRepository {

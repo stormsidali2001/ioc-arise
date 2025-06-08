@@ -1,7 +1,7 @@
 import { writeFileSync } from 'fs';
 import { dirname } from 'path';
 import { mkdirSync } from 'fs';
-import { ClassInfo, GeneratorOptions, DependencyGraph, TopologicalSortResult } from './types';
+import { ClassInfo, GeneratorOptions, DependencyGraph, TopologicalSortResult, ConstructorParameter } from './types';
 
 export class ContainerGenerator {
   private options: GeneratorOptions;
@@ -139,8 +139,8 @@ export class ContainerGenerator {
             return this.toVariableName(dep);
           }
           // Check if dependency is a class that exists in the same file but not managed
-          // For now, we'll create a simple instance for unmanaged dependencies
-          return `new ${dep}()`;
+          // For now, we'll create a simple instance for unmanaged dependencies with default values
+          return this.createUnmanagedDependencyInstance(dep);
         })
         .filter(dep => dep !== null)
         .join(', ');
@@ -171,6 +171,47 @@ export class ContainerGenerator {
   private toVariableName(className: string): string {
     // Convert PascalCase to camelCase
     return className.charAt(0).toLowerCase() + className.slice(1);
+  }
+
+  private createUnmanagedDependencyInstance(className: string): string {
+    // Find the class info for this unmanaged dependency
+    const classInfo = this.options.classes.find(c => c.name === className);
+    if (!classInfo || !classInfo.constructorParams.length) {
+      return `new ${className}()`;
+    }
+    
+    const args = this.generateConstructorArgs(classInfo.constructorParams);
+    return `new ${className}(${args})`;
+  }
+
+  private generateConstructorArgs(params: ConstructorParameter[]): string {
+    return params.map(param => this.getDefaultValueForType(param.type, param.isOptional)).join(', ');
+  }
+
+  private getDefaultValueForType(type: string, isOptional: boolean): string {
+    if (isOptional) {
+      return 'undefined';
+    }
+    
+    // Handle primitive types
+    switch (type.toLowerCase()) {
+      case 'string':
+        return '"default"';
+      case 'number':
+        return '0';
+      case 'boolean':
+        return 'false';
+      case 'date':
+        return 'new Date()';
+      default:
+        // For class types, try to find if it's a managed dependency
+        const classMap = new Map(this.options.classes.map(c => [c.name, c]));
+        if (classMap.has(type)) {
+          return this.toVariableName(type);
+        }
+        // For unmanaged class types, create a simple instance
+        return `new ${type}()`;
+    }
   }
 
   private writeContainerFile(content: string): void {

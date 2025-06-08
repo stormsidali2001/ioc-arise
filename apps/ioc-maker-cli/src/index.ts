@@ -48,6 +48,10 @@ program
         excludePatterns: options.exclude
       });
 
+      console.log("Analysis results------------\n")
+      console.dir(classes,{depth:5})
+      console.log("Analysis results------------\n")
+
       if (classes.length === 0) {
         console.log('⚠️  No classes implementing interfaces found.');
         if (options.interface) {
@@ -124,7 +128,9 @@ program
         interfacePattern: options.interface,
         excludePatterns: options.exclude
       });
-
+      console.log("Analysis results------------\n")
+      console.log(classes)
+      console.log("Analysis results------------\n")
       if (classes.length === 0) {
         console.log('⚠️  No classes implementing interfaces found.');
         return;

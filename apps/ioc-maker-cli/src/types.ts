@@ -1,7 +1,15 @@
+export interface ConstructorParameter {
+  name: string;
+  type: string;
+  isOptional: boolean;
+  accessModifier?: 'private' | 'public' | 'protected';
+}
+
 export interface ClassInfo {
   name: string;
   filePath: string;
   dependencies: string[];
+  constructorParams: ConstructorParameter[];
   interfaceName?: string;
   importPath: string;
 }
