@@ -86,16 +86,41 @@ export class ContainerGenerator {
   }
 
   private generateImports(): string {
-    const imports = this.options.classes.map(classInfo => {
-      return `import { ${classInfo.name} } from '${classInfo.importPath}';`;
-    });
+    const importSet = new Set<string>();
+    const classMap = new Map(this.options.classes.map(c => [c.name, c]));
+    
+    // Add imports for all managed classes
+    for (const classInfo of this.options.classes) {
+      importSet.add(`import { ${classInfo.name} } from '${classInfo.importPath}';`);
+    }
+    
+    // Add imports for unmanaged dependencies
+    for (const classInfo of this.options.classes) {
+      for (const dep of classInfo.dependencies) {
+        // If dependency is not a managed class, we need to import it
+        if (!classMap.has(dep)) {
+          // Check if it's an interface (starts with 'I' by convention)
+          if (!dep.startsWith('I')) {
+            importSet.add(`import { ${dep} } from '${classInfo.importPath}';`);
+          }
+        }
+      }
+    }
 
-    return imports.join('\n');
+    return Array.from(importSet).join('\n');
   }
 
   private generateInstantiations(sortedClasses: string[]): string {
     const classMap = new Map(this.options.classes.map(c => [c.name, c]));
     const instantiations: string[] = [];
+
+    // Create interface to class mapping for dependency resolution
+    const interfaceToClassMap = new Map<string, string>();
+    for (const classInfo of this.options.classes) {
+      if (classInfo.interfaceName) {
+        interfaceToClassMap.set(classInfo.interfaceName, classInfo.name);
+      }
+    }
 
     for (const className of sortedClasses) {
       const classInfo = classMap.get(className);
@@ -103,8 +128,21 @@ export class ContainerGenerator {
 
       const variableName = this.toVariableName(className);
       const dependencies = classInfo.dependencies
-        .filter(dep => classMap.has(dep))
-        .map(dep => this.toVariableName(dep))
+        .map(dep => {
+          // Check if dependency is an interface name
+          const implementingClass = interfaceToClassMap.get(dep);
+          if (implementingClass) {
+            return this.toVariableName(implementingClass);
+          }
+          // Check if dependency is a class name
+          if (classMap.has(dep)) {
+            return this.toVariableName(dep);
+          }
+          // Check if dependency is a class that exists in the same file but not managed
+          // For now, we'll create a simple instance for unmanaged dependencies
+          return `new ${dep}()`;
+        })
+        .filter(dep => dep !== null)
         .join(', ');
 
       const instantiation = dependencies

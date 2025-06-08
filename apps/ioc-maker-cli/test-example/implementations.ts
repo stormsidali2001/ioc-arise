@@ -1,6 +1,7 @@
 import { IUserRepository, IEmailService, IUserService, User, CreateUserData } from './interfaces';
 
-class Sidali{
+export class Sidali{
+  constructor(private age:number,private name:string){}
 
 }
 export class UserRepository implements IUserRepository {

@@ -18,7 +18,7 @@ program
   .command('generate')
   .description('Generate IoC container from TypeScript classes')
   .option('-s, --source <dir>', 'Source directory to scan', 'src')
-  .option('-o, --output <file>', 'Output file path', 'src/container.gen.ts')
+  .option('-o, --output <file>', 'Output file path', 'container.gen.ts')
   .option('-i, --interface <pattern>', 'Interface name pattern to match (regex)')
   .option('-e, --exclude <patterns...>', 'Exclude patterns for files')
   .option('--check-cycles', 'Only check for circular dependencies without generating')
@@ -26,7 +26,7 @@ program
   .action(async (options) => {
     try {
       const sourceDir = resolve(options.source);
-      const outputPath = resolve(options.output);
+      const outputPath = resolve(sourceDir, options.output);
 
       if (!existsSync(sourceDir)) {
         console.error(`❌ Source directory does not exist: ${sourceDir}`);
