@@ -10,7 +10,8 @@
     "build": "tsc",
     "dev": "ts-node src/index.ts",
     "start": "node dist/index.js",
-    "test:example:generate": "node dist/index.js generate --source test-example"
+    "test:example:generate": "node dist/index.js generate --source test-example",
+    "test:example:run": "cd test-example && ts-node demo.ts"
   },
   "keywords": ["ioc", "dependency-injection", "typescript", "cli", "container"],
   "author": "",
