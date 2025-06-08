@@ -1,6 +1,7 @@
 import { IGetUserInputPort } from '../IInputPort';
 import { IUserRepository } from '../repositories/IUserRepository';
 import { User } from '../entities/User';
+import { GetUserRequestDTO, UserResponseDTO } from '../dtos/UserDTOs';
 import { IGetUserOutputPort } from '../IOutputPort';
 
 export class GetUserUseCase implements IGetUserInputPort {
@@ -9,21 +10,25 @@ export class GetUserUseCase implements IGetUserInputPort {
     private outputPort: IGetUserOutputPort
   ) {}
 
-  async execute(id: string): Promise<User | null> {
+  async execute(request: GetUserRequestDTO): Promise<void> {
     try {
-      const user = await this.userRepository.findById(id);
+      const user = await this.userRepository.findById(request.id);
       
       if (user) {
-        this.outputPort.presentUser(user);
-        return user;
+        // Convert entity to DTO for presentation
+        const userDTO: UserResponseDTO = {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          createdAt: user.createdAt.toISOString()
+        };
+        this.outputPort.presentUser(userDTO);
       } else {
         this.outputPort.presentNotFound();
-        return null;
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.outputPort.presentError(errorMessage);
-      throw error;
     }
   }
 }

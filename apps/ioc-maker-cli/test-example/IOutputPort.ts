@@ -1,12 +1,12 @@
-import { User } from './entities/User';
+import { UserResponseDTO } from './dtos/UserDTOs';
 
 export interface ICreateUserOutputPort {
-  presentSuccess(user: User): void;
+  presentSuccess(user: UserResponseDTO): void;
   presentError(error: string): void;
 }
 
 export interface IGetUserOutputPort {
-  presentUser(user: User): void;
+  presentUser(user: UserResponseDTO): void;
   presentNotFound(): void;
   presentError(error: string): void;
 }

@@ -1,13 +1,13 @@
-import { User, CreateUserData } from './entities/User';
+import { CreateUserRequestDTO, UserResponseDTO, GetUserRequestDTO, DeleteUserRequestDTO } from './dtos/UserDTOs';
 
 export interface ICreateUserInputPort {
-  execute(userData: CreateUserData): Promise<User>;
+  execute(userData: CreateUserRequestDTO): Promise<void>;
 }
 
 export interface IGetUserInputPort {
-  execute(id: string): Promise<User | null>;
+  execute(request: GetUserRequestDTO): Promise<void>;
 }
 
 export interface IDeleteUserInputPort {
-  execute(id: string): Promise<void>;
+  execute(request: DeleteUserRequestDTO): Promise<void>;
 }

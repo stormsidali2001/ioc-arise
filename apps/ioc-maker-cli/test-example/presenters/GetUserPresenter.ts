@@ -1,15 +1,15 @@
 import { IGetUserOutputPort } from '../IOutputPort';
-import { User } from '../entities/User';
+import { UserResponseDTO } from '../dtos/UserDTOs';
 
 export class GetUserPresenter implements IGetUserOutputPort {
   private result: {
     success: boolean;
-    user?: User;
+    user?: UserResponseDTO;
     notFound?: boolean;
     error?: string;
   } | null = null;
 
-  presentUser(user: User): void {
+  presentUser(user: UserResponseDTO): void {
     this.result = {
       success: true,
       user

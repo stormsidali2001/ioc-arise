@@ -1,14 +1,14 @@
 import { ICreateUserOutputPort } from '../IOutputPort';
-import { User } from '../entities/User';
+import { UserResponseDTO } from '../dtos/UserDTOs';
 
 export class CreateUserPresenter implements ICreateUserOutputPort {
   private result: {
     success: boolean;
-    user?: User;
+    user?: UserResponseDTO;
     error?: string;
   } | null = null;
 
-  presentSuccess(user: User): void {
+  presentSuccess(user: UserResponseDTO): void {
     this.result = {
       success: true,
       user
