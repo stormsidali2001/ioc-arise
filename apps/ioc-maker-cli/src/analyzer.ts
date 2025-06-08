@@ -96,10 +96,16 @@ export class ProjectAnalyzer {
     try {
       // Find constructor within the class using a simpler pattern
       const constructorNodes = classNode.findAll({
-        rule: {
-          pattern: 'constructor($$$) { $$$$ }'
+        rule:{
+
+          kind:'method_definition',
+          pattern:"$NAME",
+          regex:"^constructor"
+
         }
       });
+      console.log(constructorNodes.map((t:any,index:number)=>`\n (${index}) ------${t.text()}---------\n`).join(','))
+
       
       console.log(`Found ${constructorNodes.length} constructor nodes`);
       

@@ -1,7 +1,10 @@
 import { IUserRepository, IEmailService, IUserService, User, CreateUserData } from './interfaces';
 
+class Sidali{
+
+}
 export class UserRepository implements IUserRepository {
-  constructor() {}
+  constructor(private sidali:Sidali) {}
 
   async findById(id: string): Promise<User | null> {
     // Mock implementation
