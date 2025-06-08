@@ -1,0 +1,28 @@
+{
+  "name": "ioc-maker-cli",
+  "version": "1.0.0",
+  "description": "A CLI tool to generate type-safe IoC containers for TypeScript projects",
+  "main": "dist/index.js",
+  "bin": {
+    "ioc-maker": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node src/index.ts",
+    "start": "node dist/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["ioc", "dependency-injection", "typescript", "cli", "container"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@ast-grep/napi": "^0.20.0",
+    "commander": "^11.1.0",
+    "glob": "^10.3.10"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.0",
+    "ts-node": "^10.9.0"
+  }
+}
