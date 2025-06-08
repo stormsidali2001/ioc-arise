@@ -122,7 +122,8 @@ export class ContainerGenerator {
       }
     }
 
-    for (const className of sortedClasses) {
+    // Reverse the sorted order since topological sort gives us dependents first, but we need dependencies first
+    for (const className of sortedClasses.reverse()) {
       const classInfo = classMap.get(className);
       if (!classInfo) continue;
 

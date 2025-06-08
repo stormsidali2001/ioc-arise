@@ -10,7 +10,7 @@
     "build": "tsc",
     "dev": "ts-node src/index.ts",
     "start": "node dist/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test:example:generate": "node dist/index.js generate --source test-example"
   },
   "keywords": ["ioc", "dependency-injection", "typescript", "cli", "container"],
   "author": "",
