@@ -47,6 +47,9 @@ export class ProjectAnalyzer {
       const ast = ts.parse(content);
       const root = ast.root();
       
+      // Extract import aliases for type resolution
+      const typeAliases = this.extractTypeAliases(root);
+      
       // Find classes implementing interfaces
       const classNodes = root.findAll({
         rule: {
@@ -67,12 +70,19 @@ export class ProjectAnalyzer {
         }
         
         const constructorParams = this.extractConstructorParameters(classNode);
-        const dependencies = constructorParams.map(param => param.type).filter(type => /^[A-Z]\w*$/.test(type));
+        const dependencies = constructorParams
+          .map(param => {
+            // Resolve type aliases to actual interface names
+            const resolvedType = typeAliases.get(param.type) || param.type;
+            return resolvedType;
+          })
+          .filter(type => /^[A-Z]\w*$/.test(type));
         const importPath = this.generateImportPath(filePath, className);
         
         console.log(`Processing class: ${className}`);
         console.log(`Interface for ${className}:`, interfaceName);
         console.log(`Constructor params for ${className}:`, constructorParams);
+        console.log(`Type aliases found:`, Array.from(typeAliases.entries()));
         console.log(`Dependencies for ${className}:`, dependencies);
         
         classes.push({
@@ -162,6 +172,38 @@ export class ProjectAnalyzer {
     
     console.log('Final parameters:', parameters);
     return parameters;
+  }
+
+  private extractTypeAliases(root: any): Map<string, string> {
+    const typeAliases = new Map<string, string>();
+    
+    try {
+      // Find all import statements and parse them manually
+      const allImports = root.findAll({
+        rule: {
+          kind: 'import_statement'
+        }
+      });
+      
+      console.log(`Found ${allImports.length} total import statements`);
+      
+      for (const importNode of allImports) {
+        const importText = importNode.text();
+        console.log(`Import statement: ${importText}`);
+        
+        // Manual regex parsing - handles variable whitespace
+        const aliasMatch = importText.match(/import\s*{\s*([\w]+)\s+as\s+([\w]+)\s*}\s+from/);
+        if (aliasMatch) {
+          const [, original, alias] = aliasMatch;
+          typeAliases.set(alias.trim(), original.trim());
+          console.log(`Manual regex found type alias: ${alias.trim()} -> ${original.trim()}`);
+        }
+      }
+    } catch (error) {
+      console.warn('Warning: Could not extract type aliases:', error);
+    }
+    
+    return typeAliases;
   }
 
   private generateImportPath(filePath: string, className: string): string {

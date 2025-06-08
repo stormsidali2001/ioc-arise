@@ -1,12 +1,12 @@
 import { ICreateUserInputPort } from '../IInputPort';
 import { IUserRepository } from '../repositories/IUserRepository';
 import { User, CreateUserData } from '../entities/User';
-import { ICreateUserOutputPort  } from '../IOutputPort';
+import { ICreateUserOutputPort as OutputPort  } from '../IOutputPort';
 
 export class CreateUserUseCase implements ICreateUserInputPort {
   constructor(
     private userRepository: IUserRepository,
-    private outputPort: ICreateUserOutputPort
+    private outputPort: OutputPort
   ) {}
 
   async execute(userData: CreateUserData): Promise<User> {
