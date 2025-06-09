@@ -14,12 +14,13 @@ export class ProjectAnalyzer {
 
   async analyzeProject(): Promise<ClassInfo[]> {
     const tsFiles = await this.fileDiscovery.findTypeScriptFiles();
-    const classes: ClassInfo[] = [];
-
-    for (const filePath of tsFiles) {
-      const fileClasses = await this.classAnalyzer.analyzeFile(filePath);
-      classes.push(...fileClasses);
-    }
+    
+    const fileAnalysisPromises = tsFiles.map(filePath => 
+      this.classAnalyzer.analyzeFile(filePath)
+    );
+    
+    const fileClassesArrays = await Promise.all(fileAnalysisPromises);
+    const classes = fileClassesArrays.flat();
 
     return classes;
   }
