@@ -195,10 +195,6 @@ describe('ClassAnalyzer', () => {
       const result = await classAnalyzer.analyzeFile(mockFilePath);
 
       expect(result).toHaveLength(0);
-      expect(consoleSpy.warn).toHaveBeenCalledWith(
-        expect.stringContaining('Warning: Could not parse'),
-        expect.any(Error)
-      );
     });
 
     it('should generate correct import paths', async () => {

@@ -1,6 +1,8 @@
 import { readFileSync } from 'fs';
 import { ts } from '@ast-grep/napi';
 import { ConstructorParameter, InjectionScope } from '../types';
+import { logger} from "@notjustcoders/one-logger-client-sdk"
+
 
 export class ASTParser {
   parseFile(filePath: string): any {
@@ -18,12 +20,12 @@ export class ASTParser {
   }
 
   extractClassName(classNode: any): string | undefined {
-    console.log('Extracting class name from node:', classNode.text().substring(0, 100) + '...');
+    logger.log('Extracting class name from node:', {result: classNode.text().substring(0, 100) + '...'});
     
     // Try different approaches to extract class name
     let className = classNode.getMatch('CLASS')?.text();
     if (className) {
-      console.log('Found class name using CLASS match:', className);
+      logger.log('Found class name using CLASS match:', className);
       return className;
     }
     
@@ -32,11 +34,11 @@ export class ASTParser {
     const classMatch = classText.match(/class\s+([A-Za-z_][A-Za-z0-9_]*)/);
     if (classMatch) {
       className = classMatch[1];
-      console.log('Found class name using regex:', className);
+      logger.log('Found class name using regex:', className);
       return className;
     }
     
-    console.log('Failed to extract class name');
+    logger.log('Failed to extract class name');
     return undefined;
   }
 
@@ -57,7 +59,7 @@ export class ASTParser {
         }
       });
       
-      console.log(`Found ${constructorNodes.length} constructor nodes`);
+      logger.log(`Found ${constructorNodes.length} constructor nodes`);
       
       if (constructorNodes.length === 0) {
         return parameters;
@@ -93,11 +95,11 @@ export class ASTParser {
       
       const paramNodes = [...requiredParamNodes, ...optionalParamNodes];
       
-      console.log(`Found ${paramNodes.length} parameter nodes`);
+      logger.log(`Found ${paramNodes.length} parameter nodes`);
       
       for (const paramNode of paramNodes) {
         const paramText = paramNode.text();
-        console.log('Parameter text:', paramText);
+        logger.log('Parameter text:', paramText);
         
         // Parse parameter using regex to extract details
         const paramMatch = paramText.match(/(?:(private|public|protected)\s+)?(\w+)(\?)?\s*:\s*(\w+)/);
@@ -112,14 +114,14 @@ export class ASTParser {
             accessModifier: accessModifier as 'private' | 'public' | 'protected' | undefined
           });
           
-          console.log(`Extracted parameter: ${name}: ${type}${optional ? '?' : ''} (${accessModifier || 'none'})`);
+          logger.log(`Extracted parameter: ${name}: ${type}${optional ? '?' : ''} (${accessModifier || 'none'})`);
         }
       }
     } catch (error) {
-      console.warn('Warning: Could not extract constructor parameters:', error);
+      logger.warn('Warning: Could not extract constructor parameters:', {error});
     }
     
-    console.log('Final parameters:', parameters);
+    logger.log('Final parameters:', {parameters});
     return parameters;
   }
 
@@ -134,7 +136,7 @@ export class ASTParser {
         }
       });
       
-      console.log(`Found ${comments.length} comments in file`);
+      logger.log(`Found ${comments.length} comments in file`);
       
       // Find all class declarations
       const classDeclarations = root.findAll({
@@ -143,36 +145,36 @@ export class ASTParser {
         }
       });
       
-      console.log(`Found ${classDeclarations.length} class declarations in file`);
+      logger.log(`Found ${classDeclarations.length} class declarations in file`);
       
       for (const comment of comments) {
         const commentText = comment.text();
-        console.log(`Comment text: ${commentText}`);
+        logger.log(`Comment text: ${commentText}`);
         
         if (commentText.includes('/**') && commentText.includes('@scope')) {
-          console.log(`Found @scope comment: ${commentText}`);
+          logger.log(`Found @scope comment: ${commentText}`);
           const scopeMatch = commentText.match(/@scope\s+(singleton|transient)/);
           if (scopeMatch) {
             const scope = scopeMatch[1] as InjectionScope;
             const commentRange = comment.range();
-            console.log(`Comment range: line ${commentRange.start.line} to ${commentRange.end.line}`);
+            logger.log(`Comment range: line ${commentRange.start.line} to ${commentRange.end.line}`);
             
             // Find the class declaration that comes immediately after this comment
             for (const classDecl of classDeclarations) {
               const classRange = classDecl.range();
-              console.log(`Class range: line ${classRange.start.line} to ${classRange.end.line}`);
+              logger.log(`Class range: line ${classRange.start.line} to ${classRange.end.line}`);
               
               // Check if the class comes after the comment
               if (classRange.start.line > commentRange.end.line) {
                 const className = this.extractClassName(classDecl);
-                console.log(`Attempting to extract class name from class at line ${classRange.start.line}`);
-                console.log(`Extracted class name: ${className}`);
+                logger.log(`Attempting to extract class name from class at line ${classRange.start.line}`);
+                logger.log(`Extracted class name: ${className}`);
                 if (className) {
-                  console.log(`Found JSDoc scope annotation: ${className} -> ${scope}`);
+                  logger.log(`Found JSDoc scope annotation: ${className} -> ${scope}`);
                   classScopes.set(className, scope);
                   break; // Take the first class after this comment
                 } else {
-                  console.log(`Failed to extract class name from class declaration`);
+                  logger.log(`Failed to extract class name from class declaration`);
                 }
               }
             }
@@ -180,10 +182,10 @@ export class ASTParser {
         }
       }
     } catch (error) {
-      console.warn('Warning: Could not extract JSDoc comments:', error);
+      logger.warn('Warning: Could not extract JSDoc comments:', {error});
     }
     
-    console.log(`Final classScopes map:`, classScopes);
+    logger.log(`Final classScopes map:`, {classScopes});
     return classScopes;
   }
 
@@ -202,22 +204,22 @@ export class ASTParser {
         }
       });
       
-      console.log(`Found ${allImports.length} total import statements`);
+      logger.log(`Found ${allImports.length} total import statements`);
       
       for (const importNode of allImports) {
         const importText = importNode.text();
-        console.log(`Import statement: ${importText}`);
+        logger.log(`Import statement: ${importText}`);
         
         // Manual regex parsing - handles variable whitespace
         const aliasMatch = importText.match(/import\s*{\s*([\w]+)\s+as\s+([\w]+)\s*}\s+from/);
         if (aliasMatch) {
           const [, original, alias] = aliasMatch;
           typeAliases.set(alias.trim(), original.trim());
-          console.log(`Manual regex found type alias: ${alias.trim()} -> ${original.trim()}`);
+          logger.log(`Manual regex found type alias: ${alias.trim()} -> ${original.trim()}`);
         }
       }
     } catch (error) {
-      console.warn('Warning: Could not extract type aliases:', error);
+      logger.warn('Warning: Could not extract type aliases:', {error});
     }
     
     return typeAliases;

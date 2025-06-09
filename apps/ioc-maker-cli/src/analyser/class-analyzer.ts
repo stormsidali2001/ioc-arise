@@ -2,6 +2,7 @@ import { relative } from 'path';
 import { ClassInfo, ConstructorParameter, InjectionScope } from '../types';
 import { ASTParser } from './ast-parser';
 import { container } from '../container';
+import {logger} from "@notjustcoders/one-logger-client-sdk"
 
 export class ClassAnalyzer {
   private astParser: ASTParser;
@@ -25,7 +26,7 @@ export class ClassAnalyzer {
       
       // Extract JSDoc scope annotations at file level for this specific file
       const jsDocScopes = this.astParser.extractJSDocComments(root);
-      console.log('JSDoc scopes for file', filePath, ':', jsDocScopes)
+      logger.log('JSDoc scopes for file', {filePath, jsDocScopes})
       
       // Find classes implementing interfaces
       const classNodes = this.astParser.findClassesImplementingInterfaces(root);
@@ -47,12 +48,13 @@ export class ClassAnalyzer {
         const importPath = this.generateImportPath(filePath, className);
         const scope = this.astParser.extractScopeFromJSDoc(className, jsDocScopes);
         
-        console.log(`Processing class: ${className}`);
-        console.log(`Interface for ${className}:`, interfaceName);
-        console.log(`Constructor params for ${className}:`, constructorParams);
-        console.log(`Type aliases found:`, Array.from(typeAliases.entries()));
-        console.log(`Dependencies for ${className}:`, dependencies);
-        console.log(`Scope for ${className}:`, scope);
+
+        logger.log(`Processing class: ${className}`);
+        logger.log(`Interface for ${className}:`, {interfaceName});
+        logger.log(`Constructor params for ${className}:`, {constructorParams});
+        logger.log(`Type aliases found:`, {count:Array.from(typeAliases.entries())});
+        logger.log(`Dependencies for ${className}:`, {dependencies});
+        logger.log(`Scope for ${className}:`, {scope});
         
         classes.push({
           name: className,
@@ -65,7 +67,7 @@ export class ClassAnalyzer {
         });
       }
     } catch (error) {
-      console.warn(`Warning: Could not parse ${filePath}:`, error);
+      logger.warn(`Warning: Could not parse ${filePath}:`, {error});
     }
 
     return classes;

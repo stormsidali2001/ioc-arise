@@ -4,6 +4,7 @@ import { existsSync } from 'fs';
 import { analyzeProject } from '../analyser';
 import { generateContainerFile, detectCircularDependencies } from '../generator';
 import { ConfigManager } from '../utils/configManager';
+import { initializeOneLogger ,logger} from '@notjustcoders/one-logger-client-sdk';
 
 export const generateCommand = new Command('generate')
   .description('Generate IoC container from TypeScript classes')
@@ -15,6 +16,16 @@ export const generateCommand = new Command('generate')
   .option('--verbose', 'Enable verbose logging')
   .action(async (options) => {
     try {
+
+await initializeOneLogger({
+  name:"ioc-maker",
+  description:"ioc-maker",
+  tracer:{
+    batchSize:1,
+  }
+
+
+})
       // Initialize config manager with the source directory
       const initialSourceDir = resolve(options.source);
       const configManager = new ConfigManager(initialSourceDir);
@@ -42,6 +53,7 @@ export const generateCommand = new Command('generate')
         }
       }
 
+      console.log("🚀 Starting analysis...")
       // Analyze the project
       const classes = await analyzeProject(sourceDir, {
         sourceDir,
@@ -49,9 +61,7 @@ export const generateCommand = new Command('generate')
         excludePatterns: mergedOptions.exclude
       });
 
-      console.log("Analysis results------------\n")
-      console.dir(classes,{depth:5})
-      console.log("Analysis results------------\n")
+      logger.info("Analysis results------------\n",{classes})
 
       if (classes.length === 0) {
         console.log('⚠️  No classes implementing interfaces found.');
@@ -88,18 +98,20 @@ export const generateCommand = new Command('generate')
         return;
       }
 
+      console.log("Generating container: generateContainerFile------------------>")
       // Generate container file
       generateContainerFile(classes, outputPath);
 
-      console.log(`✅ Container generated successfully!`);
-      console.log(`   File: ${outputPath}`);
-      console.log(`   Classes: ${classes.length}`);
+
+      // console.log(`✅ Container generated successfully!`);
+      // console.log(`   File: ${outputPath}`);
+      // console.log(`   Classes: ${classes.length}`);
       
-      if (mergedOptions.verbose) {
-        console.log('\n🎉 You can now import and use your container:');
-        console.log('   import { container } from "./container.gen";');
-        console.log('   const userService = container.userService;');
-      }
+      // if (mergedOptions.verbose) {
+      //   console.log('\n🎉 You can now import and use your container:');
+      //   console.log('   import { container } from "./container.gen";');
+      //   console.log('   const userService = container.userService;');
+      // }
 
     } catch (error) {
       console.error('❌ Error generating container:', error instanceof Error ? error.message : error);

@@ -23,6 +23,9 @@ importers:
       '@ast-grep/napi':
         specifier: ^0.20.0
         version: 0.20.5
+      '@notjustcoders/one-logger-client-sdk':
+        specifier: ^1.0.10
+        version: 1.0.10
       commander:
         specifier: ^11.1.0
         version: 11.1.0
@@ -409,6 +412,15 @@ packages:
   '@nodelib/fs.walk@1.2.8':
     resolution: {integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==}
     engines: {node: '>= 8'}
+
+  '@notjustcoders/one-logger-client-sdk@1.0.10':
+    resolution: {integrity: sha512-2xa5yG7oQcj4mVVtGTMWzGp+YlvIvWDQJcUL7w5iv8HsdBUt8eGHnj1jDWjZQU+W8b6WmrVCr16Nr0TcKDqZIQ==}
+
+  '@notjustcoders/one-logger-server-sdk@1.0.1':
+    resolution: {integrity: sha512-QuAtj1sDEv3dsgvowmWdYajd9IWl8HYd2SLBGyZQ7nejXitGUU1o5gIhVJ4jpGChMs9b82yA8GDUrWckNS4OSg==}
+
+  '@notjustcoders/one-logger-types@1.0.1':
+    resolution: {integrity: sha512-wab/5sVmU5iGP9HYMzxLYMrHsqj8IhpigufOUNKZzo3R0wWY2osfHyKZcX3qinqNXM5wKExY/1xMNzsY+/vCcQ==}
 
   '@pkgjs/parseargs@0.11.0':
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
@@ -1556,6 +1568,10 @@ packages:
     resolution: {integrity: sha512-RF0Fw+rO5AMf9MAyaRXI4AV0Ulj5lMHqVxxdSgiVbixSCXoEmmX/jk0CuJw4+3SqroYO9VoUh+HcuJivvtJemA==}
     engines: {node: '>=10'}
 
+  serialize-error@12.0.0:
+    resolution: {integrity: sha512-ZYkZLAvKTKQXWuh5XpBw7CdbSzagarX39WyZ2H07CDLC5/KfsRGlIXV8d4+tfqX1M7916mRqR1QfNHSij+c9Pw==}
+    engines: {node: '>=18'}
+
   set-function-length@1.2.2:
     resolution: {integrity: sha512-pgRc4hJ4/sNjWCSS9AmnS40x3bNMDTknHgL5UaMBTMyJnU90EgWh1Rz+MC9eFu4BuN/UwZjKQuY/1v3rM7HMfg==}
     engines: {node: '>= 0.4'}
@@ -1743,6 +1759,10 @@ packages:
   type-detect@4.1.0:
     resolution: {integrity: sha512-Acylog8/luQ8L7il+geoSxhEkazvkslg7PSNKOX59mbB9cOveP5aq9h74Y7YU8yDpJwetzQQrfIwtf4Wp4LKcw==}
     engines: {node: '>=4'}
+
+  type-fest@4.41.0:
+    resolution: {integrity: sha512-TeTSQ6H5YHvpqVwBRcnLDCBnDOHWYu7IvGbHT6N8AOymcr9PJGjc1GTtiWZTYg0NCgYwvnYWEkVChQAr9bjfwA==}
+    engines: {node: '>=16'}
 
   typed-array-buffer@1.0.3:
     resolution: {integrity: sha512-nAYYwfY3qnzX30IkA6AQZjVbtK6duGontcQm1WSG1MD94YLqK0515GNApXkoxKOWMusVssAHWLh9SeaoefYFGw==}
@@ -2139,6 +2159,18 @@ snapshots:
     dependencies:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.19.1
+
+  '@notjustcoders/one-logger-client-sdk@1.0.10':
+    dependencies:
+      '@notjustcoders/one-logger-server-sdk': 1.0.1
+      '@notjustcoders/one-logger-types': 1.0.1
+      serialize-error: 12.0.0
+
+  '@notjustcoders/one-logger-server-sdk@1.0.1':
+    dependencies:
+      '@notjustcoders/one-logger-types': 1.0.1
+
+  '@notjustcoders/one-logger-types@1.0.1': {}
 
   '@pkgjs/parseargs@0.11.0':
     optional: true
@@ -3509,6 +3541,10 @@ snapshots:
 
   semver@7.7.2: {}
 
+  serialize-error@12.0.0:
+    dependencies:
+      type-fest: 4.41.0
+
   set-function-length@1.2.2:
     dependencies:
       define-data-property: 1.1.4
@@ -3723,6 +3759,8 @@ snapshots:
       prelude-ls: 1.2.1
 
   type-detect@4.1.0: {}
+
+  type-fest@4.41.0: {}
 
   typed-array-buffer@1.0.3:
     dependencies:

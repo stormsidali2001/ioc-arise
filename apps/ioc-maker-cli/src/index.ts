@@ -4,6 +4,8 @@ import { Command } from 'commander';
 import { generateCommand } from './commands/generate';
 import { analyzeCommand } from './commands/analyze';
 
+
+import {initializeOneLogger} from "@notjustcoders/one-logger-client-sdk"
 const program = new Command();
 
 program
