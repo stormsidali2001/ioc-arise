@@ -1,4 +1,4 @@
-import { ClassInfo, DependencyGraph, TopologicalSortResult } from './types';
+import { ClassInfo, DependencyGraph, TopologicalSortResult } from '../types';
 
 export class DependencyResolver {
   private classes: ClassInfo[];

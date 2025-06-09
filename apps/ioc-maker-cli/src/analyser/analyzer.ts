@@ -1,4 +1,4 @@
-import { ClassInfo, AnalyzerOptions } from './types';
+import { ClassInfo, AnalyzerOptions } from '../types';
 import { FileDiscovery } from './file-discovery';
 import { ClassAnalyzer } from './class-analyzer';
 

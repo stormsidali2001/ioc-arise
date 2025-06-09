@@ -3,8 +3,8 @@
 import { Command } from 'commander';
 import { join, resolve } from 'path';
 import { existsSync } from 'fs';
-import { analyzeProject } from './analyzer';
-import { generateContainerFile, detectCircularDependencies } from './generator';
+import { analyzeProject } from './analyser/analyzer';
+import { generateContainerFile, detectCircularDependencies } from './generator/generator';
 import { ClassInfo } from './types';
 
 const program = new Command();

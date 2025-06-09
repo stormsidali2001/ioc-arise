@@ -1,5 +1,5 @@
-import { ClassInfo, GeneratorOptions } from './types';
-import { DependencyResolver } from './dependency-resolver';
+import { ClassInfo, GeneratorOptions } from '../types';
+import { DependencyResolver } from '../analyser/dependency-resolver';
 import { CodeGenerator } from './code-generator';
 import { FileWriter } from './file-writer';
 

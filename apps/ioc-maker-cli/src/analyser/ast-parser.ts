@@ -1,6 +1,6 @@
 import { readFileSync } from 'fs';
 import { ts } from '@ast-grep/napi';
-import { ConstructorParameter, InjectionScope } from './types';
+import { ConstructorParameter, InjectionScope } from '../types';
 
 export class ASTParser {
   parseFile(filePath: string): any {
