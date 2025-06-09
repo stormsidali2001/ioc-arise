@@ -3,6 +3,7 @@ import { resolve } from 'path';
 import { existsSync } from 'fs';
 import { analyzeProject } from '../analyser';
 import { generateContainerFile, detectCircularDependencies } from '../generator';
+import { ConfigManager } from '../utils/configManager';
 
 export const generateCommand = new Command('generate')
   .description('Generate IoC container from TypeScript classes')
@@ -14,27 +15,38 @@ export const generateCommand = new Command('generate')
   .option('--verbose', 'Enable verbose logging')
   .action(async (options) => {
     try {
-      const sourceDir = resolve(options.source);
-      const outputPath = resolve(sourceDir, options.output);
+      // Initialize config manager with the source directory
+      const initialSourceDir = resolve(options.source);
+      const configManager = new ConfigManager(initialSourceDir);
+      
+      // Merge CLI options with config file
+      const mergedOptions = configManager.mergeWithCliOptions(options);
+      
+      const sourceDir = resolve(mergedOptions.source!);
+      const outputPath = resolve(sourceDir, mergedOptions.output!);
+      
+      if (configManager.hasConfigFile() && mergedOptions.verbose) {
+        console.log(`📋 Using config file: ${configManager.getConfigPath()}`);
+      }
 
       if (!existsSync(sourceDir)) {
         console.error(`❌ Source directory does not exist: ${sourceDir}`);
         process.exit(1);
       }
 
-      if (options.verbose) {
+      if (mergedOptions.verbose) {
         console.log(`🔍 Scanning directory: ${sourceDir}`);
         console.log(`📝 Output file: ${outputPath}`);
-        if (options.interface) {
-          console.log(`🎯 Interface pattern: ${options.interface}`);
+        if (mergedOptions.interface) {
+          console.log(`🎯 Interface pattern: ${mergedOptions.interface}`);
         }
       }
 
       // Analyze the project
       const classes = await analyzeProject(sourceDir, {
         sourceDir,
-        interfacePattern: options.interface,
-        excludePatterns: options.exclude
+        interfacePattern: mergedOptions.interface,
+        excludePatterns: mergedOptions.exclude
       });
 
       console.log("Analysis results------------\n")
@@ -43,15 +55,15 @@ export const generateCommand = new Command('generate')
 
       if (classes.length === 0) {
         console.log('⚠️  No classes implementing interfaces found.');
-        if (options.interface) {
-          console.log(`   Make sure classes implement interfaces matching pattern: ${options.interface}`);
+        if (mergedOptions.interface) {
+          console.log(`   Make sure classes implement interfaces matching pattern: ${mergedOptions.interface}`);
         } else {
           console.log('   Make sure classes implement interfaces using the "implements" keyword.');
         }
         return;
       }
 
-      if (options.verbose) {
+      if (mergedOptions.verbose) {
         console.log(`\n📋 Found ${classes.length} classes:`);
         classes.forEach(cls => {
           console.log(`   • ${cls.name} (${cls.dependencies.length} dependencies)`);
@@ -71,7 +83,7 @@ export const generateCommand = new Command('generate')
         process.exit(1);
       }
 
-      if (options.checkCycles) {
+      if (mergedOptions.checkCycles) {
         console.log('✅ No circular dependencies found.');
         return;
       }
@@ -83,7 +95,7 @@ export const generateCommand = new Command('generate')
       console.log(`   File: ${outputPath}`);
       console.log(`   Classes: ${classes.length}`);
       
-      if (options.verbose) {
+      if (mergedOptions.verbose) {
         console.log('\n🎉 You can now import and use your container:');
         console.log('   import { container } from "./container.gen";');
         console.log('   const userService = container.userService;');

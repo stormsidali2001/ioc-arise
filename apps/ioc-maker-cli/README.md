@@ -60,11 +60,40 @@ ioc-maker generate --check-cycles
 | Option | Description | Default |
 |--------|-------------|----------|
 | `-s, --source <dir>` | Source directory to scan | `src` |
-| `-o, --output <file>` | Output file path | `src/container.gen.ts` |
+| `-o, --output <file>` | Output file path | `container.gen.ts` |
 | `-i, --interface <pattern>` | Interface name pattern (regex) | - |
 | `-e, --exclude <patterns...>` | Exclude file patterns | - |
 | `--check-cycles` | Only check circular dependencies | `false` |
 | `--verbose` | Enable verbose logging | `false` |
+
+## Configuration File
+
+You can create an `ioc.config.json` file in the same directory as your source code to set default options. CLI arguments will override config file settings.
+
+```json
+{
+  "source": "src",
+  "output": "container.gen.ts",
+  "interface": "I[A-Z].*",
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "**/node_modules/**"
+  ],
+  "checkCycles": false,
+  "verbose": true
+}
+```
+
+### Config File Location
+
+The config file should be placed in the same directory as your source code. For example, if your source directory is `src`, place `ioc.config.json` in the `src` directory.
+
+### Priority Order
+
+1. CLI arguments (highest priority)
+2. Config file settings
+3. Default values (lowest priority)
 
 ## Example
 
