@@ -3,6 +3,7 @@ import { writeFileSync, mkdirSync, rmSync } from 'fs';
 import { join } from 'path';
 import { ASTParser } from '../analyser/ast-parser';
 import { ConstructorParameter, InjectionScope } from '../types';
+import { testFileContents } from './fixtures/ast-parser-fixtures';
 
 describe('ASTParser', () => {
   let parser: ASTParser;
@@ -32,12 +33,7 @@ describe('ASTParser', () => {
   describe('parseFile', () => {
     it('should parse a TypeScript file and return AST root', () => {
       const testFile = join(tempDir, 'test.ts');
-      const content = `
-class TestClass {
-  constructor() {}
-}
-`;
-      writeFileSync(testFile, content);
+      writeFileSync(testFile, testFileContents.basicClass);
 
       const root = parser.parseFile(testFile);
       
@@ -48,7 +44,7 @@ class TestClass {
 
     it('should handle empty files', () => {
       const testFile = join(tempDir, 'empty.ts');
-      writeFileSync(testFile, '');
+      writeFileSync(testFile, testFileContents.emptyFile);
 
       const root = parser.parseFile(testFile);
       
@@ -60,22 +56,7 @@ class TestClass {
   describe('findClassesImplementingInterfaces', () => {
     it('should find classes implementing interfaces', () => {
       const testFile = join(tempDir, 'interface-test.ts');
-      const content = `
-interface IUserService {
-  getUser(): string;
-}
-
-class UserService implements IUserService {
-  getUser(): string {
-    return 'user';
-  }
-}
-
-class RegularClass {
-  doSomething() {}
-}
-`;
-      writeFileSync(testFile, content);
+      writeFileSync(testFile, testFileContents.classWithInterface);
 
       const root = parser.parseFile(testFile);
       const classes = parser.findClassesImplementingInterfaces(root);
@@ -86,12 +67,7 @@ class RegularClass {
 
     it('should return empty array when no classes implement interfaces', () => {
       const testFile = join(tempDir, 'no-interface.ts');
-      const content = `
-class RegularClass {
-  doSomething() {}
-}
-`;
-      writeFileSync(testFile, content);
+      writeFileSync(testFile, testFileContents.regularClassOnly);
 
       const root = parser.parseFile(testFile);
       const classes = parser.findClassesImplementingInterfaces(root);
@@ -101,26 +77,7 @@ class RegularClass {
 
     it('should find multiple classes implementing interfaces', () => {
       const testFile = join(tempDir, 'multiple-interfaces.ts');
-      const content = `
-interface IUserService {
-  getUser(): string;
-}
-
-interface IEmailService {
-  sendEmail(): void;
-}
-
-class UserService implements IUserService {
-  getUser(): string {
-    return 'user';
-  }
-}
-
-class EmailService implements IEmailService {
-  sendEmail(): void {}
-}
-`;
-      writeFileSync(testFile, content);
+      writeFileSync(testFile, testFileContents.multipleInterfaceClasses);
 
       const root = parser.parseFile(testFile);
       const classes = parser.findClassesImplementingInterfaces(root);
@@ -132,12 +89,7 @@ class EmailService implements IEmailService {
   describe('extractClassName', () => {
     it('should extract class name from class node', () => {
       const testFile = join(tempDir, 'class-name.ts');
-      const content = `
-class UserService implements IUserService {
-  constructor() {}
-}
-`;
-      writeFileSync(testFile, content);
+      writeFileSync(testFile, testFileContents.simpleClassName);
 
       const root = parser.parseFile(testFile);
       const classes = parser.findClassesImplementingInterfaces(root);
@@ -148,12 +100,7 @@ class UserService implements IUserService {
 
     it('should handle class names with underscores and numbers', () => {
       const testFile = join(tempDir, 'complex-name.ts');
-      const content = `
-class User_Service_123 implements IUserService {
-  constructor() {}
-}
-`;
-      writeFileSync(testFile, content);
+      writeFileSync(testFile, testFileContents.complexClassName);
 
       const root = parser.parseFile(testFile);
       const classes = parser.findClassesImplementingInterfaces(root);
@@ -164,12 +111,7 @@ class User_Service_123 implements IUserService {
 
     it('should return undefined for invalid class nodes', () => {
       const testFile = join(tempDir, 'invalid.ts');
-      const content = `
-interface IUserService {
-  getUser(): string;
-}
-`;
-      writeFileSync(testFile, content);
+      writeFileSync(testFile, testFileContents.interfaceOnly);
 
       const root = parser.parseFile(testFile);
       // Try to extract class name from a non-class node
@@ -184,12 +126,7 @@ interface IUserService {
   describe('extractInterfaceName', () => {
     it('should extract interface name from class node', () => {
       const testFile = join(tempDir, 'interface-name.ts');
-      const content = `
-class UserService implements IUserService {
-  constructor() {}
-}
-`;
-      writeFileSync(testFile, content);
+      writeFileSync(testFile, testFileContents.singleInterface);
 
       const root = parser.parseFile(testFile);
       const classes = parser.findClassesImplementingInterfaces(root);
@@ -200,12 +137,7 @@ class UserService implements IUserService {
 
     it('should handle multiple interfaces (first one)', () => {
       const testFile = join(tempDir, 'multiple-interfaces.ts');
-      const content = `
-class UserService implements IUserService, ILoggable {
-  constructor() {}
-}
-`;
-      writeFileSync(testFile, content);
+      writeFileSync(testFile, testFileContents.multipleInterfaces);
 
       const root = parser.parseFile(testFile);
       const classes = parser.findClassesImplementingInterfaces(root);
@@ -218,12 +150,7 @@ class UserService implements IUserService, ILoggable {
   describe('extractConstructorParameters', () => {
     it('should extract constructor parameters with types', () => {
       const testFile = join(tempDir, 'constructor-params.ts');
-      const content = `
-class UserService implements IUserService {
-  constructor(private userRepo: UserRepository, public logger: Logger) {}
-}
-`;
-      writeFileSync(testFile, content);
+      writeFileSync(testFile, testFileContents.constructorWithParams);
 
       const root = parser.parseFile(testFile);
       const classes = parser.findClassesImplementingInterfaces(root);
@@ -246,12 +173,7 @@ class UserService implements IUserService {
 
     it('should handle optional parameters', () => {
       const testFile = join(tempDir, 'optional-params.ts');
-      const content = `
-class UserService implements IUserService {
-  constructor(private userRepo: UserRepository, logger?: Logger) {}
-}
-`;
-      writeFileSync(testFile, content);
+      writeFileSync(testFile, testFileContents.optionalParameters);
 
       const root = parser.parseFile(testFile);
       const classes = parser.findClassesImplementingInterfaces(root);
@@ -268,14 +190,7 @@ class UserService implements IUserService {
 
     it('should handle classes without constructors', () => {
       const testFile = join(tempDir, 'no-constructor.ts');
-      const content = `
-class UserService implements IUserService {
-  getUser(): string {
-    return 'user';
-  }
-}
-`;
-      writeFileSync(testFile, content);
+      writeFileSync(testFile, testFileContents.noConstructor);
 
       const root = parser.parseFile(testFile);
       const classes = parser.findClassesImplementingInterfaces(root);
@@ -286,12 +201,7 @@ class UserService implements IUserService {
 
     it('should handle empty constructors', () => {
       const testFile = join(tempDir, 'empty-constructor.ts');
-      const content = `
-class UserService implements IUserService {
-  constructor() {}
-}
-`;
-      writeFileSync(testFile, content);
+      writeFileSync(testFile, testFileContents.emptyConstructor);
 
       const root = parser.parseFile(testFile);
       const classes = parser.findClassesImplementingInterfaces(root);
@@ -302,12 +212,7 @@ class UserService implements IUserService {
 
     it('should handle protected access modifier', () => {
       const testFile = join(tempDir, 'protected-params.ts');
-      const content = `
-class UserService implements IUserService {
-  constructor(protected userRepo: UserRepository) {}
-}
-`;
-      writeFileSync(testFile, content);
+      writeFileSync(testFile, testFileContents.protectedParameter);
 
       const root = parser.parseFile(testFile);
       const classes = parser.findClassesImplementingInterfaces(root);
@@ -326,22 +231,7 @@ class UserService implements IUserService {
   describe('extractJSDocComments', () => {
     it('should extract scope annotations from JSDoc comments', () => {
       const testFile = join(tempDir, 'jsdoc-scope.ts');
-      const content = `
-/**
- * @scope singleton
- */
-class UserService implements IUserService {
-  constructor() {}
-}
-
-/**
- * @scope transient
- */
-class EmailService implements IEmailService {
-  constructor() {}
-}
-`;
-      writeFileSync(testFile, content);
+      writeFileSync(testFile, testFileContents.jsDocWithScope);
 
       const root = parser.parseFile(testFile);
       const scopes = parser.extractJSDocComments(root);
@@ -352,12 +242,7 @@ class EmailService implements IEmailService {
 
     it('should handle classes without JSDoc comments', () => {
       const testFile = join(tempDir, 'no-jsdoc.ts');
-      const content = `
-class UserService implements IUserService {
-  constructor() {}
-}
-`;
-      writeFileSync(testFile, content);
+      writeFileSync(testFile, testFileContents.noJSDoc);
 
       const root = parser.parseFile(testFile);
       const scopes = parser.extractJSDocComments(root);
@@ -367,16 +252,7 @@ class UserService implements IUserService {
 
     it('should ignore comments without @scope annotation', () => {
       const testFile = join(tempDir, 'regular-comments.ts');
-      const content = `
-/**
- * This is a regular comment
- * @param something
- */
-class UserService implements IUserService {
-  constructor() {}
-}
-`;
-      writeFileSync(testFile, content);
+      writeFileSync(testFile, testFileContents.regularComments);
 
       const root = parser.parseFile(testFile);
       const scopes = parser.extractJSDocComments(root);
@@ -386,15 +262,7 @@ class UserService implements IUserService {
 
     it('should handle malformed JSDoc comments gracefully', () => {
       const testFile = join(tempDir, 'malformed-jsdoc.ts');
-      const content = `
-/**
- * @scope invalid_scope
- */
-class UserService implements IUserService {
-  constructor() {}
-}
-`;
-      writeFileSync(testFile, content);
+      writeFileSync(testFile, testFileContents.malformedJSDoc);
 
       const root = parser.parseFile(testFile);
       const scopes = parser.extractJSDocComments(root);
@@ -433,16 +301,7 @@ class UserService implements IUserService {
   describe('extractTypeAliases', () => {
     it('should extract type aliases from import statements', () => {
       const testFile = join(tempDir, 'type-aliases.ts');
-      const content = `
-import { UserRepository as UserRepo } from './user-repository';
-import { Logger as AppLogger } from './logger';
-import { SomeClass } from './some-class';
-
-class UserService implements IUserService {
-  constructor(private userRepo: UserRepo, private logger: AppLogger) {}
-}
-`;
-      writeFileSync(testFile, content);
+      writeFileSync(testFile, testFileContents.typeAliases);
 
       const root = parser.parseFile(testFile);
       const aliases = parser.extractTypeAliases(root);
@@ -454,15 +313,7 @@ class UserService implements IUserService {
 
     it('should handle imports without aliases', () => {
       const testFile = join(tempDir, 'no-aliases.ts');
-      const content = `
-import { UserRepository } from './user-repository';
-import { Logger } from './logger';
-
-class UserService implements IUserService {
-  constructor(private userRepo: UserRepository) {}
-}
-`;
-      writeFileSync(testFile, content);
+      writeFileSync(testFile, testFileContents.noAliases);
 
       const root = parser.parseFile(testFile);
       const aliases = parser.extractTypeAliases(root);
@@ -472,12 +323,7 @@ class UserService implements IUserService {
 
     it('should handle files without imports', () => {
       const testFile = join(tempDir, 'no-imports.ts');
-      const content = `
-class UserService implements IUserService {
-  constructor() {}
-}
-`;
-      writeFileSync(testFile, content);
+      writeFileSync(testFile, testFileContents.noImports);
 
       const root = parser.parseFile(testFile);
       const aliases = parser.extractTypeAliases(root);
@@ -487,15 +333,7 @@ class UserService implements IUserService {
 
     it('should handle complex import statements with whitespace', () => {
       const testFile = join(tempDir, 'complex-imports.ts');
-      const content = `
-import {   UserRepository   as   UserRepo   } from './user-repository';
-import {Logger as AppLogger} from './logger';
-
-class UserService implements IUserService {
-  constructor() {}
-}
-`;
-      writeFileSync(testFile, content);
+      writeFileSync(testFile, testFileContents.complexImports);
 
       const root = parser.parseFile(testFile);
       const aliases = parser.extractTypeAliases(root);

@@ -1,55 +1,26 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { DependencyResolver } from '../analyser/dependency-resolver';
 import { ClassInfo } from '../types';
+import {
+  basicMockClasses,
+  simpleClasses,
+  circularClasses,
+  selfRefClasses,
+  classesWithExternal,
+  simpleBinaryCircular,
+  multiCircularClasses,
+  externalDependencyClasses,
+  standaloneClasses,
+  diamondClasses,
+  optionalDepClasses
+} from './fixtures/dependency-resolver-fixtures';
 
 describe('DependencyResolver', () => {
   let resolver: DependencyResolver;
   let mockClasses: ClassInfo[];
 
   beforeEach(() => {
-    mockClasses = [
-      {
-        name: 'UserService',
-        dependencies: ['UserRepository', 'Logger'],
-        constructorParams: [
-          { name: 'userRepo', type: 'UserRepository', isOptional: false },
-          { name: 'logger', type: 'Logger', isOptional: false }
-        ],
-        scope: 'singleton',
-        interfaceName: 'IUserService',
-        importPath: './user-service',
-        filePath: '/test/user-service.ts'
-      },
-      {
-        name: 'UserRepository',
-        dependencies: ['DatabaseConnection'],
-        constructorParams: [
-          { name: 'db', type: 'DatabaseConnection', isOptional: false }
-        ],
-        scope: 'singleton',
-        interfaceName: 'IUserRepository',
-        importPath: './user-repository',
-        filePath: '/test/user-repository.ts'
-      },
-      {
-        name: 'DatabaseConnection',
-        dependencies: [],
-        constructorParams: [],
-        scope: 'singleton',
-        interfaceName: 'IDatabaseConnection',
-        importPath: './database-connection',
-        filePath: '/test/database-connection.ts'
-      },
-      {
-        name: 'Logger',
-        dependencies: [],
-        constructorParams: [],
-        scope: 'singleton',
-        interfaceName: 'ILogger',
-        importPath: './logger',
-        filePath: '/test/logger.ts'
-      }
-    ];
+    mockClasses = basicMockClasses;
     resolver = new DependencyResolver(mockClasses);
   });
 
@@ -72,17 +43,6 @@ describe('DependencyResolver', () => {
     });
 
     it('should handle classes with no dependencies', () => {
-      const simpleClasses: ClassInfo[] = [
-        {
-          name: 'SimpleClass',
-          dependencies: [],
-          constructorParams: [],
-          scope: 'singleton',
-          importPath: './simple',
-          filePath: '/test/simple.ts'
-        }
-      ];
-      
       const simpleResolver = new DependencyResolver(simpleClasses);
       const result = simpleResolver.resolve();
       
@@ -99,39 +59,6 @@ describe('DependencyResolver', () => {
     });
 
     it('should detect circular dependencies', () => {
-      const circularClasses: ClassInfo[] = [
-        {
-          name: 'ClassA',
-          dependencies: ['ClassB'],
-          constructorParams: [
-            { name: 'classB', type: 'ClassB', isOptional: false }
-          ],
-          scope: 'singleton',
-          importPath: './class-a',
-          filePath: '/test/class-a.ts'
-        },
-        {
-          name: 'ClassB',
-          dependencies: ['ClassC'],
-          constructorParams: [
-            { name: 'classC', type: 'ClassC', isOptional: false }
-          ],
-          scope: 'singleton',
-          importPath: './class-b',
-          filePath: '/test/class-b.ts'
-        },
-        {
-          name: 'ClassC',
-          dependencies: ['ClassA'],
-          constructorParams: [
-            { name: 'classA', type: 'ClassA', isOptional: false }
-          ],
-          scope: 'singleton',
-          importPath: './class-c',
-          filePath: '/test/class-c.ts'
-        }
-      ];
-      
       const circularResolver = new DependencyResolver(circularClasses);
       const result = circularResolver.resolve();
       
@@ -142,19 +69,6 @@ describe('DependencyResolver', () => {
     });
 
     it('should handle self-referencing circular dependency', () => {
-      const selfRefClasses: ClassInfo[] = [
-        {
-          name: 'SelfRef',
-          dependencies: ['SelfRef'],
-          constructorParams: [
-            { name: 'self', type: 'SelfRef', isOptional: false }
-          ],
-          scope: 'singleton',
-          importPath: './self-ref',
-          filePath: '/test/self-ref.ts'
-        }
-      ];
-      
       const selfRefResolver = new DependencyResolver(selfRefClasses);
       const result = selfRefResolver.resolve();
       
@@ -163,28 +77,6 @@ describe('DependencyResolver', () => {
     });
 
     it('should ignore external dependencies not in managed classes', () => {
-      const classesWithExternal: ClassInfo[] = [
-        {
-          name: 'ServiceWithExternal',
-          dependencies: ['ManagedDep', 'ExternalLibrary'],
-          constructorParams: [
-            { name: 'managed', type: 'ManagedDep', isOptional: false },
-            { name: 'external', type: 'ExternalLibrary', isOptional: false }
-          ],
-          scope: 'singleton',
-          importPath: './service',
-          filePath: '/test/service.ts'
-        },
-        {
-          name: 'ManagedDep',
-          dependencies: [],
-          constructorParams: [],
-          scope: 'singleton',
-          importPath: './managed',
-          filePath: '/test/managed.ts'
-        }
-      ];
-      
       const externalResolver = new DependencyResolver(classesWithExternal);
       const result = externalResolver.resolve();
       
@@ -205,26 +97,7 @@ describe('DependencyResolver', () => {
     });
 
     it('should detect and return circular dependencies', () => {
-      const circularClasses: ClassInfo[] = [
-        {
-          name: 'A',
-          dependencies: ['B'],
-          constructorParams: [{ name: 'b', type: 'B', isOptional: false }],
-          scope: 'singleton',
-          importPath: './a',
-          filePath: '/test/a.ts'
-        },
-        {
-          name: 'B',
-          dependencies: ['A'],
-          constructorParams: [{ name: 'a', type: 'A', isOptional: false }],
-          scope: 'singleton',
-          importPath: './b',
-          filePath: '/test/b.ts'
-        }
-      ];
-      
-      const circularResolver = new DependencyResolver(circularClasses);
+      const circularResolver = new DependencyResolver(simpleBinaryCircular);
       const cycles = circularResolver.detectCircularDependencies();
       
       expect(cycles.length).toBeGreaterThan(0);
@@ -233,43 +106,6 @@ describe('DependencyResolver', () => {
     });
 
     it('should detect multiple separate circular dependencies', () => {
-      const multiCircularClasses: ClassInfo[] = [
-        // First cycle: A -> B -> A
-        {
-          name: 'A',
-          dependencies: ['B'],
-          constructorParams: [{ name: 'b', type: 'B', isOptional: false }],
-          scope: 'singleton',
-          importPath: './a',
-          filePath: '/test/a.ts'
-        },
-        {
-          name: 'B',
-          dependencies: ['A'],
-          constructorParams: [{ name: 'a', type: 'A', isOptional: false }],
-          scope: 'singleton',
-          importPath: './b',
-          filePath: '/test/b.ts'
-        },
-        // Second cycle: C -> D -> C
-        {
-          name: 'C',
-          dependencies: ['D'],
-          constructorParams: [{ name: 'd', type: 'D', isOptional: false }],
-          scope: 'singleton',
-          importPath: './c',
-          filePath: '/test/c.ts'
-        },
-        {
-          name: 'D',
-          dependencies: ['C'],
-          constructorParams: [{ name: 'c', type: 'C', isOptional: false }],
-          scope: 'singleton',
-          importPath: './d',
-          filePath: '/test/d.ts'
-        }
-      ];
-      
       const multiResolver = new DependencyResolver(multiCircularClasses);
       const cycles = multiResolver.detectCircularDependencies();
       
@@ -289,26 +125,7 @@ describe('DependencyResolver', () => {
     });
 
     it('should filter out external dependencies', () => {
-      const classesWithExternal: ClassInfo[] = [
-        {
-          name: 'TestClass',
-          dependencies: ['ManagedClass', 'ExternalLibrary', 'AnotherExternal'],
-          constructorParams: [],
-          scope: 'singleton',
-          importPath: '/test/test.ts',
-          filePath: '/test/test.ts'
-        },
-        {
-          name: 'ManagedClass',
-          dependencies: [],
-          constructorParams: [],
-          scope: 'singleton',
-          importPath: '/test/managed.ts',
-          filePath: '/test/managed.ts'
-        }
-      ];
-      
-      const externalResolver = new DependencyResolver(classesWithExternal);
+      const externalResolver = new DependencyResolver(externalDependencyClasses);
       const graph = (externalResolver as any).buildDependencyGraph();
       
       expect(graph['TestClass']).toEqual(['ManagedClass']);
@@ -316,18 +133,7 @@ describe('DependencyResolver', () => {
     });
 
     it('should handle classes with no dependencies', () => {
-      const noDepsClasses: ClassInfo[] = [
-        {
-          name: 'Standalone',
-          dependencies: [],
-          constructorParams: [],
-          scope: 'singleton',
-          importPath: '/test/standalone.ts',
-          filePath: '/test/standalone.ts'
-        }
-      ];
-      
-      const noDepsResolver = new DependencyResolver(noDepsClasses);
+      const noDepsResolver = new DependencyResolver(standaloneClasses);
       const graph = (noDepsResolver as any).buildDependencyGraph();
       
       expect(graph['Standalone']).toEqual([]);
@@ -336,48 +142,6 @@ describe('DependencyResolver', () => {
 
   describe('complex dependency scenarios', () => {
     it('should handle diamond dependency pattern', () => {
-      const diamondClasses: ClassInfo[] = [
-        {
-          name: 'Top',
-          dependencies: ['Left', 'Right'],
-          constructorParams: [
-            { name: 'left', type: 'Left', isOptional: false },
-            { name: 'right', type: 'Right', isOptional: false }
-          ],
-          scope: 'singleton',
-          importPath: '/test/top.ts',
-          filePath: '/test/top.ts'
-        },
-        {
-          name: 'Left',
-          dependencies: ['Bottom'],
-          constructorParams: [
-            { name: 'bottom', type: 'Bottom', isOptional: false }
-          ],
-          scope: 'singleton',
-          importPath: '/test/left.ts',
-          filePath: '/test/left.ts'
-        },
-        {
-          name: 'Right',
-          dependencies: ['Bottom'],
-          constructorParams: [
-            { name: 'bottom', type: 'Bottom', isOptional: false }
-          ],
-          scope: 'singleton',
-          importPath: '/test/right.ts',
-          filePath: '/test/right.ts'
-        },
-        {
-          name: 'Bottom',
-          dependencies: [],
-          constructorParams: [],
-          scope: 'singleton',
-          importPath: '/test/bottom.ts',
-          filePath: '/test/bottom.ts'
-        }
-      ];
-      
       const diamondResolver = new DependencyResolver(diamondClasses);
       const result = diamondResolver.resolve();
       
@@ -396,28 +160,6 @@ describe('DependencyResolver', () => {
     });
 
     it('should handle optional dependencies correctly', () => {
-      const optionalDepClasses: ClassInfo[] = [
-        {
-          name: 'ServiceWithOptional',
-          dependencies: ['RequiredDep'],
-          constructorParams: [
-            { name: 'required', type: 'RequiredDep', isOptional: false },
-            { name: 'optional', type: 'OptionalDep', isOptional: true }
-          ],
-          scope: 'singleton',
-          importPath: '/test/service.ts',
-          filePath: '/test/service.ts'
-        },
-        {
-          name: 'RequiredDep',
-          dependencies: [],
-          constructorParams: [],
-          scope: 'singleton',
-          importPath: '/test/required.ts',
-          filePath: '/test/required.ts'
-        }
-      ];
-      
       const optionalResolver = new DependencyResolver(optionalDepClasses);
       const result = optionalResolver.resolve();
       
