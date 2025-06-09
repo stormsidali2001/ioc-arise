@@ -1,6 +1,6 @@
 import { ClassInfo } from '../types';
 import { DependencyResolver } from '../analyser/dependency-resolver';
-import { ContainerFileGenerator } from './Container-file-generator';
+import { ContainerFileGenerator } from './container-file-generator';
 
 export function generateContainerFile(classes: ClassInfo[], outputPath: string): void {
   const generator = new ContainerFileGenerator({ classes, outputPath });

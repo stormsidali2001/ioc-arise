@@ -1,4 +1,4 @@
-import { ClassInfo } from '../../types';
+import { ClassInfo } from '../../../types';
 
 export const basicMockClasses: ClassInfo[] = [
   {

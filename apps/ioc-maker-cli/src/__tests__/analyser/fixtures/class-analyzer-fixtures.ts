@@ -1,4 +1,4 @@
-import { ClassInfo, ConstructorParameter, InjectionScope } from '../../types';
+import { ClassInfo, ConstructorParameter, InjectionScope } from '../../../types';
 
 // Test file contents for different scenarios
 export const testFileContents = {

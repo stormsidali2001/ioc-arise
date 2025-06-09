@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { writeFileSync, mkdirSync, rmSync } from 'fs';
 import { join } from 'path';
-import { ASTParser } from '../analyser/ast-parser';
-import { ConstructorParameter, InjectionScope } from '../types';
+import { ASTParser } from '../../analyser/ast-parser';
+import { ConstructorParameter, InjectionScope } from '../../types';
 import { testFileContents } from './fixtures/ast-parser-fixtures';
 
 describe('ASTParser', () => {

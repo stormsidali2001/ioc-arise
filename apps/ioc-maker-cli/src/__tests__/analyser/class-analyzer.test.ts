@@ -1,8 +1,7 @@
 import { describe, it, expect, beforeEach, vi, Mock } from 'vitest';
-import { ClassAnalyzer } from '../analyser/class-analyzer';
-import { ASTParser } from '../analyser/ast-parser';
-import { InjectionScope } from '../types';
-import { container } from '../container';
+import { ClassAnalyzer } from '../../analyser/class-analyzer';
+import { InjectionScope } from '../../types';
+import { container } from '../../container';
 import {
   mockConstructorParams,
   importPathTestCases,
@@ -13,7 +12,7 @@ import {
 } from './fixtures/class-analyzer-fixtures';
 
 // Mock the container
-vi.mock('../container', () => ({
+vi.mock('../../container', () => ({
   container: {
     astParser: {
       parseFile: vi.fn(),

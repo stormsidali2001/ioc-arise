@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { DependencyResolver } from '../analyser/dependency-resolver';
-import { ClassInfo } from '../types';
+import { DependencyResolver } from '../../analyser/dependency-resolver';
+import { ClassInfo } from '../../types';
 import {
   basicMockClasses,
   simpleClasses,
