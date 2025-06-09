@@ -1,0 +1,139 @@
+import { ClassInfo, ConstructorParameter } from './types';
+
+export class CodeGenerator {
+  private classes: ClassInfo[];
+
+  constructor(classes: ClassInfo[]) {
+    this.classes = classes;
+  }
+
+  generateImports(): string {
+    const importSet = new Set<string>();
+    const classMap = new Map(this.classes.map(c => [c.name, c]));
+    
+    // Add imports for all managed classes
+    for (const classInfo of this.classes) {
+      importSet.add(`import { ${classInfo.name} } from '${classInfo.importPath}';`);
+    }
+    
+    // Add imports for unmanaged dependencies
+    for (const classInfo of this.classes) {
+      for (const dep of classInfo.dependencies) {
+        // If dependency is not a managed class, we need to import it
+        if (!classMap.has(dep)) {
+          // Check if it's an interface (starts with 'I' by convention)
+          if (!dep.startsWith('I')) {
+            importSet.add(`import { ${dep} } from '${classInfo.importPath}';`);
+          }
+        }
+      }
+    }
+
+    return Array.from(importSet).join('\n');
+  }
+
+  generateInstantiations(sortedClasses: string[]): string {
+    const classMap = new Map(this.classes.map(c => [c.name, c]));
+    const instantiations: string[] = [];
+
+    // Create interface to class mapping for dependency resolution
+    const interfaceToClassMap = new Map<string, string>();
+    for (const classInfo of this.classes) {
+      if (classInfo.interfaceName) {
+        interfaceToClassMap.set(classInfo.interfaceName, classInfo.name);
+      }
+    }
+
+    // Reverse the sorted order so classes with no dependencies are created first
+    for (const className of sortedClasses.reverse()) {
+      const classInfo = classMap.get(className);
+      if (!classInfo) continue;
+
+      const variableName = this.toVariableName(className);
+      const dependencies = classInfo.dependencies
+        .map(dep => {
+          // Check if dependency is an interface name
+          const implementingClass = interfaceToClassMap.get(dep);
+          if (implementingClass) {
+            return this.toVariableName(implementingClass);
+          }
+          // Check if dependency is a class name
+          if (classMap.has(dep)) {
+            return this.toVariableName(dep);
+          }
+          // Check if dependency is a class that exists in the same file but not managed
+          // For now, we'll create a simple instance for unmanaged dependencies with default values
+          return this.createUnmanagedDependencyInstance(dep);
+        })
+        .filter(dep => dep !== null)
+        .join(', ');
+
+      const instantiation = dependencies
+        ? `const ${variableName} = new ${className}(${dependencies});`
+        : `const ${variableName} = new ${className}();`;
+
+      instantiations.push(instantiation);
+    }
+
+    return instantiations.join('\n');
+  }
+
+  generateContainerObject(): string {
+    const properties = this.classes.map(classInfo => {
+      const variableName = this.toVariableName(classInfo.name);
+      return `  ${variableName},`;
+    });
+
+    return `export const container = {\n${properties.join('\n')}\n};`;
+  }
+
+  generateTypeExport(): string {
+    return 'export type Container = typeof container;';
+  }
+
+  private toVariableName(className: string): string {
+    // Convert PascalCase to camelCase
+    return className.charAt(0).toLowerCase() + className.slice(1);
+  }
+
+  private createUnmanagedDependencyInstance(className: string): string {
+    // Find the class info for this unmanaged dependency
+    const classInfo = this.classes.find(c => c.name === className);
+    if (!classInfo || !classInfo.constructorParams.length) {
+      return `new ${className}()`;
+    }
+    
+    const args = this.generateConstructorArgs(classInfo.constructorParams);
+    return `new ${className}(${args})`;
+  }
+
+  private generateConstructorArgs(params: ConstructorParameter[]): string {
+    return params.map(param => this.getDefaultValueForType(param.type, param.isOptional)).join(', ');
+  }
+
+  private getDefaultValueForType(type: string, isOptional: boolean): string {
+    if (isOptional) {
+      return 'undefined';
+    }
+    
+    // Handle primitive types
+    switch (type.toLowerCase()) {
+      case 'string':
+        return '"default"';
+      case 'number':
+        return '0';
+      case 'boolean':
+        return 'false';
+      case 'date':
+        return 'new Date()';
+      default:
+        // For class types, try to find if it's a managed dependency
+        const classMap = new Map(this.classes.map(c => [c.name, c]));
+        if (classMap.has(type)) {
+          return this.toVariableName(type);
+        }
+        // For unmanaged class types, create a simple instance
+        return `new ${type}()`;
+    }
+  }
+}
