@@ -1,5 +1,5 @@
 import { relative } from 'path';
-import { ClassInfo, ConstructorParameter } from './types';
+import { ClassInfo, ConstructorParameter, InjectionScope } from './types';
 import { ASTParser } from './ast-parser';
 
 export class ClassAnalyzer {
@@ -22,6 +22,10 @@ export class ClassAnalyzer {
       // Extract import aliases for type resolution
       const typeAliases = this.astParser.extractTypeAliases(root);
       
+      // Extract JSDoc scope annotations at file level for this specific file
+      const jsDocScopes = this.astParser.extractJSDocComments(root);
+      console.log('JSDoc scopes for file', filePath, ':', jsDocScopes)
+      
       // Find classes implementing interfaces
       const classNodes = this.astParser.findClassesImplementingInterfaces(root);
 
@@ -40,12 +44,14 @@ export class ClassAnalyzer {
         const constructorParams = this.astParser.extractConstructorParameters(classNode);
         const dependencies = this.resolveDependencies(constructorParams, typeAliases);
         const importPath = this.generateImportPath(filePath, className);
+        const scope = this.astParser.extractScopeFromJSDoc(className, jsDocScopes);
         
         console.log(`Processing class: ${className}`);
         console.log(`Interface for ${className}:`, interfaceName);
         console.log(`Constructor params for ${className}:`, constructorParams);
         console.log(`Type aliases found:`, Array.from(typeAliases.entries()));
         console.log(`Dependencies for ${className}:`, dependencies);
+        console.log(`Scope for ${className}:`, scope);
         
         classes.push({
           name: className,
@@ -53,7 +59,8 @@ export class ClassAnalyzer {
           dependencies,
           constructorParams,
           interfaceName,
-          importPath
+          importPath,
+          scope
         });
       }
     } catch (error) {

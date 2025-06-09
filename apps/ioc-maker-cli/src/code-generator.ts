@@ -1,4 +1,4 @@
-import { ClassInfo, ConstructorParameter } from './types';
+import { ClassInfo, ConstructorParameter, InjectionScope } from './types';
 
 export class CodeGenerator {
   private classes: ClassInfo[];
@@ -35,6 +35,7 @@ export class CodeGenerator {
   generateInstantiations(sortedClasses: string[]): string {
     const classMap = new Map(this.classes.map(c => [c.name, c]));
     const instantiations: string[] = [];
+    const transientFactories: string[] = [];
 
     // Create interface to class mapping for dependency resolution
     const interfaceToClassMap = new Map<string, string>();
@@ -44,29 +45,21 @@ export class CodeGenerator {
       }
     }
 
-    // Reverse the sorted order so classes with no dependencies are created first
-    for (const className of sortedClasses.reverse()) {
+    // Separate singletons and transients
+    const singletonClasses = this.classes.filter(c => c.scope === 'singleton');
+    const transientClasses = this.classes.filter(c => c.scope === 'transient');
+
+    // Generate singleton instantiations (eager loading)
+    const singletonClassNames = sortedClasses.filter(name => {
+      return singletonClasses.some(c => c.name === name);
+    });
+
+    for (const className of singletonClassNames.reverse()) {
       const classInfo = classMap.get(className);
       if (!classInfo) continue;
 
       const variableName = this.toVariableName(className);
-      const dependencies = classInfo.dependencies
-        .map(dep => {
-          // Check if dependency is an interface name
-          const implementingClass = interfaceToClassMap.get(dep);
-          if (implementingClass) {
-            return this.toVariableName(implementingClass);
-          }
-          // Check if dependency is a class name
-          if (classMap.has(dep)) {
-            return this.toVariableName(dep);
-          }
-          // Check if dependency is a class that exists in the same file but not managed
-          // For now, we'll create a simple instance for unmanaged dependencies with default values
-          return this.createUnmanagedDependencyInstance(dep);
-        })
-        .filter(dep => dep !== null)
-        .join(', ');
+      const dependencies = this.resolveDependencies(classInfo, interfaceToClassMap, classMap);
 
       const instantiation = dependencies
         ? `const ${variableName} = new ${className}(${dependencies});`
@@ -75,16 +68,68 @@ export class CodeGenerator {
       instantiations.push(instantiation);
     }
 
-    return instantiations.join('\n');
+    // Generate transient factory functions (lazy loading)
+    for (const classInfo of transientClasses) {
+      const className = classInfo.name;
+      const variableName = this.toVariableName(className);
+      const dependencies = this.resolveDependencies(classInfo, interfaceToClassMap, classMap);
+
+      const factory = dependencies
+        ? `  ['${variableName}', () => new ${className}(${dependencies})]`
+        : `  ['${variableName}', () => new ${className}()]`;
+
+      transientFactories.push(factory);
+    }
+
+    const result = [];
+    
+    // First declare transient factories if needed
+    if (transientFactories.length > 0) {
+      result.push('// Lazy loading setup for transient dependencies');
+      
+      // Create individual typed factory functions
+      for (const classInfo of transientClasses) {
+        const variableName = this.toVariableName(classInfo.name);
+        const className = classInfo.name;
+        const dependencies = this.resolveDependencies(classInfo, interfaceToClassMap, classMap);
+        
+        const factoryFunction = dependencies
+          ? `const ${variableName}Factory = (): ${className} => new ${className}(${dependencies});`
+          : `const ${variableName}Factory = (): ${className} => new ${className}();`;
+        
+        result.push(factoryFunction);
+      }
+      result.push('');
+    }
+    
+    // Then do singleton instantiations
+    if (instantiations.length > 0) {
+      result.push('// Eager singleton instantiation');
+      result.push(...instantiations);
+    }
+
+    return result.join('\n');
   }
 
   generateContainerObject(): string {
-    const properties = this.classes.map(classInfo => {
-      const variableName = this.toVariableName(classInfo.name);
-      return `  ${variableName},`;
-    });
+    const singletonProperties: string[] = [];
+    const transientProperties: string[] = [];
 
-    return `export const container = {\n${properties.join('\n')}\n};`;
+    for (const classInfo of this.classes) {
+      const variableName = this.toVariableName(classInfo.name);
+      const interfaceName = classInfo.interfaceName || classInfo.name;
+      
+      if (classInfo.scope === 'singleton') {
+        singletonProperties.push(`  ${interfaceName}: ${variableName},`);
+      } else if (classInfo.scope === 'transient') {
+        transientProperties.push(`  get ${interfaceName}(): ${classInfo.name} {
+    return ${variableName}Factory();
+  },`);
+      }
+    }
+
+    const allProperties = [...singletonProperties, ...transientProperties];
+    return `export const container = {\n${allProperties.join('\n')}\n};`;
   }
 
   generateTypeExport(): string {
@@ -94,6 +139,38 @@ export class CodeGenerator {
   private toVariableName(className: string): string {
     // Convert PascalCase to camelCase
     return className.charAt(0).toLowerCase() + className.slice(1);
+  }
+
+  private resolveDependencies(
+    classInfo: ClassInfo,
+    interfaceToClassMap: Map<string, string>,
+    classMap: Map<string, ClassInfo>
+  ): string {
+    return classInfo.dependencies
+      .map(dep => {
+        // Check if dependency is an interface name
+        const implementingClass = interfaceToClassMap.get(dep);
+        if (implementingClass) {
+          const depClassInfo = classMap.get(implementingClass);
+          if (depClassInfo && depClassInfo.scope === 'transient') {
+            // For transient dependencies, use factory call
+            return `${this.toVariableName(implementingClass)}Factory()`;
+          }
+          return this.toVariableName(implementingClass);
+        }
+        // Check if dependency is a class name
+        if (classMap.has(dep)) {
+          const depClassInfo = classMap.get(dep);
+          if (depClassInfo && depClassInfo.scope === 'transient') {
+            return `${this.toVariableName(dep)}Factory()`;
+          }
+          return this.toVariableName(dep);
+        }
+        // Check if dependency is a class that exists in the same file but not managed
+        return this.createUnmanagedDependencyInstance(dep);
+      })
+      .filter(dep => dep !== null)
+      .join(', ');
   }
 
   private createUnmanagedDependencyInstance(className: string): string {

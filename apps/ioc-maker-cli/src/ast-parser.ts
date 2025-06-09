@@ -1,6 +1,6 @@
 import { readFileSync } from 'fs';
 import { ts } from '@ast-grep/napi';
-import { ConstructorParameter } from './types';
+import { ConstructorParameter, InjectionScope } from './types';
 
 export class ASTParser {
   parseFile(filePath: string): any {
@@ -18,7 +18,26 @@ export class ASTParser {
   }
 
   extractClassName(classNode: any): string | undefined {
-    return classNode.getMatch('CLASS')?.text();
+    console.log('Extracting class name from node:', classNode.text().substring(0, 100) + '...');
+    
+    // Try different approaches to extract class name
+    let className = classNode.getMatch('CLASS')?.text();
+    if (className) {
+      console.log('Found class name using CLASS match:', className);
+      return className;
+    }
+    
+    // Try to match the class declaration pattern directly
+    const classText = classNode.text();
+    const classMatch = classText.match(/class\s+([A-Za-z_][A-Za-z0-9_]*)/);
+    if (classMatch) {
+      className = classMatch[1];
+      console.log('Found class name using regex:', className);
+      return className;
+    }
+    
+    console.log('Failed to extract class name');
+    return undefined;
   }
 
   extractInterfaceName(classNode: any): string | undefined {
@@ -94,6 +113,74 @@ export class ASTParser {
     
     console.log('Final parameters:', parameters);
     return parameters;
+  }
+
+  extractJSDocComments(root: any): Map<string, InjectionScope> {
+    const classScopes = new Map<string, InjectionScope>();
+    
+    try {
+      // Find all JSDoc comments in the file
+      const comments = root.findAll({
+        rule: {
+          kind: 'comment'
+        }
+      });
+      
+      console.log(`Found ${comments.length} comments in file`);
+      
+      // Find all class declarations
+      const classDeclarations = root.findAll({
+        rule: {
+          kind: 'class_declaration'
+        }
+      });
+      
+      console.log(`Found ${classDeclarations.length} class declarations in file`);
+      
+      for (const comment of comments) {
+        const commentText = comment.text();
+        console.log(`Comment text: ${commentText}`);
+        
+        if (commentText.includes('/**') && commentText.includes('@scope')) {
+          console.log(`Found @scope comment: ${commentText}`);
+          const scopeMatch = commentText.match(/@scope\s+(singleton|transient)/);
+          if (scopeMatch) {
+            const scope = scopeMatch[1] as InjectionScope;
+            const commentRange = comment.range();
+            console.log(`Comment range: line ${commentRange.start.line} to ${commentRange.end.line}`);
+            
+            // Find the class declaration that comes immediately after this comment
+            for (const classDecl of classDeclarations) {
+              const classRange = classDecl.range();
+              console.log(`Class range: line ${classRange.start.line} to ${classRange.end.line}`);
+              
+              // Check if the class comes after the comment
+              if (classRange.start.line > commentRange.end.line) {
+                const className = this.extractClassName(classDecl);
+                console.log(`Attempting to extract class name from class at line ${classRange.start.line}`);
+                console.log(`Extracted class name: ${className}`);
+                if (className) {
+                  console.log(`Found JSDoc scope annotation: ${className} -> ${scope}`);
+                  classScopes.set(className, scope);
+                  break; // Take the first class after this comment
+                } else {
+                  console.log(`Failed to extract class name from class declaration`);
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('Warning: Could not extract JSDoc comments:', error);
+    }
+    
+    console.log(`Final classScopes map:`, classScopes);
+    return classScopes;
+  }
+
+  extractScopeFromJSDoc(className: string, jsDocScopes: Map<string, InjectionScope>): InjectionScope {
+    return jsDocScopes.get(className) || 'singleton';
   }
 
   extractTypeAliases(root: any): Map<string, string> {

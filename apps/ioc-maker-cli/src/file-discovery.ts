@@ -12,6 +12,7 @@ export class FileDiscovery {
 
   async findTypeScriptFiles(): Promise<string[]> {
     const pattern = join(this.sourceDir, '**/*.ts');
+    console.log(`Searching for TypeScript files with pattern: ${pattern}`);
     const files = await glob(pattern, {
       ignore: [
         '**/node_modules/**',
@@ -22,6 +23,8 @@ export class FileDiscovery {
         ...this.excludePatterns
       ]
     });
+    console.log(`Found ${files.length} TypeScript files:`);
+    files.forEach(file => console.log(`  - ${file}`));
     return files;
   }
 }

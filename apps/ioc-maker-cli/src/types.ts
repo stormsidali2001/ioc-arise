@@ -1,3 +1,5 @@
+export type InjectionScope = 'singleton' | 'transient';
+
 export interface ConstructorParameter {
   name: string;
   type: string;
@@ -12,6 +14,7 @@ export interface ClassInfo {
   constructorParams: ConstructorParameter[];
   interfaceName?: string;
   importPath: string;
+  scope: InjectionScope;
 }
 
 export interface AnalyzerOptions {

@@ -2,6 +2,9 @@ import { UserResponseDTO } from '../dtos/UserDTOs';
 import { ICreateUserOutputPort } from '../IOutputPort';
 import { CreateUserViewModel } from '../view-models/UserViewModels';
 
+/**
+ * @scope singleton
+ */
 export class CreateUserPresenter implements ICreateUserOutputPort {
   private viewModel: CreateUserViewModel = {
     isLoading: false,

@@ -1,6 +1,9 @@
 import { IUserRepository } from './IUserRepository';
 import { User } from '../entities/User';
 
+/**
+ * @scope transient
+ */
 export class UserRepository implements IUserRepository {
   private users: Map<string, User> = new Map();
 

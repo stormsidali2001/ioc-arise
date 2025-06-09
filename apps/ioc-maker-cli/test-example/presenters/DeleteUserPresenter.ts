@@ -1,6 +1,9 @@
 import { IDeleteUserOutputPort } from '../IOutputPort';
 import { DeleteUserViewModel } from '../view-models/UserViewModels';
 
+/**
+ * @scope transient
+ */
 export class DeleteUserPresenter implements IDeleteUserOutputPort {
   private viewModel: DeleteUserViewModel = {
     isLoading: false,
