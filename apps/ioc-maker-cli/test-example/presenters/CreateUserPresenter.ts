@@ -3,7 +3,7 @@ import { ICreateUserOutputPort } from '../IOutputPort';
 import { CreateUserViewModel } from '../view-models/UserViewModels';
 
 /**
- * @scope singleton
+ * @scope transient
  */
 export class CreateUserPresenter implements ICreateUserOutputPort {
   private viewModel: CreateUserViewModel = {

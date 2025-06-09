@@ -2,6 +2,9 @@ import { UserResponseDTO } from '../dtos/UserDTOs';
 import { IGetUserOutputPort } from '../IOutputPort';
 import { GetUserViewModel } from '../view-models/UserViewModels';
 
+/**
+ * @scope transient
+ */
 export class GetUserPresenter implements IGetUserOutputPort {
   private viewModel: GetUserViewModel = {
     isLoading: false,

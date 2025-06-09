@@ -7,27 +7,29 @@ import { DeleteUserPresenter } from './presenters/DeleteUserPresenter';
 import { CreateUserPresenter } from './presenters/CreateUserPresenter';
 
 // Lazy loading setup for transient dependencies
-const userRepositoryFactory = (): UserRepository => new UserRepository();
+const getUserPresenterFactory = (): GetUserPresenter => new GetUserPresenter();
 const deleteUserPresenterFactory = (): DeleteUserPresenter => new DeleteUserPresenter();
+const createUserPresenterFactory = (): CreateUserPresenter => new CreateUserPresenter();
 
 // Eager singleton instantiation
-const createUserPresenter = new CreateUserPresenter();
-const getUserPresenter = new GetUserPresenter();
-const createUserUseCase = new CreateUserUseCase(userRepositoryFactory(), createUserPresenter);
-const deleteUserUseCase = new DeleteUserUseCase(userRepositoryFactory(), deleteUserPresenterFactory());
-const getUserUseCase = new GetUserUseCase(userRepositoryFactory(), getUserPresenter);
+const userRepository = new UserRepository();
+const createUserUseCase = new CreateUserUseCase(userRepository, createUserPresenterFactory());
+const deleteUserUseCase = new DeleteUserUseCase(userRepository, deleteUserPresenterFactory());
+const getUserUseCase = new GetUserUseCase(userRepository, getUserPresenterFactory());
 
 export const container = {
   IGetUserInputPort: getUserUseCase,
   IDeleteUserInputPort: deleteUserUseCase,
   ICreateUserInputPort: createUserUseCase,
-  IGetUserOutputPort: getUserPresenter,
-  ICreateUserOutputPort: createUserPresenter,
-  get IUserRepository(): UserRepository {
-    return userRepositoryFactory();
+  IUserRepository: userRepository,
+  get IGetUserOutputPort(): GetUserPresenter {
+    return getUserPresenterFactory();
   },
   get IDeleteUserOutputPort(): DeleteUserPresenter {
     return deleteUserPresenterFactory();
+  },
+  get ICreateUserOutputPort(): CreateUserPresenter {
+    return createUserPresenterFactory();
   },
 };
 
