@@ -65,7 +65,7 @@ export class DependencyResolver {
     return params.map(param => this.getDefaultValueForType(param.type, param.isOptional)).join(', ');
   }
 
-  private getDefaultValueForType(type: string, isOptional: boolean): string {
+  getDefaultValueForType(type: string, isOptional: boolean): string {
     if (isOptional) {
       return 'undefined';
     }

@@ -33,10 +33,37 @@ export class InstantiationGenerator {
       if (!classInfo) continue;
 
       const variableName = toVariableName(className);
-      const dependencies = this.dependencyResolver.resolveDependencies(classInfo, interfaceToClassMap, classMap);
+      
+      // Generate constructor arguments for all parameters
+      let constructorArgs = '';
+      if (classInfo.constructorParams.length > 0) {
+        const args = classInfo.constructorParams.map(param => {
+          // Check if this parameter is a dependency
+           const depIndex = classInfo.dependencies.indexOf(param.type);
+           if (depIndex !== -1) {
+             // Check if it's a managed dependency (exists in our class map)
+             const implementingClass = interfaceToClassMap.get(param.type) || param.type;
+             const depClassInfo = classMap.get(implementingClass);
+             if (depClassInfo) {
+               // This is a managed dependency, resolve it
+               if (depClassInfo.scope === 'transient') {
+                 return `${toVariableName(implementingClass)}Factory()`;
+               }
+               return toVariableName(implementingClass);
+             } else {
+               // This is an unmanaged dependency, create new instance
+               return `new ${param.type}()`;
+             }
+           } else {
+             // This is an unmanaged parameter, generate default value
+             return this.dependencyResolver.getDefaultValueForType(param.type, param.isOptional);
+           }
+        });
+        constructorArgs = args.join(', ');
+      }
 
-      const instantiation = dependencies
-        ? `const ${variableName} = new ${className}(${dependencies});`
+      const instantiation = constructorArgs
+        ? `const ${variableName} = new ${className}(${constructorArgs});`
         : `const ${variableName} = new ${className}();`;
 
       instantiations.push(instantiation);
@@ -65,10 +92,37 @@ export class InstantiationGenerator {
       for (const classInfo of transientClasses) {
         const variableName = toVariableName(classInfo.name);
         const className = classInfo.name;
-        const dependencies = this.dependencyResolver.resolveDependencies(classInfo, interfaceToClassMap, classMap);
         
-        const factoryFunction = dependencies
-          ? `const ${variableName}Factory = (): ${className} => new ${className}(${dependencies});`
+        // Generate constructor arguments for all parameters
+        let constructorArgs = '';
+        if (classInfo.constructorParams.length > 0) {
+          const args = classInfo.constructorParams.map(param => {
+             // Check if this parameter is a dependency
+             const depIndex = classInfo.dependencies.indexOf(param.type);
+             if (depIndex !== -1) {
+               // Check if it's a managed dependency (exists in our class map)
+               const implementingClass = interfaceToClassMap.get(param.type) || param.type;
+               const depClassInfo = classMap.get(implementingClass);
+               if (depClassInfo) {
+                 // This is a managed dependency, resolve it
+                 if (depClassInfo.scope === 'transient') {
+                   return `${toVariableName(implementingClass)}Factory()`;
+                 }
+                 return toVariableName(implementingClass);
+               } else {
+                 // This is an unmanaged dependency, create new instance
+                 return `new ${param.type}()`;
+               }
+             } else {
+               // This is an unmanaged parameter, generate default value
+               return this.dependencyResolver.getDefaultValueForType(param.type, param.isOptional);
+             }
+           });
+          constructorArgs = args.join(', ');
+        }
+        
+        const factoryFunction = constructorArgs
+          ? `const ${variableName}Factory = (): ${className} => new ${className}(${constructorArgs});`
           : `const ${variableName}Factory = (): ${className} => new ${className}();`;
         
         result.push(factoryFunction);
