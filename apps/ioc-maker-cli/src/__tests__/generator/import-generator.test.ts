@@ -8,7 +8,6 @@ import {
   circularClassesFixture,
   mixedClassesFixture
 } from './fixtures/import-generator.fixtures';
-import { ClassInfo } from '../../types';
 
 describe('ImportGenerator', () => {
   let importGenerator: ImportGenerator;
