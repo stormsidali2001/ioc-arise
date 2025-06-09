@@ -1,4 +1,4 @@
-import { ClassInfo, ConstructorParameter, InjectionScope } from '../types';
+import { ClassInfo, ConstructorParameter} from '../types';
 
 export class CodeGenerator {
   private classes: ClassInfo[];

@@ -1,6 +1,7 @@
 import { relative } from 'path';
 import { ClassInfo, ConstructorParameter, InjectionScope } from '../types';
 import { ASTParser } from './ast-parser';
+import { container } from '../container';
 
 export class ClassAnalyzer {
   private astParser: ASTParser;
@@ -8,7 +9,7 @@ export class ClassAnalyzer {
   private interfacePattern?: string;
 
   constructor(sourceDir: string, interfacePattern?: string) {
-    this.astParser = new ASTParser();
+    this.astParser =  container.astParser;
     this.sourceDir = sourceDir;
     this.interfacePattern = interfacePattern;
   }

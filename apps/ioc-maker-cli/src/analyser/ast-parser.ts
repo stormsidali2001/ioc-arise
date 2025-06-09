@@ -78,12 +78,20 @@ export class ASTParser {
       
       const formalParams = parameterNodes[0];
       
-      // Find individual parameters
-      const paramNodes = formalParams.findAll({
+      // Find individual parameters (both required and optional)
+      const requiredParamNodes = formalParams.findAll({
         rule: {
           kind: 'required_parameter'
         }
       });
+      
+      const optionalParamNodes = formalParams.findAll({
+        rule: {
+          kind: 'optional_parameter'
+        }
+      });
+      
+      const paramNodes = [...requiredParamNodes, ...optionalParamNodes];
       
       console.log(`Found ${paramNodes.length} parameter nodes`);
       
@@ -92,10 +100,10 @@ export class ASTParser {
         console.log('Parameter text:', paramText);
         
         // Parse parameter using regex to extract details
-        const paramMatch = paramText.match(/(?:(private|public|protected)\s+)?(\w+)\s*:\s*(\w+)(\?)?/);
+        const paramMatch = paramText.match(/(?:(private|public|protected)\s+)?(\w+)(\?)?\s*:\s*(\w+)/);
         
         if (paramMatch) {
-          const [, accessModifier, name, type, optional] = paramMatch;
+          const [, accessModifier, name, optional, type] = paramMatch;
           
           parameters.push({
             name: name.trim(),
