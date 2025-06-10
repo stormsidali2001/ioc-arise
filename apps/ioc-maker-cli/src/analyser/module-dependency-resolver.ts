@@ -1,4 +1,5 @@
 import { ClassInfo } from '../types';
+import { TopologicalSorter } from '../utils/topological-sorter';
 
 export interface ModuleDependencyResult {
   sortedModules: string[];
@@ -68,42 +69,13 @@ export class ModuleDependencyResolver {
   }
 
   private topologicalSort(moduleDependencies: Map<string, Set<string>>): { sorted: string[], cycles: string[][] } {
-    const visited = new Set<string>();
-    const visiting = new Set<string>();
-    const sorted: string[] = [];
-    const cycles: string[][] = [];
-
-    const visit = (module: string, path: string[] = []): void => {
-      if (visiting.has(module)) {
-        // Cycle detected
-        const cycleStart = path.indexOf(module);
-        cycles.push(path.slice(cycleStart).concat(module));
-        return;
-      }
-
-      if (visited.has(module)) {
-        return;
-      }
-
-      visiting.add(module);
-      const dependencies = moduleDependencies.get(module) || new Set();
-
-      for (const dep of dependencies) {
-        visit(dep, [...path, module]);
-      }
-
-      visiting.delete(module);
-      visited.add(module);
-      sorted.push(module);
-    };
-
-    for (const module of moduleDependencies.keys()) {
-      if (!visited.has(module)) {
-        visit(module);
-      }
+    // Convert Map<string, Set<string>> to Map<string, string[]> for TopologicalSorter
+    const graphMap = new Map<string, string[]>();
+    for (const [module, deps] of moduleDependencies) {
+      graphMap.set(module, Array.from(deps));
     }
-
-    return { sorted, cycles };
+    
+    return TopologicalSorter.sort(graphMap,"desc");
   }
 
   getModuleDependencies(moduleName: string): string[] {

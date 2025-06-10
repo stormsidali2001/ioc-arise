@@ -32,8 +32,3 @@ export interface GeneratorOptions {
 export interface DependencyGraph {
   [className: string]: string[];
 }
-
-export interface TopologicalSortResult {
-  sorted: string[];
-  cycles: string[][];
-}
