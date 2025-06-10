@@ -13,7 +13,7 @@ const createUserPresenterFactory = (): CreateUserPresenter => new CreateUserPres
 
 // Eager singleton instantiation
 const userRepository = new UserRepository();
-const createUserUseCase = new CreateUserUseCase(userRepository, new OutputPort());
+const createUserUseCase = new CreateUserUseCase(userRepository, createUserPresenterFactory());
 const deleteUserUseCase = new DeleteUserUseCase(userRepository, deleteUserPresenterFactory());
 const getUserUseCase = new GetUserUseCase(userRepository, getUserPresenterFactory());
 

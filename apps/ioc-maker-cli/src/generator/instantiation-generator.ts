@@ -37,27 +37,43 @@ export class InstantiationGenerator {
       // Generate constructor arguments for all parameters
       let constructorArgs = '';
       if (classInfo.constructorParams.length > 0) {
-        const args = classInfo.constructorParams.map(param => {
-          // Check if this parameter is a dependency
-           const depIndex = classInfo.dependencies.indexOf(param.type);
-           if (depIndex !== -1) {
-             // Check if it's a managed dependency (exists in our class map)
-             const implementingClass = interfaceToClassMap.get(param.type) || param.type;
-             const depClassInfo = classMap.get(implementingClass);
-             if (depClassInfo) {
-               // This is a managed dependency, resolve it
-               if (depClassInfo.scope === 'transient') {
-                 return `${toVariableName(implementingClass)}Factory()`;
-               }
-               return toVariableName(implementingClass);
-             } else {
-               // This is an unmanaged dependency, create new instance
-               return `new ${param.type}()`;
-             }
-           } else {
-             // This is an unmanaged parameter, generate default value
-             return this.dependencyResolver.getDefaultValueForType(param.type, param.isOptional);
-           }
+        const args = classInfo.constructorParams.map((param, paramIndex) => {
+          // The dependencies array contains resolved interface names (after alias resolution)
+          // We need to map constructor parameters to dependencies by position
+          let targetDependency: string = param.type;
+          
+          // If we have a dependency at this parameter index, use it (it's already resolved)
+          if (paramIndex < classInfo.dependencies.length) {
+            const resolvedDep = classInfo.dependencies[paramIndex];
+            if (resolvedDep) {
+              targetDependency = resolvedDep;
+            }
+          } else {
+            // Fallback: check if parameter type directly matches any dependency
+            const directMatch = classInfo.dependencies.find(dep => dep === param.type);
+            if (directMatch) {
+              targetDependency = directMatch;
+            }
+          }
+          
+          // Check if this is a managed dependency
+          const implementingClass = interfaceToClassMap.get(targetDependency) || targetDependency;
+          const depClassInfo = classMap.get(implementingClass);
+          
+          if (depClassInfo) {
+            // This is a managed dependency, resolve it
+            if (depClassInfo.scope === 'transient') {
+              return `${toVariableName(implementingClass)}Factory()`;
+            }
+            return toVariableName(implementingClass);
+          } else {
+            // Check if it's in our dependencies list (unmanaged but expected)
+            if (classInfo.dependencies.includes(targetDependency)) {
+              return `new ${targetDependency}()`;
+            }
+            // This is an unmanaged parameter, generate default value
+            return this.dependencyResolver.getDefaultValueForType(param.type, param.isOptional);
+          }
         });
         constructorArgs = args.join(', ');
       }
@@ -76,8 +92,8 @@ export class InstantiationGenerator {
       const dependencies = this.dependencyResolver.resolveDependencies(classInfo, interfaceToClassMap, classMap);
 
       const factory = dependencies
-        ? `  ['${variableName}', () => new ${className}(${dependencies})]`
-        : `  ['${variableName}', () => new ${className}()]`;
+        ? `const ${variableName}Factory = (): ${className} => new ${className}(${dependencies});`
+        : `const ${variableName}Factory = (): ${className} => new ${className}();`;
 
       transientFactories.push(factory);
     }

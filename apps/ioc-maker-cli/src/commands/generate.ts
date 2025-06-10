@@ -103,15 +103,18 @@ await initializeOneLogger({
       generateContainerFile(classes, outputPath);
 
 
-      // console.log(`✅ Container generated successfully!`);
-      // console.log(`   File: ${outputPath}`);
-      // console.log(`   Classes: ${classes.length}`);
+      console.log(`✅ Container generated successfully!`);
+      console.log(`   File: ${outputPath}`);
+      console.log(`   Classes: ${classes.length}`);
       
-      // if (mergedOptions.verbose) {
-      //   console.log('\n🎉 You can now import and use your container:');
-      //   console.log('   import { container } from "./container.gen";');
-      //   console.log('   const userService = container.userService;');
-      // }
+      if (mergedOptions.verbose) {
+        console.log('\n🎉 You can now import and use your container:');
+        console.log('   import { container } from "./container.gen";');
+        console.log('   const userService = container.userService;');
+      }
+
+      // Force process exit to prevent hanging due to one-logger SDK
+      process.exit(0);
 
     } catch (error) {
       console.error('❌ Error generating container:', error instanceof Error ? error.message : error);
