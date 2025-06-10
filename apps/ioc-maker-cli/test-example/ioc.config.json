@@ -8,6 +8,16 @@
   ],
   "verbose": true,
   "modules": {
+    "UserModule": [
+      "use-cases/*User*",
+      "repositories/UserRepository.ts",
+      "presenters/*User*"
+    ],
+    "TodoModule": [
+      "use-cases/*Todo*",
+      "repositories/TodoRepository.ts",
+      "presenters/*Todo*"
+    ]
   }
 
 }
