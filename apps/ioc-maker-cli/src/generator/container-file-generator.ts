@@ -104,7 +104,6 @@ export class ContainerFileGenerator {
       const moduleClasses = this.moduleGroupedClasses.get(moduleName);
       if (!moduleClasses) continue;
       
-      const moduleVarName = this.camelCase(moduleName) + 'Container';
       const moduleFunctionName = `create${moduleName}Container`;
       const moduleExports: string[] = [];
       const moduleDeps = moduleDependencies.get(moduleName) || new Set();
