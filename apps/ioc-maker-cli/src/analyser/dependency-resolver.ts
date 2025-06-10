@@ -7,7 +7,7 @@ export class DependencyResolver {
     this.classes = classes;
   }
 
-  resolve(): TopologicalSortResult {
+  resolve(moduleGroupedClasses?: Map<string, ClassInfo[]>): TopologicalSortResult {
     const graph = this.buildDependencyGraph();
     const visited = new Set<string>();
     const visiting = new Set<string>();
@@ -44,6 +44,12 @@ export class DependencyResolver {
       if (!visited.has(className)) {
         visit(className);
       }
+    }
+
+    // If moduleGroupedClasses is provided, we need to reverse the order
+    // because the topological sort gives us dependents first, but we need dependencies first
+    if (moduleGroupedClasses) {
+      sorted.reverse();
     }
 
     return { sorted, cycles };

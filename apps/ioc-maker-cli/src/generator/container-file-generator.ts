@@ -37,7 +37,7 @@ export class ContainerFileGenerator {
   }
 
   generateContainer(): void {
-    const sortResult = this.dependencyResolver.resolve();
+    const sortResult = this.dependencyResolver.resolve(this.moduleGroupedClasses);
 
     if (sortResult.cycles.length > 0) {
       throw new Error(`Circular dependencies detected: ${JSON.stringify(sortResult.cycles)}`);
@@ -52,7 +52,9 @@ export class ContainerFileGenerator {
       throw new Error('Module grouped classes not available');
     }
 
-    const sortResult = this.dependencyResolver.resolve();
+    const sortResult = this.dependencyResolver.resolve(this.moduleGroupedClasses);
+
+    console.log("sort order",sortResult)
 
     if (sortResult.cycles.length > 0) {
       throw new Error(`Circular dependencies detected: ${JSON.stringify(sortResult.cycles)}`);
