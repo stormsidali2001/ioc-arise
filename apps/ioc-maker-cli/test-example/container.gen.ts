@@ -17,71 +17,78 @@ import { DeleteUserPresenter } from './presenters/DeleteUserPresenter';
 import { CreateUserPresenter } from './presenters/CreateUserPresenter';
 import { UserRepository } from './repositories/UserRepository';
 
-// Lazy loading setup for transient dependencies
-const updateTodoPresenterFactory = (): UpdateTodoPresenter => new UpdateTodoPresenter();
-const getTodoPresenterFactory = (): GetTodoPresenter => new GetTodoPresenter();
-const deleteTodoPresenterFactory = (): DeleteTodoPresenter => new DeleteTodoPresenter();
-const createTodoPresenterFactory = (): CreateTodoPresenter => new CreateTodoPresenter();
-const getUserPresenterFactory = (): GetUserPresenter => new GetUserPresenter();
-const getTodosByUserPresenterFactory = (): GetTodosByUserPresenter => new GetTodosByUserPresenter();
-const deleteUserPresenterFactory = (): DeleteUserPresenter => new DeleteUserPresenter();
-const createUserPresenterFactory = (): CreateUserPresenter => new CreateUserPresenter();
+function createUserModuleContainer() {
+  const getUserPresenterFactory = (): GetUserPresenter => new GetUserPresenter();
+  const getTodosByUserPresenterFactory = (): GetTodosByUserPresenter => new GetTodosByUserPresenter();
+  const deleteUserPresenterFactory = (): DeleteUserPresenter => new DeleteUserPresenter();
+  const createUserPresenterFactory = (): CreateUserPresenter => new CreateUserPresenter();
 
-// Eager singleton instantiation
-const userRepository = new UserRepository();
-const todoRepository = new TodoRepository();
-const updateTodoUseCase = new UpdateTodoUseCase(userRepository, todoRepository, updateTodoPresenterFactory());
-const getTodoUseCase = new GetTodoUseCase(userRepository, todoRepository, getTodoPresenterFactory());
-const deleteTodoUseCase = new DeleteTodoUseCase(userRepository, todoRepository, deleteTodoPresenterFactory());
-const createTodoUseCase = new CreateTodoUseCase(userRepository, createTodoPresenterFactory());
-const getUserUseCase = new GetUserUseCase(userRepository, getUserPresenterFactory());
-const getTodosByUserUseCase = new GetTodosByUserUseCase(userRepository, getTodosByUserPresenterFactory());
-const deleteUserUseCase = new DeleteUserUseCase(userRepository, deleteUserPresenterFactory());
-const createUserUseCase = new CreateUserUseCase(userRepository, createUserPresenterFactory());
+  const userRepository = new UserRepository();
+  const getUserUseCase = new GetUserUseCase(userRepository, getUserPresenterFactory());
+  const getTodosByUserUseCase = new GetTodosByUserUseCase(userRepository, getTodosByUserPresenterFactory());
+  const deleteUserUseCase = new DeleteUserUseCase(userRepository, deleteUserPresenterFactory());
+  const createUserUseCase = new CreateUserUseCase(userRepository, createUserPresenterFactory());
 
-const todoModuleContainer = {
-  IUpdateTodoInputPort: updateTodoUseCase,
-  IGetTodoInputPort: getTodoUseCase,
-  IDeleteTodoInputPort: deleteTodoUseCase,
-  ICreateTodoInputPort: createTodoUseCase,
-  get IUpdateTodoOutputPort(): UpdateTodoPresenter {
-    return updateTodoPresenterFactory();
-  },
-  get IGetTodoOutputPort(): GetTodoPresenter {
-    return getTodoPresenterFactory();
-  },
-  get IDeleteTodoOutputPort(): DeleteTodoPresenter {
-    return deleteTodoPresenterFactory();
-  },
-  get ICreateTodoOutputPort(): CreateTodoPresenter {
-    return createTodoPresenterFactory();
-  },
-  ITodoRepository: todoRepository
-};
+  return {
+    IGetUserInputPort: getUserUseCase,
+    IGetTodosByUserInputPort: getTodosByUserUseCase,
+    IDeleteUserInputPort: deleteUserUseCase,
+    ICreateUserInputPort: createUserUseCase,
+    get IGetUserOutputPort(): GetUserPresenter {
+      return getUserPresenterFactory();
+    },
+    get IGetTodosByUserOutputPort(): GetTodosByUserPresenter {
+      return getTodosByUserPresenterFactory();
+    },
+    get IDeleteUserOutputPort(): DeleteUserPresenter {
+      return deleteUserPresenterFactory();
+    },
+    get ICreateUserOutputPort(): CreateUserPresenter {
+      return createUserPresenterFactory();
+    },
+    IUserRepository: userRepository
+  };
+}
 
-const userModuleContainer = {
-  IGetUserInputPort: getUserUseCase,
-  IGetTodosByUserInputPort: getTodosByUserUseCase,
-  IDeleteUserInputPort: deleteUserUseCase,
-  ICreateUserInputPort: createUserUseCase,
-  get IGetUserOutputPort(): GetUserPresenter {
-    return getUserPresenterFactory();
-  },
-  get IGetTodosByUserOutputPort(): GetTodosByUserPresenter {
-    return getTodosByUserPresenterFactory();
-  },
-  get IDeleteUserOutputPort(): DeleteUserPresenter {
-    return deleteUserPresenterFactory();
-  },
-  get ICreateUserOutputPort(): CreateUserPresenter {
-    return createUserPresenterFactory();
-  },
-  IUserRepository: userRepository
-};
+function createTodoModuleContainer(userModuleContainer: ReturnType<typeof createUserModuleContainer>) {
+  const updateTodoPresenterFactory = (): UpdateTodoPresenter => new UpdateTodoPresenter();
+  const getTodoPresenterFactory = (): GetTodoPresenter => new GetTodoPresenter();
+  const deleteTodoPresenterFactory = (): DeleteTodoPresenter => new DeleteTodoPresenter();
+  const createTodoPresenterFactory = (): CreateTodoPresenter => new CreateTodoPresenter();
+
+  const todoRepository = new TodoRepository();
+  const updateTodoUseCase = new UpdateTodoUseCase(userModuleContainer.IUserRepository, todoRepository, updateTodoPresenterFactory());
+  const getTodoUseCase = new GetTodoUseCase(userModuleContainer.IUserRepository, todoRepository, getTodoPresenterFactory());
+  const deleteTodoUseCase = new DeleteTodoUseCase(userModuleContainer.IUserRepository, todoRepository, deleteTodoPresenterFactory());
+  const createTodoUseCase = new CreateTodoUseCase(userModuleContainer.IUserRepository, createTodoPresenterFactory());
+
+  return {
+    IUpdateTodoInputPort: updateTodoUseCase,
+    IGetTodoInputPort: getTodoUseCase,
+    IDeleteTodoInputPort: deleteTodoUseCase,
+    ICreateTodoInputPort: createTodoUseCase,
+    get IUpdateTodoOutputPort(): UpdateTodoPresenter {
+      return updateTodoPresenterFactory();
+    },
+    get IGetTodoOutputPort(): GetTodoPresenter {
+      return getTodoPresenterFactory();
+    },
+    get IDeleteTodoOutputPort(): DeleteTodoPresenter {
+      return deleteTodoPresenterFactory();
+    },
+    get ICreateTodoOutputPort(): CreateTodoPresenter {
+      return createTodoPresenterFactory();
+    },
+    ITodoRepository: todoRepository
+  };
+}
+
+const userModuleContainer = createUserModuleContainer();
+const todoModuleContainer = createTodoModuleContainer(userModuleContainer);
 
 export const container = {
-  todoModule: todoModuleContainer,
-  userModule: userModuleContainer
+  userModule: userModuleContainer,
+  todoModule: todoModuleContainer
 };
 
 export type Container = typeof container;

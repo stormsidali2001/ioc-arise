@@ -1,4 +1,5 @@
 import { DependencyResolver } from '../analyser/dependency-resolver';
+import { ModuleDependencyResolver } from '../analyser/module-dependency-resolver';
 import { GeneratorOptions, ClassInfo } from '../types';
 import { ContainerGenerator as ContainerCodeGenerator } from './container-generator';
 import { FileWriter } from './file-writer';
@@ -49,18 +50,27 @@ export class ContainerFileGenerator {
 
   generateModularContainer(): void {
     if (!this.moduleGroupedClasses) {
-      throw new Error('Module grouped classes not available');
+      throw new Error('Module grouped classes not provided for modular container generation');
     }
 
-    const sortResult = this.dependencyResolver.resolve();
+    // First, check for module-level cycles
+    const moduleDependencyResolver = new ModuleDependencyResolver(this.moduleGroupedClasses);
+    const moduleResult = moduleDependencyResolver.resolve();
 
-    console.log("sort order",sortResult)
+    if (moduleResult.cycles.length > 0) {
+      throw new Error(`Circular dependencies detected between modules: ${JSON.stringify(moduleResult.cycles)}`);
+    }
+
+    // Then resolve class-level dependencies within each module
+    const allClasses = Array.from(this.moduleGroupedClasses.values()).flat();
+    const dependencyResolver = new DependencyResolver(allClasses);
+    const sortResult = dependencyResolver.resolve();
 
     if (sortResult.cycles.length > 0) {
-      throw new Error(`Circular dependencies detected: ${JSON.stringify(sortResult.cycles)}`);
+      throw new Error(`Circular dependencies detected within classes: ${JSON.stringify(sortResult.cycles)}`);
     }
 
-    const containerCode = this.generateModularContainerCode(sortResult.sorted);
+    const containerCode = this.generateModularContainerCode(sortResult.sorted, moduleResult.sortedModules, moduleResult.moduleDependencies);
     this.fileWriter.writeContainer(containerCode);
   }
 
@@ -73,55 +83,163 @@ export class ContainerFileGenerator {
     return `${imports}\n\n${instantiations}\n\n${containerObject}\n\n${typeExport}\n`;
   }
 
-  private generateModularContainerCode(sortedClasses: string[]): string {
+  private generateModularContainerCode(sortedClasses: string[], sortedModules: string[], moduleDependencies: Map<string, Set<string>>): string {
+    console.log("sorted modules",sortedModules)
     const imports = this.importGenerator.generateImports();
-    const instantiations = this.instantiationGenerator.generateInstantiations(sortedClasses);
-    const moduleContainers = this.generateModuleContainers();
-    const aggregatedContainer = this.generateAggregatedContainer();
+    const moduleContainers = this.generateModuleContainers(sortedModules, moduleDependencies);
+    const aggregatedContainer = this.generateAggregatedContainer(sortedModules);
     const typeExport = this.generateModularTypeExport();
 
-    return `${imports}\n\n${instantiations}\n\n${moduleContainers}\n\n${aggregatedContainer}\n\n${typeExport}\n`;
+    return `${imports}\n\n${moduleContainers}\n\n${aggregatedContainer}\n\n${typeExport}\n`;
   }
 
-  private generateModuleContainers(): string {
+  private generateModuleContainers(sortedModules: string[], moduleDependencies: Map<string, Set<string>>): string {
     if (!this.moduleGroupedClasses) return '';
 
     const moduleContainerCodes: string[] = [];
+    const moduleContainerFunctions: string[] = [];
     
-    for (const [moduleName, moduleClasses] of this.moduleGroupedClasses) {
-      const moduleVarName = this.camelCase(moduleName) + 'Container';
-      const moduleExports: string[] = [];
+    // Generate module container functions in dependency order
+    for (const moduleName of sortedModules) {
+      const moduleClasses = this.moduleGroupedClasses.get(moduleName);
+      if (!moduleClasses) continue;
       
+      const moduleVarName = this.camelCase(moduleName) + 'Container';
+      const moduleFunctionName = `create${moduleName}Container`;
+      const moduleExports: string[] = [];
+      const moduleDeps = moduleDependencies.get(moduleName) || new Set();
+      
+      // Generate function parameters for dependent modules
+      const functionParams: string[] = [];
+      
+      for (const depModule of moduleDeps) {
+        const depVarName = this.camelCase(depModule) + 'Container';
+        functionParams.push(`${depVarName}: ReturnType<typeof create${depModule}Container>`);
+      }
+      
+      // Generate instantiations inside the module function
+      const moduleInstantiations: string[] = [];
+      const factoryFunctions: string[] = [];
+      
+      // First, create factory functions for transient dependencies
+      for (const classInfo of moduleClasses) {
+        if (classInfo.scope === 'transient') {
+          const instanceName = this.camelCase(classInfo.name);
+          const factoryName = `${instanceName}Factory`;
+          factoryFunctions.push(`  const ${factoryName} = (): ${classInfo.name} => new ${classInfo.name}();`);
+        }
+      }
+      
+      // Sort singleton classes by their dependencies within the module
+       const singletonClasses = moduleClasses.filter(c => c.scope !== 'transient');
+       const sortedSingletons = this.sortClassesByDependencies(singletonClasses, moduleClasses);
+       
+       // Then, create singleton instances in dependency order
+       for (const classInfo of sortedSingletons) {
+         const instanceName = this.camelCase(classInfo.name);
+         const constructorArgs: string[] = [];
+         
+         // Build constructor arguments
+         for (const dep of classInfo.dependencies) {
+           // Check if dependency is from another module
+           let foundInOtherModule = false;
+           for (const depModule of moduleDeps) {
+             const depModuleClasses = this.moduleGroupedClasses!.get(depModule);
+             if (depModuleClasses) {
+               const depClass = depModuleClasses.find(c => c.interfaceName === dep);
+               if (depClass) {
+                 const depModuleVarName = this.camelCase(depModule) + 'Container';
+                 constructorArgs.push(`${depModuleVarName}.${dep}`);
+                 foundInOtherModule = true;
+                 break;
+               }
+             }
+           }
+           
+           // If not found in other modules, it's from the same module
+           if (!foundInOtherModule) {
+             const depClass = moduleClasses.find(c => c.interfaceName === dep);
+             if (depClass) {
+               if (depClass.scope === 'transient') {
+                 const depInstanceName = this.camelCase(depClass.name);
+                 constructorArgs.push(`${depInstanceName}Factory()`);
+               } else {
+                 const depInstanceName = this.camelCase(depClass.name);
+                 constructorArgs.push(depInstanceName);
+               }
+             }
+           }
+         }
+         
+         const instantiation = constructorArgs.length > 0 ?
+           `  const ${instanceName} = new ${classInfo.name}(${constructorArgs.join(', ')});` :
+           `  const ${instanceName} = new ${classInfo.name}();`;
+         
+         moduleInstantiations.push(instantiation);
+       }
+      
+      // Generate module exports
       for (const classInfo of moduleClasses) {
         if (classInfo.interfaceName) {
           const instanceName = this.camelCase(classInfo.name);
-          // Check if this is a transient dependency (has factory)
           const isTransient = classInfo.scope === 'transient';
-          const exportValue = isTransient ? 
-            `get ${classInfo.interfaceName}(): ${classInfo.name} {\n    return ${instanceName}Factory();\n  }` :
-            `${classInfo.interfaceName}: ${instanceName}`;
           
           if (isTransient) {
-            moduleExports.push(`  ${exportValue}`);
+            moduleExports.push(`    get ${classInfo.interfaceName}(): ${classInfo.name} {\n      return ${instanceName}Factory();\n    }`);
           } else {
-            moduleExports.push(`  ${exportValue}`);
+            moduleExports.push(`    ${classInfo.interfaceName}: ${instanceName}`);
           }
         }
       }
       
-      const moduleContainerCode = `const ${moduleVarName} = {\n${moduleExports.join(',\n')}\n};`;
-      moduleContainerCodes.push(moduleContainerCode);
+      const functionSignature = functionParams.length > 0 ? 
+        `function ${moduleFunctionName}(${functionParams.join(', ')})` :
+        `function ${moduleFunctionName}()`;
+      
+      const returnObject = moduleExports.length > 0 ? 
+        `  return {\n${moduleExports.join(',\n')}\n  };` :
+        '  return {};';
+      
+      const functionBody = [
+        ...factoryFunctions,
+        '',
+        ...moduleInstantiations,
+        '',
+        returnObject
+      ].filter(line => line !== '' || factoryFunctions.length > 0 || moduleInstantiations.length > 0).join('\n');
+      
+      const moduleContainerFunction = `${functionSignature} {\n${functionBody}\n}`;
+      moduleContainerFunctions.push(moduleContainerFunction);
     }
     
-    return moduleContainerCodes.join('\n\n');
+    // Sort modules by dependencies and generate instantiations
+    for (const moduleName of sortedModules) {
+      const moduleVarName = this.camelCase(moduleName) + 'Container';
+      const moduleFunctionName = `create${moduleName}Container`;
+      const moduleDeps = moduleDependencies.get(moduleName) || new Set();
+      
+      const functionArgs: string[] = [];
+      for (const depModule of moduleDeps) {
+        const depVarName = this.camelCase(depModule) + 'Container';
+        functionArgs.push(depVarName);
+      }
+      
+      const moduleInstantiation = functionArgs.length > 0 ?
+        `const ${moduleVarName} = ${moduleFunctionName}(${functionArgs.join(', ')});` :
+        `const ${moduleVarName} = ${moduleFunctionName}();`;
+      
+      moduleContainerCodes.push(moduleInstantiation);
+    }
+    
+    return moduleContainerFunctions.join('\n\n') + '\n\n' + moduleContainerCodes.join('\n');
   }
 
-  private generateAggregatedContainer(): string {
+  private generateAggregatedContainer(sortedModules: string[]): string {
     if (!this.moduleGroupedClasses) return '';
 
     const moduleExports: string[] = [];
     
-    for (const [moduleName] of this.moduleGroupedClasses) {
+    for (const moduleName of sortedModules) {
       const moduleVarName = this.camelCase(moduleName) + 'Container';
       const moduleKey = this.camelCase(moduleName);
       moduleExports.push(`  ${moduleKey}: ${moduleVarName}`);
@@ -137,4 +255,42 @@ export class ContainerFileGenerator {
   private camelCase(str: string): string {
     return str.charAt(0).toLowerCase() + str.slice(1).replace(/[^a-zA-Z0-9]/g, '');
   }
+
+  private sortClassesByDependencies(classes: ClassInfo[], allModuleClasses: ClassInfo[]): ClassInfo[] {
+    const sorted: ClassInfo[] = [];
+    const visited = new Set<string>();
+    const visiting = new Set<string>();
+
+    const visit = (classInfo: ClassInfo) => {
+      if (visiting.has(classInfo.name)) {
+        // Circular dependency detected, just add it
+        return;
+      }
+      if (visited.has(classInfo.name)) {
+        return;
+      }
+
+      visiting.add(classInfo.name);
+
+      // Visit dependencies first (only within the same module)
+      for (const dep of classInfo.dependencies) {
+        const depClass = allModuleClasses.find(c => c.interfaceName === dep && c.scope !== 'transient');
+        if (depClass && classes.includes(depClass)) {
+          visit(depClass);
+        }
+      }
+
+      visiting.delete(classInfo.name);
+      visited.add(classInfo.name);
+      sorted.push(classInfo);
+    };
+
+    for (const classInfo of classes) {
+      visit(classInfo);
+    }
+
+    return sorted;
+  }
+
+
 }
