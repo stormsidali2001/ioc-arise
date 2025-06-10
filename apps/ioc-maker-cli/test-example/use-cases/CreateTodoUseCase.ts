@@ -1,8 +1,8 @@
-import { ICreateTodoInputPort } from '../ITodoInputPort';
+import { ICreateTodoInputPort } from '../ports/ITodoInputPort';
 import { ITodoRepository } from '../repositories/ITodoRepository';
 import { Todo } from '../entities/Todo';
 import { CreateTodoRequestDTO, TodoResponseDTO } from '../dtos/TodoDTOs';
-import { ICreateTodoOutputPort } from '../ITodoOutputPort';
+import { ICreateTodoOutputPort } from '../ports/ITodoOutputPort';
 
 export class CreateTodoUseCase implements ICreateTodoInputPort {
   constructor(

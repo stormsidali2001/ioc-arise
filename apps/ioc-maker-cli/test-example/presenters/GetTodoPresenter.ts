@@ -1,5 +1,5 @@
 import { TodoResponseDTO } from '../dtos/TodoDTOs';
-import { IGetTodoOutputPort } from '../ITodoOutputPort';
+import { IGetTodoOutputPort } from '../ports/ITodoOutputPort';
 import { GetTodoViewModel } from '../view-models/TodoViewModels';
 
 /**

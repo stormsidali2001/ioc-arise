@@ -1,7 +1,7 @@
-import { IUpdateTodoInputPort } from '../ITodoInputPort';
+import { IUpdateTodoInputPort } from '../ports/ITodoInputPort';
 import { ITodoRepository } from '../repositories/ITodoRepository';
 import { UpdateTodoRequestDTO, TodoResponseDTO } from '../dtos/TodoDTOs';
-import { IUpdateTodoOutputPort } from '../ITodoOutputPort';
+import { IUpdateTodoOutputPort } from '../ports/ITodoOutputPort';
 
 export class UpdateTodoUseCase implements IUpdateTodoInputPort {
   constructor(

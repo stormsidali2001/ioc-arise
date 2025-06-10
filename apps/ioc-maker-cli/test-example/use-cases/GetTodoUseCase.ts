@@ -1,7 +1,7 @@
-import { IGetTodoInputPort } from '../ITodoInputPort';
+import { IGetTodoInputPort } from '../ports/ITodoInputPort';
 import { ITodoRepository } from '../repositories/ITodoRepository';
 import { GetTodoRequestDTO, TodoResponseDTO } from '../dtos/TodoDTOs';
-import { IGetTodoOutputPort } from '../ITodoOutputPort';
+import { IGetTodoOutputPort } from '../ports/ITodoOutputPort';
 
 export class GetTodoUseCase implements IGetTodoInputPort {
   constructor(

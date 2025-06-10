@@ -28,7 +28,6 @@ const createUserPresenterFactory = (): CreateUserPresenter => new CreateUserPres
 const createTodoPresenterFactory = (): CreateTodoPresenter => new CreateTodoPresenter();
 
 // Eager singleton instantiation
-// CoreModule module dependencies
 const todoRepository = new TodoRepository();
 const userRepository = new UserRepository();
 const createTodoUseCase = new CreateTodoUseCase(todoRepository, createTodoPresenterFactory());
@@ -40,7 +39,7 @@ const getTodosByUserUseCase = new GetTodosByUserUseCase(todoRepository, getTodos
 const getUserUseCase = new GetUserUseCase(userRepository, getUserPresenterFactory());
 const updateTodoUseCase = new UpdateTodoUseCase(todoRepository, updateTodoPresenterFactory());
 
-const coreModuleContainer = {
+export const container = {
   IUpdateTodoInputPort: updateTodoUseCase,
   IGetUserInputPort: getUserUseCase,
   IGetTodosByUserInputPort: getTodosByUserUseCase,
@@ -74,11 +73,7 @@ const coreModuleContainer = {
   },
   get ICreateTodoOutputPort(): CreateTodoPresenter {
     return createTodoPresenterFactory();
-  }
-};
-
-export const container = {
-  coreModule: coreModuleContainer
+  },
 };
 
 export type Container = typeof container;

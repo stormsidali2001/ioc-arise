@@ -1,8 +1,8 @@
-import { ICreateUserInputPort } from '../IInputPort';
+import { ICreateUserInputPort } from '../ports/IInputPort';
 import { IUserRepository } from '../repositories/IUserRepository';
 import { User } from '../entities/User';
 import { CreateUserRequestDTO, UserResponseDTO } from '../dtos/UserDTOs';
-import { ICreateUserOutputPort as OutputPort  } from '../IOutputPort';
+import { ICreateUserOutputPort as OutputPort  } from '../ports/IOutputPort';
 
 export class CreateUserUseCase implements ICreateUserInputPort {
   constructor(

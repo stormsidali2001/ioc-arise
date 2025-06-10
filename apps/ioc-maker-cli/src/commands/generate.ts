@@ -43,7 +43,7 @@ await initializeOneLogger({
 
       // Validate module configuration if present
       let moduleResolver: ModuleResolver | null = null;
-      if (mergedOptions.modules) {
+      if (mergedOptions.modules && Object.keys(mergedOptions.modules).length > 0) {
         const validationErrors = ModuleResolver.validateModuleConfig(mergedOptions.modules);
         if (validationErrors.length > 0) {
           console.error('❌ Module configuration errors:');

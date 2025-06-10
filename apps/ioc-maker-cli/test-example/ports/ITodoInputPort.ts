@@ -1,4 +1,4 @@
-import { CreateTodoRequestDTO, UpdateTodoRequestDTO, GetTodoRequestDTO, GetTodosByUserRequestDTO, DeleteTodoRequestDTO } from './dtos/TodoDTOs';
+import { CreateTodoRequestDTO, UpdateTodoRequestDTO, GetTodoRequestDTO, GetTodosByUserRequestDTO, DeleteTodoRequestDTO } from '../dtos/TodoDTOs';
 
 export interface ICreateTodoInputPort {
   execute(todoData: CreateTodoRequestDTO): Promise<void>;

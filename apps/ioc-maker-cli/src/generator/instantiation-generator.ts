@@ -41,7 +41,7 @@ export class InstantiationGenerator {
             // Sort within module by dependency order
             const aIndex = sortedClasses.indexOf(a);
             const bIndex = sortedClasses.indexOf(b);
-            return bIndex - aIndex; // Reverse order for proper dependency resolution
+            return aIndex - bIndex; // Normal order for proper dependency resolution
           });
 
         if (moduleSingletons.length > 0) {

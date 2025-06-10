@@ -1,4 +1,4 @@
-import { TodoResponseDTO } from './dtos/TodoDTOs';
+import { TodoResponseDTO } from '../dtos/TodoDTOs';
 
 export interface ICreateTodoOutputPort {
   presentSuccess(todo: TodoResponseDTO): void;
