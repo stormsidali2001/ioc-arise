@@ -1,7 +1,7 @@
-import { IDeleteUserInputPort } from '../IInputPort';
+import { IDeleteUserInputPort } from '../ports/IInputPort';
 import { IUserRepository } from '../repositories/IUserRepository';
 import { DeleteUserRequestDTO } from '../dtos/UserDTOs';
-import { IDeleteUserOutputPort } from '../IOutputPort';
+import { IDeleteUserOutputPort } from '../ports/IOutputPort';
 
 export class DeleteUserUseCase implements IDeleteUserInputPort {
   constructor(

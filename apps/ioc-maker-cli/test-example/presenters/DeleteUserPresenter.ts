@@ -1,4 +1,4 @@
-import { IDeleteUserOutputPort } from '../IOutputPort';
+import { IDeleteUserOutputPort } from '../ports/IOutputPort';
 import { DeleteUserViewModel } from '../view-models/UserViewModels';
 
 /**

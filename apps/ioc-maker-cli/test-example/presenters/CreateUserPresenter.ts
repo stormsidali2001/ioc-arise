@@ -1,5 +1,5 @@
 import { UserResponseDTO } from '../dtos/UserDTOs';
-import { ICreateUserOutputPort } from '../IOutputPort';
+import { ICreateUserOutputPort } from '../ports/IOutputPort';
 import { CreateUserViewModel } from '../view-models/UserViewModels';
 
 /**

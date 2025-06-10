@@ -1,8 +1,8 @@
-import { IGetUserInputPort } from '../IInputPort';
+import { IGetUserInputPort } from '../ports/IInputPort';
 import { IUserRepository } from '../repositories/IUserRepository';
 import { User } from '../entities/User';
 import { GetUserRequestDTO, UserResponseDTO } from '../dtos/UserDTOs';
-import { IGetUserOutputPort } from '../IOutputPort';
+import { IGetUserOutputPort } from '../ports/IOutputPort';
 
 export class GetUserUseCase implements IGetUserInputPort {
   constructor(

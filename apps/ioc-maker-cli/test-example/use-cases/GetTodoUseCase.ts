@@ -1,28 +1,31 @@
 import { IGetTodoInputPort } from '../ports/ITodoInputPort';
+import { IUserRepository } from '../repositories/IUserRepository';
 import { ITodoRepository } from '../repositories/ITodoRepository';
 import { GetTodoRequestDTO, TodoResponseDTO } from '../dtos/TodoDTOs';
 import { IGetTodoOutputPort } from '../ports/ITodoOutputPort';
 
 export class GetTodoUseCase implements IGetTodoInputPort {
   constructor(
+    private userRepository: IUserRepository,
     private todoRepository: ITodoRepository,
     private outputPort: IGetTodoOutputPort
   ) {}
 
   async execute(request: GetTodoRequestDTO): Promise<void> {
     try {
-      const todo = await this.todoRepository.findById(request.id);
+      // Directly fetch the todo by ID
+      const foundTodo = await this.todoRepository.findById(request.id);
       
-      if (todo) {
+      if (foundTodo) {
         // Convert entity to DTO for presentation
         const todoDTO: TodoResponseDTO = {
-          id: todo.id,
-          title: todo.title,
-          description: todo.description,
-          completed: todo.completed,
-          userId: todo.userId,
-          createdAt: todo.createdAt.toISOString(),
-          updatedAt: todo.updatedAt.toISOString()
+          id: foundTodo.id,
+          title: foundTodo.title,
+          description: foundTodo.description,
+          completed: foundTodo.completed,
+          userId: foundTodo.userId,
+          createdAt: foundTodo.createdAt.toISOString(),
+          updatedAt: foundTodo.updatedAt.toISOString()
         };
         this.outputPort.presentTodo(todoDTO);
       } else {

@@ -6,15 +6,15 @@ export class TodoRepository implements ITodoRepository {
 
   constructor() {
     // Initialize with some mock data
-    const mockTodo: Todo = {
-      id: '1',
-      title: 'Learn Clean Architecture',
-      description: 'Study the principles of clean architecture and implement a sample project',
-      completed: false,
-      userId: '1',
-      createdAt: new Date('2024-01-01'),
-      updatedAt: new Date('2024-01-01')
-    };
+    const mockTodo = new Todo(
+      '1',
+      'Learn Clean Architecture',
+      'Study the principles of clean architecture and implement a sample project',
+      false,
+      '1',
+      new Date('2024-01-01'),
+      new Date('2024-01-01')
+    );
     this.todos.set(mockTodo.id, mockTodo);
   }
 
@@ -31,13 +31,8 @@ export class TodoRepository implements ITodoRepository {
   async update(id: string, updateData: UpdateTodoData): Promise<void> {
     const existingTodo = this.todos.get(id);
     if (existingTodo) {
-      const updatedTodo: Todo = {
-        ...existingTodo,
-        ...updateData,
-        updatedAt: new Date()
-      };
-      this.todos.set(id, updatedTodo);
-      console.log('Todo updated in repository:', updatedTodo);
+      existingTodo.update(updateData);
+      console.log('Todo updated in repository:', existingTodo);
     }
   }
 
@@ -48,7 +43,7 @@ export class TodoRepository implements ITodoRepository {
 
   async findByUserId(userId: string): Promise<Todo[]> {
     const userTodos: Todo[] = [];
-    for (const todo of this.todos.values()) {
+    for (const todo of Array.from(this.todos.values())) {
       if (todo.userId === userId) {
         userTodos.push(todo);
       }

@@ -1,12 +1,12 @@
 import { ICreateTodoInputPort } from '../ports/ITodoInputPort';
-import { ITodoRepository } from '../repositories/ITodoRepository';
-import { Todo } from '../entities/Todo';
+import { IUserRepository } from '../repositories/IUserRepository';
+import { CreateTodoData } from '../entities/Todo';
 import { CreateTodoRequestDTO, TodoResponseDTO } from '../dtos/TodoDTOs';
 import { ICreateTodoOutputPort } from '../ports/ITodoOutputPort';
 
 export class CreateTodoUseCase implements ICreateTodoInputPort {
   constructor(
-    private todoRepository: ITodoRepository,
+    private userRepository: IUserRepository,
     private outputPort: ICreateTodoOutputPort
   ) {}
 
@@ -23,18 +23,24 @@ export class CreateTodoUseCase implements ICreateTodoInputPort {
         return;
       }
 
-      // Create new todo entity
-      const todo: Todo = {
-        id: Math.random().toString(36).substr(2, 9),
+      // Get the user aggregate
+      const user = await this.userRepository.findById(todoData.userId);
+      if (!user) {
+        this.outputPort.presentError('User not found');
+        return;
+      }
+
+      // Create todo through the user aggregate
+      const createData: CreateTodoData = {
         title: todoData.title.trim(),
         description: todoData.description.trim(),
-        completed: false,
-        userId: todoData.userId,
-        createdAt: new Date(),
-        updatedAt: new Date()
+        userId: todoData.userId
       };
+      
+      const todo = user.addTodo(createData);
 
-      await this.todoRepository.save(todo);
+      // Save the user aggregate (which includes the new todo)
+      await this.userRepository.save(user);
       
       // Convert entity to DTO for presentation
       const todoDTO: TodoResponseDTO = {

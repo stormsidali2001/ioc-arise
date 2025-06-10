@@ -1,6 +1,6 @@
 import { ICreateUserInputPort } from '../ports/IInputPort';
 import { IUserRepository } from '../repositories/IUserRepository';
-import { User } from '../entities/User';
+import { User, CreateUserData } from '../entities/User';
 import { CreateUserRequestDTO, UserResponseDTO } from '../dtos/UserDTOs';
 import { ICreateUserOutputPort as OutputPort  } from '../ports/IOutputPort';
 
@@ -19,13 +19,12 @@ export class CreateUserUseCase implements ICreateUserInputPort {
         return;
       }
 
-      // Create new user entity
-      const user: User = {
-        id: Math.random().toString(36).substr(2, 9),
+      // Create new user entity using factory method
+      const createData: CreateUserData = {
         email: userData.email,
-        name: userData.name,
-        createdAt: new Date()
+        name: userData.name
       };
+      const user = User.create(createData);
 
       await this.userRepository.save(user);
       

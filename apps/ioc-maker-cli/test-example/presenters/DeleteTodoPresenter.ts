@@ -1,4 +1,4 @@
-import { IDeleteTodoOutputPort } from '../ITodoOutputPort';
+import { IDeleteTodoOutputPort } from '../ports/ITodoOutputPort';
 import { DeleteTodoViewModel } from '../view-models/TodoViewModels';
 
 /**

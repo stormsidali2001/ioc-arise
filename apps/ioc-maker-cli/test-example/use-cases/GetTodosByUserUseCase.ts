@@ -1,17 +1,24 @@
-import { IGetTodosByUserInputPort } from '../ITodoInputPort';
-import { ITodoRepository } from '../repositories/ITodoRepository';
+import { IGetTodosByUserInputPort } from '../ports/ITodoInputPort';
+import { IUserRepository } from '../repositories/IUserRepository';
 import { GetTodosByUserRequestDTO, TodoResponseDTO } from '../dtos/TodoDTOs';
-import { IGetTodosByUserOutputPort } from '../ITodoOutputPort';
+import { IGetTodosByUserOutputPort } from '../ports/ITodoOutputPort';
 
 export class GetTodosByUserUseCase implements IGetTodosByUserInputPort {
   constructor(
-    private todoRepository: ITodoRepository,
+    private userRepository: IUserRepository,
     private outputPort: IGetTodosByUserOutputPort
   ) {}
 
   async execute(request: GetTodosByUserRequestDTO): Promise<void> {
     try {
-      const todos = await this.todoRepository.findByUserId(request.userId);
+      const user = await this.userRepository.findById(request.userId);
+      
+      if (!user) {
+        this.outputPort.presentTodos([]);
+        return;
+      }
+      
+      const todos = user.todos;
       
       // Convert entities to DTOs for presentation
       const todoDTOs: TodoResponseDTO[] = todos.map(todo => ({
