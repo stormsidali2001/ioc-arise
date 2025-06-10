@@ -4,6 +4,7 @@ import { existsSync } from 'fs';
 import { analyzeProject } from '../analyser';
 import { generateContainerFile, detectCircularDependencies } from '../generator';
 import { ConfigManager } from '../utils/configManager';
+import { ModuleResolver } from '../utils/moduleResolver';
 import { initializeOneLogger ,logger} from '@notjustcoders/one-logger-client-sdk';
 
 export const generateCommand = new Command('generate')
@@ -40,6 +41,21 @@ await initializeOneLogger({
         console.log(`📋 Using config file: ${configManager.getConfigPath()}`);
       }
 
+      // Validate module configuration if present
+      let moduleResolver: ModuleResolver | null = null;
+      if (mergedOptions.modules) {
+        const validationErrors = ModuleResolver.validateModuleConfig(mergedOptions.modules);
+        if (validationErrors.length > 0) {
+          console.error('❌ Module configuration errors:');
+          validationErrors.forEach(error => console.error(`   ${error}`));
+          process.exit(1);
+        }
+        moduleResolver = new ModuleResolver(mergedOptions.modules, sourceDir);
+        if (mergedOptions.verbose) {
+          console.log(`🏗️  Module support enabled with ${Object.keys(mergedOptions.modules).length} modules`);
+        }
+      }
+
       if (!existsSync(sourceDir)) {
         console.error(`❌ Source directory does not exist: ${sourceDir}`);
         process.exit(1);
@@ -73,14 +89,36 @@ await initializeOneLogger({
         return;
       }
 
-      if (mergedOptions.verbose) {
-        console.log(`\n📋 Found ${classes.length} classes:`);
-        classes.forEach(cls => {
-          console.log(`   • ${cls.name} (${cls.dependencies.length} dependencies)`);
-          if (cls.dependencies.length > 0) {
-            console.log(`     Dependencies: ${cls.dependencies.join(', ')}`);
+      // Group classes by modules if module resolver is available
+      let moduleGroupedClasses: Map<string, any[]>;
+      if (moduleResolver) {
+        moduleGroupedClasses = moduleResolver.groupClassesByModule(classes);
+        
+        if (mergedOptions.verbose) {
+          console.log(`\n📋 Found ${classes.length} classes organized into ${moduleGroupedClasses.size} modules:`);
+          for (const [moduleName, moduleClasses] of moduleGroupedClasses) {
+            console.log(`\n   📦 ${moduleName} (${moduleClasses.length} classes):`);
+            moduleClasses.forEach(cls => {
+              console.log(`      • ${cls.name} (${cls.dependencies.length} dependencies)`);
+              if (cls.dependencies.length > 0) {
+                console.log(`        Dependencies: ${cls.dependencies.join(', ')}`);
+              }
+            });
           }
-        });
+        }
+      } else {
+        // Backward compatibility: single default module
+        moduleGroupedClasses = new Map([['default', classes]]);
+        
+        if (mergedOptions.verbose) {
+          console.log(`\n📋 Found ${classes.length} classes:`);
+          classes.forEach(cls => {
+            console.log(`   • ${cls.name} (${cls.dependencies.length} dependencies)`);
+            if (cls.dependencies.length > 0) {
+              console.log(`     Dependencies: ${cls.dependencies.join(', ')}`);
+            }
+          });
+        }
       }
 
       // Check for circular dependencies
@@ -100,7 +138,12 @@ await initializeOneLogger({
 
       console.log("Generating container: generateContainerFile------------------>")
       // Generate container file
-      generateContainerFile(classes, outputPath);
+      if (moduleResolver) {
+        generateContainerFile(moduleGroupedClasses, outputPath);
+      } else {
+        // Backward compatibility
+        generateContainerFile(classes, outputPath);
+      }
 
 
       console.log(`✅ Container generated successfully!`);

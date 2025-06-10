@@ -14,7 +14,7 @@
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest --watch",
-    "test:example:generate": "node dist/index.js generate --source test-example",
+    "test:example:generate": "npm run build && node dist/index.js generate --source test-example",
     "test:example:run": "cd test-example && ts-node demo.ts"
   },
   "keywords": [
@@ -30,9 +30,11 @@
     "@ast-grep/napi": "^0.20.0",
     "@notjustcoders/one-logger-client-sdk": "^1.0.10",
     "commander": "^11.1.0",
-    "glob": "^10.3.10"
+    "glob": "^10.3.10",
+    "minimatch": "^10.0.1"
   },
   "devDependencies": {
+    "@types/minimatch": "^5.1.2",
     "@types/node": "^20.10.0",
     "@vitest/coverage-v8": "^1.0.0",
     "ts-node": "^10.9.0",

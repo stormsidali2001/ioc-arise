@@ -11,7 +11,7 @@ export class InstantiationGenerator {
     this.dependencyResolver = new DependencyResolver(classes);
   }
 
-  generateInstantiations(sortedClasses: string[]): string {
+  generateInstantiations(sortedClasses: string[], moduleGroupedClasses?: Map<string, ClassInfo[]>): string {
     const classMap = new Map(this.classes.map(c => [c.name, c]));
     const instantiations: string[] = [];
     const transientFactories: string[] = [];
@@ -28,7 +28,88 @@ export class InstantiationGenerator {
       return singletonClasses.some(c => c.name === name);
     });
 
-    for (const className of singletonClassNames.reverse()) {
+    // Group singleton classes by module if module information is available
+    if (moduleGroupedClasses) {
+      const moduleInstantiations: string[] = [];
+      
+      for (const [moduleName, moduleClasses] of moduleGroupedClasses) {
+        const moduleSingletons = moduleClasses
+          .filter(c => c.scope === 'singleton')
+          .map(c => c.name)
+          .filter(name => singletonClassNames.includes(name))
+          .sort((a, b) => {
+            // Sort within module by dependency order
+            const aIndex = sortedClasses.indexOf(a);
+            const bIndex = sortedClasses.indexOf(b);
+            return bIndex - aIndex; // Reverse order for proper dependency resolution
+          });
+
+        if (moduleSingletons.length > 0) {
+          moduleInstantiations.push(`// ${moduleName} module dependencies`);
+          
+          for (const className of moduleSingletons) {
+            const classInfo = classMap.get(className);
+            if (!classInfo) continue;
+
+            const variableName = toVariableName(className);
+            
+            // Generate constructor arguments for all parameters
+            let constructorArgs = '';
+            if (classInfo.constructorParams.length > 0) {
+              const args = classInfo.constructorParams.map((param, paramIndex) => {
+                // The dependencies array contains resolved interface names (after alias resolution)
+                // We need to map constructor parameters to dependencies by position
+                let targetDependency: string = param.type;
+                
+                // If we have a dependency at this parameter index, use it (it's already resolved)
+                if (paramIndex < classInfo.dependencies.length) {
+                  const resolvedDep = classInfo.dependencies[paramIndex];
+                  if (resolvedDep) {
+                    targetDependency = resolvedDep;
+                  }
+                } else {
+                  // Fallback: check if parameter type directly matches any dependency
+                  const directMatch = classInfo.dependencies.find(dep => dep === param.type);
+                  if (directMatch) {
+                    targetDependency = directMatch;
+                  }
+                }
+                
+                // Check if this is a managed dependency
+                const implementingClass = interfaceToClassMap.get(targetDependency) || targetDependency;
+                const depClassInfo = classMap.get(implementingClass);
+                
+                if (depClassInfo) {
+                  // This is a managed dependency, resolve it
+                  if (depClassInfo.scope === 'transient') {
+                    return `${toVariableName(implementingClass)}Factory()`;
+                  }
+                  return toVariableName(implementingClass);
+                } else {
+                  // Check if it's in our dependencies list (unmanaged but expected)
+                  if (classInfo.dependencies.includes(targetDependency)) {
+                    return `new ${targetDependency}()`;
+                  }
+                  // This is an unmanaged parameter, generate default value
+                  return this.dependencyResolver.getDefaultValueForType(param.type, param.isOptional);
+                }
+              });
+              constructorArgs = args.join(', ');
+            }
+
+            const instantiation = constructorArgs
+              ? `const ${variableName} = new ${className}(${constructorArgs});`
+              : `const ${variableName} = new ${className}();`;
+
+            moduleInstantiations.push(instantiation);
+          }
+        }
+      }
+      
+      instantiations.push(...moduleInstantiations);
+    } else {
+      // Fallback to original behavior for backward compatibility
+      for (const className of singletonClassNames.reverse()) {
       const classInfo = classMap.get(className);
       if (!classInfo) continue;
 
@@ -82,7 +163,8 @@ export class InstantiationGenerator {
         ? `const ${variableName} = new ${className}(${constructorArgs});`
         : `const ${variableName} = new ${className}();`;
 
-      instantiations.push(instantiation);
+        instantiations.push(instantiation);
+      }
     }
 
     // Generate transient factory functions (lazy loading)

@@ -25,7 +25,8 @@ export interface AnalyzerOptions {
 
 export interface GeneratorOptions {
   outputPath: string;
-  classes: ClassInfo[];
+  classes?: ClassInfo[];
+  moduleGroupedClasses?: Map<string, ClassInfo[]>;
 }
 
 export interface DependencyGraph {

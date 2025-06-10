@@ -6,5 +6,7 @@
     "**/*.test.ts",
     "**/*.spec.ts"
   ],
-  "verbose": true
+  "verbose": true,
+  "modules": {
+  }
 }

@@ -8,6 +8,7 @@ export interface IoCConfig {
   exclude?: string[];
   checkCycles?: boolean;
   verbose?: boolean;
+  modules?: Record<string, string[]>;
 }
 
 export class ConfigManager {
@@ -46,7 +47,8 @@ export class ConfigManager {
       interface: cliOptions.interface || this.config.interface,
       exclude: cliOptions.exclude || this.config.exclude,
       checkCycles: cliOptions.checkCycles || this.config.checkCycles || false,
-      verbose: cliOptions.verbose || this.config.verbose || false
+      verbose: cliOptions.verbose || this.config.verbose || false,
+      modules: cliOptions.modules || this.config.modules
     };
   }
 
