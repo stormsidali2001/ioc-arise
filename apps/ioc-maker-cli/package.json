@@ -14,7 +14,7 @@
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest --watch",
-    "test1:generate": "npm run build && node dist/index.js generate --source test-example"
+    "test1:generate": "npm run build && node dist/index.js generate --source examples/clean-architecture"
   },
   "keywords": [
     "ioc",

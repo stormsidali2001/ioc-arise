@@ -1,12 +1,4 @@
-import { UpdateTodoUseCase } from './use-cases/UpdateTodoUseCase';
-import { GetTodoUseCase } from './use-cases/GetTodoUseCase';
-import { DeleteTodoUseCase } from './use-cases/DeleteTodoUseCase';
-import { CreateTodoUseCase } from './use-cases/CreateTodoUseCase';
-import { UpdateTodoPresenter } from './presenters/UpdateTodoPresenter';
-import { GetTodoPresenter } from './presenters/GetTodoPresenter';
-import { DeleteTodoPresenter } from './presenters/DeleteTodoPresenter';
-import { CreateTodoPresenter } from './presenters/CreateTodoPresenter';
-import { TodoRepository } from './repositories/TodoRepository';
+import { UserRepository } from './repositories/UserRepository';
 import { GetUserUseCase } from './use-cases/GetUserUseCase';
 import { GetTodosByUserUseCase } from './use-cases/GetTodosByUserUseCase';
 import { DeleteUserUseCase } from './use-cases/DeleteUserUseCase';
@@ -15,7 +7,15 @@ import { GetUserPresenter } from './presenters/GetUserPresenter';
 import { GetTodosByUserPresenter } from './presenters/GetTodosByUserPresenter';
 import { DeleteUserPresenter } from './presenters/DeleteUserPresenter';
 import { CreateUserPresenter } from './presenters/CreateUserPresenter';
-import { UserRepository } from './repositories/UserRepository';
+import { TodoRepository } from './repositories/TodoRepository';
+import { UpdateTodoUseCase } from './use-cases/UpdateTodoUseCase';
+import { GetTodoUseCase } from './use-cases/GetTodoUseCase';
+import { DeleteTodoUseCase } from './use-cases/DeleteTodoUseCase';
+import { CreateTodoUseCase } from './use-cases/CreateTodoUseCase';
+import { UpdateTodoPresenter } from './presenters/UpdateTodoPresenter';
+import { GetTodoPresenter } from './presenters/GetTodoPresenter';
+import { DeleteTodoPresenter } from './presenters/DeleteTodoPresenter';
+import { CreateTodoPresenter } from './presenters/CreateTodoPresenter';
 
 function createUserModuleContainer() {
   const getUserPresenterFactory = (): GetUserPresenter => new GetUserPresenter();
@@ -30,6 +30,7 @@ function createUserModuleContainer() {
   const createUserUseCase = new CreateUserUseCase(userRepository, createUserPresenterFactory());
 
   return {
+    IUserRepository: userRepository,
     IGetUserInputPort: getUserUseCase,
     IGetTodosByUserInputPort: getTodosByUserUseCase,
     IDeleteUserInputPort: deleteUserUseCase,
@@ -45,8 +46,7 @@ function createUserModuleContainer() {
     },
     get ICreateUserOutputPort(): CreateUserPresenter {
       return createUserPresenterFactory();
-    },
-    IUserRepository: userRepository
+    }
   };
 }
 
@@ -63,6 +63,7 @@ function createTodoModuleContainer(userModuleContainer: ReturnType<typeof create
   const createTodoUseCase = new CreateTodoUseCase(userModuleContainer.IUserRepository, createTodoPresenterFactory());
 
   return {
+    ITodoRepository: todoRepository,
     IUpdateTodoInputPort: updateTodoUseCase,
     IGetTodoInputPort: getTodoUseCase,
     IDeleteTodoInputPort: deleteTodoUseCase,
@@ -78,8 +79,7 @@ function createTodoModuleContainer(userModuleContainer: ReturnType<typeof create
     },
     get ICreateTodoOutputPort(): CreateTodoPresenter {
       return createTodoPresenterFactory();
-    },
-    ITodoRepository: todoRepository
+    }
   };
 }
 
