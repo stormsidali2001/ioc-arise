@@ -15,7 +15,8 @@
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest --watch",
     "test1:generate": "npm run build && node dist/index.js generate --source examples/clean-architecture",
-    "test2:generate": "npm run build && node dist/index.js generate --source examples/circular-deps-modules"
+    "test2:generate": "npm run build && node dist/index.js generate --source examples/circular-deps-modules",
+    "test3:generate": "npm run build && node dist/index.js generate --source examples/circular-deps-classes"
   },
   "keywords": [
     "ioc",
