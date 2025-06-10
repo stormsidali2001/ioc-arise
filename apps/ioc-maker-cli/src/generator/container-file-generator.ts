@@ -4,7 +4,6 @@ import { ContainerGenerator as ContainerCodeGenerator } from './container-genera
 import { FileWriter } from './file-writer';
 import { ImportGenerator } from './import-generator';
 import { InstantiationGenerator } from './instantiation-generator';
-import { ModuleContainerGenerator } from './module-container-generator';
 
 
 export class ContainerFileGenerator {
@@ -14,7 +13,6 @@ export class ContainerFileGenerator {
   private containerCodeGenerator: ContainerCodeGenerator;
   private fileWriter: FileWriter;
   private moduleGroupedClasses?: Map<string, ClassInfo[]>;
-  private moduleContainerGenerator?: ModuleContainerGenerator;
 
   constructor(options: GeneratorOptions) {
     if (options.classes) {
@@ -26,7 +24,6 @@ export class ContainerFileGenerator {
     } else if (options.moduleGroupedClasses) {
       // Module mode
       this.moduleGroupedClasses = options.moduleGroupedClasses;
-      this.moduleContainerGenerator = new ModuleContainerGenerator(options.moduleGroupedClasses);
       // Flatten classes for existing generators (temporary solution)
       const allClasses = Array.from(options.moduleGroupedClasses.values()).flat();
       this.dependencyResolver = new DependencyResolver(allClasses);
@@ -75,18 +72,67 @@ export class ContainerFileGenerator {
   }
 
   private generateModularContainerCode(sortedClasses: string[]): string {
-    if (!this.moduleContainerGenerator) {
-      throw new Error('Module container generator not available');
-    }
-
     const imports = this.importGenerator.generateImports();
     const instantiations = this.instantiationGenerator.generateInstantiations(sortedClasses, this.moduleGroupedClasses);
-    const moduleContainers = this.moduleContainerGenerator.generateModuleContainers();
-    const aggregatedContainer = this.moduleContainerGenerator.generateAggregatedContainer();
-    const typeExport = this.moduleContainerGenerator.generateModularTypeExport();
+    const moduleContainers = this.generateModuleContainers();
+    const aggregatedContainer = this.generateAggregatedContainer();
+    const typeExport = this.generateModularTypeExport();
 
     return `${imports}\n\n${instantiations}\n\n${moduleContainers}\n\n${aggregatedContainer}\n\n${typeExport}\n`;
   }
 
+  private generateModuleContainers(): string {
+    if (!this.moduleGroupedClasses) return '';
 
+    const moduleContainerCodes: string[] = [];
+    
+    for (const [moduleName, moduleClasses] of this.moduleGroupedClasses) {
+      const moduleVarName = this.camelCase(moduleName) + 'Container';
+      const moduleExports: string[] = [];
+      
+      for (const classInfo of moduleClasses) {
+        if (classInfo.interfaceName) {
+          const instanceName = this.camelCase(classInfo.name);
+          // Check if this is a transient dependency (has factory)
+          const isTransient = classInfo.scope === 'transient';
+          const exportValue = isTransient ? 
+            `get ${classInfo.interfaceName}(): ${classInfo.name} {\n    return ${instanceName}Factory();\n  }` :
+            `${classInfo.interfaceName}: ${instanceName}`;
+          
+          if (isTransient) {
+            moduleExports.push(`  ${exportValue}`);
+          } else {
+            moduleExports.push(`  ${exportValue}`);
+          }
+        }
+      }
+      
+      const moduleContainerCode = `const ${moduleVarName} = {\n${moduleExports.join(',\n')}\n};`;
+      moduleContainerCodes.push(moduleContainerCode);
+    }
+    
+    return moduleContainerCodes.join('\n\n');
+  }
+
+  private generateAggregatedContainer(): string {
+    if (!this.moduleGroupedClasses) return '';
+
+    const moduleExports: string[] = [];
+    
+    for (const [moduleName] of this.moduleGroupedClasses) {
+      const moduleVarName = this.camelCase(moduleName) + 'Container';
+      const moduleKey = this.camelCase(moduleName);
+      moduleExports.push(`  ${moduleKey}: ${moduleVarName}`);
+    }
+    
+    return `export const container = {\n${moduleExports.join(',\n')}\n};`;
+  }
+
+  private generateModularTypeExport(): string {
+    return 'export type Container = typeof container;';
+  }
+
+  private camelCase(str: string): string {
+    return str.charAt(0).toLowerCase() + str.slice(1).replace(/[^a-zA-Z0-9]/g, '');
+  }
 }
