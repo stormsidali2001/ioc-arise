@@ -7,7 +7,7 @@ export class DependencyResolver {
     this.classes = classes;
   }
 
-  resolve(moduleGroupedClasses?: Map<string, ClassInfo[]>): TopologicalSortResult {
+  resolve(): TopologicalSortResult {
     const graph = this.buildDependencyGraph();
     const visited = new Set<string>();
     const visiting = new Set<string>();
@@ -46,22 +46,37 @@ export class DependencyResolver {
       }
     }
 
-    // If moduleGroupedClasses is provided, we need to reverse the order
-    // because the topological sort gives us dependents first, but we need dependencies first
-    if (moduleGroupedClasses) {
-      sorted.reverse();
-    }
 
-    return { sorted, cycles };
+    return { sorted:sorted.reverse(), cycles };
   }
 
   private buildDependencyGraph(): DependencyGraph {
     const graph: DependencyGraph = {};
     const classNames = new Set(this.classes.map(c => c.name));
+    
+    // Create interface-to-class mapping
+    const interfaceToClassMap = new Map<string, string>();
+    for (const classInfo of this.classes) {
+      if (classInfo.interfaceName) {
+        interfaceToClassMap.set(classInfo.interfaceName, classInfo.name);
+      }
+    }
 
     for (const classInfo of this.classes) {
-      // Only include dependencies that are also managed classes
-      const managedDependencies = classInfo.dependencies.filter(dep => classNames.has(dep));
+      const managedDependencies: string[] = [];
+      
+      for (const dep of classInfo.dependencies) {
+        // Check if dependency is a direct class name
+        if (classNames.has(dep)) {
+          managedDependencies.push(dep);
+        }
+        // Check if dependency is an interface that maps to a managed class
+        else if (interfaceToClassMap.has(dep)) {
+          const implementingClass = interfaceToClassMap.get(dep)!;
+          managedDependencies.push(implementingClass);
+        }
+      }
+      
       graph[classInfo.name] = managedDependencies;
     }
 
