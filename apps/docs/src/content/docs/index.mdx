@@ -1,0 +1,84 @@
+---
+title: IoC Arise
+description: Automatic type-safe IoC container generation for TypeScript projects
+template: splash
+hero:
+  tagline: Generate type-safe IoC containers automatically from your TypeScript code!
+  image:
+    file: ../../assets/houston.webp
+  actions:
+    - text: Get Started
+      link: /guides/getting-started/
+      icon: right-arrow
+    - text: View Examples
+      link: /guides/examples/
+      icon: document
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## Why IoC Arise?
+
+<CardGrid stagger>
+	<Card title="🔍 Automatic Detection" icon="magnifier">
+		Finds all classes implementing specific interfaces without manual registration.
+	</Card>
+	<Card title="🧠 Smart Analysis" icon="puzzle">
+		Parses constructor dependencies from TypeScript code using AST analysis.
+	</Card>
+	<Card title="📊 Dependency Resolution" icon="list-format">
+		Ensures correct instantiation order with topological sorting.
+	</Card>
+	<Card title="🛡️ Type Safety" icon="approve-check">
+		Generates fully typed containers with IDE autocompletion support.
+	</Card>
+	<Card title="🚫 No Decorators" icon="warning">
+		Pure static analysis - no runtime registration or decorators needed.
+	</Card>
+	<Card title="⚠️ Cycle Detection" icon="error">
+		Detects and warns about circular dependencies in your code.
+	</Card>
+</CardGrid>
+
+## Key Features
+
+- **Module Support**: Organize dependencies into logical modules
+- **Configuration Driven**: Flexible configuration via JSON files or CLI options
+- **Clean Architecture Ready**: Perfect for clean architecture patterns
+- **Zero Runtime Overhead**: All analysis happens at build time
+- **TypeScript First**: Built specifically for TypeScript projects
+
+## Quick Example
+
+Given these TypeScript classes:
+
+```typescript
+// IUserService.ts
+export interface IUserService {
+  getUser(id: string): Promise<User>;
+}
+
+// UserService.ts
+export class UserService implements IUserService {
+  constructor(private userRepository: IUserRepository) {}
+  
+  async getUser(id: string): Promise<User> {
+    return this.userRepository.findById(id);
+  }
+}
+```
+
+IoC Arise automatically generates:
+
+```typescript
+// container.gen.ts
+export const container = {
+  userRepository: new UserRepository(),
+  userService: new UserService(container.userRepository)
+};
+```
+
+## Ready to Start?
+
+Check out our [Getting Started Guide](/guides/getting-started/) to begin using IoC Arise in your TypeScript project.
