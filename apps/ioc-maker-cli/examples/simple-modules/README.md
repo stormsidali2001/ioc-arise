@@ -40,7 +40,7 @@ IoC Arise automatically:
 
 1. Generate the container:
    ```bash
-   npx ioc-arise generate
+   npx @notjustcoders/ioc-arise generate
    ```
 
 2. Run the demo:

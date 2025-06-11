@@ -9,7 +9,7 @@ import {initializeOneLogger} from "@notjustcoders/one-logger-client-sdk"
 const program = new Command();
 
 program
-  .name('ioc-maker')
+  .name('ioc-arise')
   .description('Generate type-safe IoC containers for TypeScript projects')
   .version('1.0.0');
 

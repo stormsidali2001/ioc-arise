@@ -1,10 +1,23 @@
 {
-  "name": "ioc-maker-cli",
+  "name": "@notjustcoders/ioc-arise",
   "version": "1.0.0",
-  "description": "A CLI tool to generate type-safe IoC containers for TypeScript projects",
+  "description": "A CLI tool to generate type-safe IoC containers for TypeScript projects with automatic dependency injection",
   "main": "dist/index.js",
   "bin": {
-    "ioc-maker": "dist/index.js"
+    "ioc-arise": "dist/index.js"
+  },
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "LICENSE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/ioc-arise.git"
+  },
+  "homepage": "https://ioc-arise.notjustcoders.com",
+  "bugs": {
+    "url": "https://github.com/your-username/ioc-arise/issues"
   },
   "scripts": {
     "build": "tsc",
@@ -14,6 +27,8 @@
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest --watch",
+    "prepublishOnly": "npm run build",
+    "prepack": "npm run build",
     "test1:generate": "npm run build && node dist/index.js generate --source examples/clean-architecture",
     "test2:generate": "npm run build && node dist/index.js generate --source examples/circular-deps-modules",
     "test3:generate": "npm run build && node dist/index.js generate --source examples/circular-deps-classes",
@@ -25,10 +40,22 @@
     "dependency-injection",
     "typescript",
     "cli",
-    "container"
+    "container",
+    "di",
+    "inversion-of-control",
+    "automatic",
+    "code-generation",
+    "type-safe"
   ],
-  "author": "",
+  "author": "Sid Ali Assoul <assoulsidali@gmail.com>",
   "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "@ast-grep/napi": "^0.20.0",
     "@notjustcoders/one-logger-client-sdk": "^1.0.10",

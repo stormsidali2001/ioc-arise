@@ -1,6 +1,25 @@
-# IoC Maker CLI
+# IoC Arise
 
 A command-line tool that automatically generates type-safe IoC (Inversion of Control) containers for TypeScript projects. It analyzes your classes, detects dependencies, and creates a container file with proper instantiation order.
+
+## Table of Contents
+
+- [Features](#features)
+- [Installation](#installation)
+- [Usage](#usage)
+  - [Generate Container](#generate-container)
+  - [Analyze Project](#analyze-project)
+  - [Command Options](#command-options)
+- [Configuration File](#configuration-file)
+  - [Config File Location](#config-file-location)
+  - [Priority Order](#priority-order)
+- [Examples](#examples)
+  - [Basic Example](#basic-example)
+  - [Multi-Module Example](#multi-module-example)
+- [Usage in Your Code](#usage-in-your-code)
+- [Development](#development)
+- [Limitations](#limitations)
+- [Contributing](#contributing)
 
 ## Features
 
@@ -14,14 +33,15 @@ A command-line tool that automatically generates type-safe IoC (Inversion of Con
 ## Installation
 
 ```bash
-# Install dependencies
+# Install globally
+npm install -g @notjustcoders/ioc-arise
+
+# Or use with npx
+npx @notjustcoders/ioc-arise --help
+
+# For development
 pnpm install
-
-# Build the CLI
 pnpm run build
-
-# Link for global usage (optional)
-npm link
 ```
 
 ## Usage
@@ -30,29 +50,29 @@ npm link
 
 ```bash
 # Basic usage
-ioc-maker generate
+ioc-arise generate
 
 # Specify source and output directories
-ioc-maker generate --source src --output src/container.gen.ts
+ioc-arise generate --source src --output src/container.gen.ts
 
 # Filter by interface pattern
-ioc-maker generate --interface "Service|Repository"
+ioc-arise generate --interface "Service|Repository"
 
 # Exclude specific patterns
-ioc-maker generate --exclude "**/*.test.ts" "**/*.spec.ts"
+ioc-arise generate --exclude "**/*.test.ts" "**/*.spec.ts"
 
 # Verbose output
-ioc-maker generate --verbose
+ioc-arise generate --verbose
 ```
 
 ### Analyze Project
 
 ```bash
 # Analyze without generating
-ioc-maker analyze
+ioc-arise analyze
 
 # Check for circular dependencies only
-ioc-maker generate --check-cycles
+ioc-arise generate --check-cycles
 ```
 
 ### Command Options
@@ -95,61 +115,130 @@ The config file should be placed in the same directory as your source code. For 
 2. Config file settings
 3. Default values (lowest priority)
 
-## Example
+## Examples
 
-Given these TypeScript classes:
+### Basic Example
 
-```typescript
-// UserRepository.ts
-export interface IUserRepository {
-  findById(id: string): User;
-}
+Directory structure:
+```
+minimal-todo/
+├── entities/Todo.ts
+├── repositories/
+│   ├── ITodoRepository.ts
+│   └── InMemoryTodoRepository.ts
+├── services/
+│   ├── ITodoService.ts
+│   └── TodoService.ts
+├── ioc.config.json
+└── container.gen.ts (generated)
+```
 
-export class UserRepository implements IUserRepository {
-  findById(id: string): User {
-    // implementation
-  }
-}
-
-// UserService.ts
-export interface IUserService {
-  getUser(id: string): User;
-}
-
-export class UserService implements IUserService {
-  constructor(private userRepository: UserRepository) {}
-  
-  getUser(id: string): User {
-    return this.userRepository.findById(id);
-  }
+Configuration (`ioc.config.json`):
+```json
+{
+  "source": ".",
+  "output": "container.gen.ts"
 }
 ```
 
-Running `ioc-maker generate` will create:
-
+Generated container:
 ```typescript
-// container.gen.ts
-import { UserRepository } from './UserRepository';
-import { UserService } from './UserService';
-
-const userRepository = new UserRepository();
-const userService = new UserService(userRepository);
+// ... imports and lazy initialization functions ...
 
 export const container = {
-  userRepository,
-  userService,
+  get ITodoService(): TodoService {
+    return getTodoService();
+  },
+  get ITodoRepository(): InMemoryTodoRepository {
+    return getInMemoryTodoRepository();
+  },
 };
 
 export type Container = typeof container;
 ```
+
+### Multi-Module Example
+
+Directory structure:
+```
+simple-modules/
+├── user/
+│   ├── User.ts
+│   ├── IUserRepository.ts
+│   ├── UserRepository.ts
+│   ├── IUserService.ts
+│   └── UserService.ts
+├── todo/
+│   ├── Todo.ts
+│   ├── ITodoRepository.ts
+│   ├── TodoRepository.ts
+│   ├── ITodoService.ts
+│   └── TodoService.ts
+├── ioc.config.json
+└── container.gen.ts (generated)
+```
+
+Configuration (`ioc.config.json`):
+```json
+{
+  "source": ".",
+  "output": "container.gen.ts",
+  "modules": {
+    "UserModule": ["user/**"],
+    "TodoModule": ["todo/**"]
+  }
+}
+```
+
+Generated container:
+```typescript
+// ... imports ...
+
+// Module container functions
+function createUserModuleContainer() {
+  // ... lazy initialization variables ...
+  // Lazy initialization for UserModule services
+  return {
+    get IUserService(): UserService { /* ... */ },
+    get IUserRepository(): UserRepository { /* ... */ }
+  };
+}
+
+function createTodoModuleContainer(userModuleContainer) {
+  // ... lazy initialization variables ...
+  // TodoModule with cross-module dependencies
+  return {
+    get ITodoService(): TodoService { /* ... */ },
+    get ITodoRepository(): TodoRepository { /* ... */ }
+  };
+}
+
+// Module instantiation with dependency injection
+const userModuleContainer = createUserModuleContainer();
+const todoModuleContainer = createTodoModuleContainer(userModuleContainer);
+
+export const container = {
+  userModule: userModuleContainer,
+  todoModule: todoModuleContainer
+};
+
+export type Container = typeof container;
+```
+
+See the `examples/` directory for complete working examples.
 
 ## Usage in Your Code
 
 ```typescript
 import { container } from './container.gen';
 
-// Full type safety and autocompletion
-const user = container.userService.getUser('123');
+// Basic usage
+const todoService = container.ITodoService;
+const todos = await todoService.getAllTodos();
+
+// Multi-module usage
+const userService = container.userModule.IUserService;
+const todoService = container.todoModule.ITodoService;
 ```
 
 ## Development

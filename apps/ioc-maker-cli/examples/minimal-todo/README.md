@@ -18,7 +18,7 @@ This example demonstrates a simple todo list application using IoC Arise with:
 
 1. Generate the container:
    ```bash
-   npx ioc-arise generate
+   npx @notjustcoders/ioc-arise generate
    ```
 
 2. Use the container in your application:
