@@ -7,9 +7,6 @@ A command-line tool that automatically generates type-safe IoC (Inversion of Con
 - [Features](#features)
 - [Installation](#installation)
 - [Usage](#usage)
-  - [Generate Container](#generate-container)
-  - [Analyze Project](#analyze-project)
-  - [Command Options](#command-options)
 - [Configuration File](#configuration-file)
   - [Config File Location](#config-file-location)
   - [Priority Order](#priority-order)
@@ -46,45 +43,13 @@ pnpm run build
 
 ## Usage
 
-### Generate Container
-
 ```bash
 # Basic usage
 ioc-arise generate
 
-# Specify source and output directories
+# With custom source and output
 ioc-arise generate --source src --output src/container.gen.ts
-
-# Filter by interface pattern
-ioc-arise generate --interface "Service|Repository"
-
-# Exclude specific patterns
-ioc-arise generate --exclude "**/*.test.ts" "**/*.spec.ts"
-
-# Verbose output
-ioc-arise generate --verbose
 ```
-
-### Analyze Project
-
-```bash
-# Analyze without generating
-ioc-arise analyze
-
-# Check for circular dependencies only
-ioc-arise generate --check-cycles
-```
-
-### Command Options
-
-| Option | Description | Default |
-|--------|-------------|----------|
-| `-s, --source <dir>` | Source directory to scan | `src` |
-| `-o, --output <file>` | Output file path | `container.gen.ts` |
-| `-i, --interface <pattern>` | Interface name pattern (regex) | - |
-| `-e, --exclude <patterns...>` | Exclude file patterns | - |
-| `--check-cycles` | Only check circular dependencies | `false` |
-| `--verbose` | Enable verbose logging | `false` |
 
 ## Configuration File
 
@@ -258,7 +223,7 @@ pnpm run start
 
 - Only detects classes using the `implements` keyword
 - Constructor parameters must be typed
-- Circular dependencies are not supported
+- Circular dependencies are detected and warned about, but not automatically resolved
 - Only analyzes TypeScript files (`.ts` extension)
 
 ## Contributing
