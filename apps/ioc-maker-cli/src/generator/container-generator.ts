@@ -15,9 +15,12 @@ export class ContainerGenerator {
     for (const classInfo of this.classes) {
       const variableName = toVariableName(classInfo.name);
       const interfaceName = classInfo.interfaceName || classInfo.name;
+      const getterName = `get${classInfo.name}`;
       
       if (classInfo.scope === 'singleton') {
-        singletonProperties.push(`  ${interfaceName}: ${variableName},`);
+        singletonProperties.push(`  get ${interfaceName}(): ${classInfo.name} {
+    return ${getterName}();
+  },`);
       } else if (classInfo.scope === 'transient') {
         transientProperties.push(`  get ${interfaceName}(): ${classInfo.name} {
     return ${variableName}Factory();

@@ -116,8 +116,8 @@ export class ContainerFileGenerator {
         functionParams.push(`${depVarName}: ReturnType<typeof create${depModule}Container>`);
       }
       
-      // Generate instantiations inside the module function
-      const moduleInstantiations: string[] = [];
+      // Generate lazy initialization variables and factory functions
+      const lazyInitializations: string[] = [];
       const factoryFunctions: string[] = [];
       
       // First, create factory functions for transient dependencies
@@ -130,52 +130,62 @@ export class ContainerFileGenerator {
       }
       
       // Sort singleton classes by their dependencies within the module
-       const singletonClasses = moduleClasses.filter(c => c.scope !== 'transient');
-       const sortedSingletons = this.sortClassesByDependencies(singletonClasses, moduleClasses);
-       
-       // Then, create singleton instances in dependency order
-       for (const classInfo of sortedSingletons) {
-         const instanceName = this.camelCase(classInfo.name);
-         const constructorArgs: string[] = [];
-         
-         // Build constructor arguments
-         for (const dep of classInfo.dependencies) {
-           // Check if dependency is from another module
-           let foundInOtherModule = false;
-           for (const depModule of moduleDeps) {
-             const depModuleClasses = this.moduleGroupedClasses!.get(depModule);
-             if (depModuleClasses) {
-               const depClass = depModuleClasses.find(c => c.interfaceName === dep);
-               if (depClass) {
-                 const depModuleVarName = this.camelCase(depModule) + 'Container';
-                 constructorArgs.push(`${depModuleVarName}.${dep}`);
-                 foundInOtherModule = true;
-                 break;
-               }
-             }
-           }
-           
-           // If not found in other modules, it's from the same module
-           if (!foundInOtherModule) {
-             const depClass = moduleClasses.find(c => c.interfaceName === dep);
-             if (depClass) {
-               if (depClass.scope === 'transient') {
-                 const depInstanceName = this.camelCase(depClass.name);
-                 constructorArgs.push(`${depInstanceName}Factory()`);
-               } else {
-                 const depInstanceName = this.camelCase(depClass.name);
-                 constructorArgs.push(depInstanceName);
-               }
-             }
-           }
-         }
-         
-         const instantiation = constructorArgs.length > 0 ?
-           `  const ${instanceName} = new ${classInfo.name}(${constructorArgs.join(', ')});` :
-           `  const ${instanceName} = new ${classInfo.name}();`;
-         
-         moduleInstantiations.push(instantiation);
-       }
+      const singletonClasses = moduleClasses.filter(c => c.scope !== 'transient');
+      const sortedSingletons = this.sortClassesByDependencies(singletonClasses, moduleClasses);
+      
+      // Generate lazy initialization variables for singletons
+      for (const classInfo of sortedSingletons) {
+        const instanceName = this.camelCase(classInfo.name);
+        lazyInitializations.push(`  let ${instanceName}: ${classInfo.name} | undefined;`);
+      }
+      
+      // Generate lazy getter functions for singletons
+      const lazyGetters: string[] = [];
+      for (const classInfo of sortedSingletons) {
+        const instanceName = this.camelCase(classInfo.name);
+        const getterName = `get${classInfo.name}`;
+        const constructorArgs: string[] = [];
+        
+        // Build constructor arguments
+        for (const dep of classInfo.dependencies) {
+          // Check if dependency is from another module
+          let foundInOtherModule = false;
+          for (const depModule of moduleDeps) {
+            const depModuleClasses = this.moduleGroupedClasses!.get(depModule);
+            if (depModuleClasses) {
+              const depClass = depModuleClasses.find(c => c.interfaceName === dep);
+              if (depClass) {
+                const depModuleVarName = this.camelCase(depModule) + 'Container';
+                constructorArgs.push(`${depModuleVarName}.${dep}`);
+                foundInOtherModule = true;
+                break;
+              }
+            }
+          }
+          
+          // If not found in other modules, it's from the same module
+          if (!foundInOtherModule) {
+            const depClass = moduleClasses.find(c => c.interfaceName === dep);
+            if (depClass) {
+              if (depClass.scope === 'transient') {
+                const depInstanceName = this.camelCase(depClass.name);
+                constructorArgs.push(`${depInstanceName}Factory()`);
+              } else {
+                const depGetterName = `get${depClass.name}`;
+                constructorArgs.push(`${depGetterName}()`);
+              }
+            }
+          }
+        }
+        
+        const instantiation = constructorArgs.length > 0 ?
+          `new ${classInfo.name}(${constructorArgs.join(', ')})` :
+          `new ${classInfo.name}()`;
+        
+        const lazyGetter = `  const ${getterName} = (): ${classInfo.name} => {\n    if (!${instanceName}) {\n      ${instanceName} = ${instantiation};\n    }\n    return ${instanceName};\n  };`;
+        
+        lazyGetters.push(lazyGetter);
+      }
       
       // Generate module exports
       for (const classInfo of moduleClasses) {
@@ -186,7 +196,8 @@ export class ContainerFileGenerator {
           if (isTransient) {
             moduleExports.push(`    get ${classInfo.interfaceName}(): ${classInfo.name} {\n      return ${instanceName}Factory();\n    }`);
           } else {
-            moduleExports.push(`    ${classInfo.interfaceName}: ${instanceName}`);
+            const getterName = `get${classInfo.name}`;
+            moduleExports.push(`    get ${classInfo.interfaceName}(): ${classInfo.name} {\n      return ${getterName}();\n    }`);
           }
         }
       }
@@ -202,10 +213,12 @@ export class ContainerFileGenerator {
       const functionBody = [
         ...factoryFunctions,
         '',
-        ...moduleInstantiations,
+        ...lazyInitializations,
+        '',
+        ...lazyGetters,
         '',
         returnObject
-      ].filter(line => line !== '' || factoryFunctions.length > 0 || moduleInstantiations.length > 0).join('\n');
+      ].filter(line => line !== '' || factoryFunctions.length > 0 || lazyInitializations.length > 0 || lazyGetters.length > 0).join('\n');
       
       const moduleContainerFunction = `${functionSignature} {\n${functionBody}\n}`;
       moduleContainerFunctions.push(moduleContainerFunction);

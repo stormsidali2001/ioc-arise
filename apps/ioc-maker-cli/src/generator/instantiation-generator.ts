@@ -13,7 +13,8 @@ export class InstantiationGenerator {
 
   generateInstantiations(sortedClasses: string[]): string {
     const classMap = new Map(this.classes.map(c => [c.name, c]));
-    const instantiations: string[] = [];
+    const lazyInitializations: string[] = [];
+    const lazyGetters: string[] = [];
     const transientFactories: string[] = [];
 
     // Create interface to class mapping for dependency resolution
@@ -23,16 +24,23 @@ export class InstantiationGenerator {
     const singletonClasses = this.classes.filter(c => c.scope === 'singleton');
     const transientClasses = this.classes.filter(c => c.scope === 'transient');
 
-    // Generate singleton instantiations (eager loading)
+    // Generate lazy initialization variables for singletons
     const singletonClassNames = sortedClasses.filter(name => {
       return singletonClasses.some(c => c.name === name);
     });
 
-      for (const className of singletonClassNames.reverse()) {
+    for (const className of singletonClassNames) {
+      const variableName = toVariableName(className);
+      lazyInitializations.push(`let ${variableName}: ${className} | undefined;`);
+    }
+
+    // Generate lazy getter functions for singletons
+    for (const className of singletonClassNames.reverse()) {
       const classInfo = classMap.get(className);
       if (!classInfo) continue;
 
       const variableName = toVariableName(className);
+      const getterName = `get${className}`;
       
       // Generate constructor arguments for all parameters
       let constructorArgs = '';
@@ -65,7 +73,7 @@ export class InstantiationGenerator {
             if (depClassInfo.scope === 'transient') {
               return `${toVariableName(implementingClass)}Factory()`;
             }
-            return toVariableName(implementingClass);
+            return `get${implementingClass}()`;
           } else {
             // Check if it's in our dependencies list (unmanaged but expected)
             if (classInfo.dependencies.includes(targetDependency)) {
@@ -79,11 +87,13 @@ export class InstantiationGenerator {
       }
 
       const instantiation = constructorArgs
-        ? `const ${variableName} = new ${className}(${constructorArgs});`
-        : `const ${variableName} = new ${className}();`;
+        ? `new ${className}(${constructorArgs})`
+        : `new ${className}()`;
 
-        instantiations.push(instantiation);
-      }
+      const lazyGetter = `const ${getterName} = (): ${className} => {\n  if (!${variableName}) {\n    ${variableName} = ${instantiation};\n  }\n  return ${variableName};\n};`;
+      
+      lazyGetters.push(lazyGetter);
+    }
 
     // Generate transient factory functions (lazy loading)
     for (const classInfo of transientClasses) {
@@ -124,7 +134,7 @@ export class InstantiationGenerator {
                  if (depClassInfo.scope === 'transient') {
                    return `${toVariableName(implementingClass)}Factory()`;
                  }
-                 return toVariableName(implementingClass);
+                 return `get${implementingClass}()`;
                } else {
                  // This is an unmanaged dependency, create new instance
                  return `new ${param.type}()`;
@@ -146,10 +156,17 @@ export class InstantiationGenerator {
       result.push('');
     }
     
-    // Then do singleton instantiations
-    if (instantiations.length > 0) {
-      result.push('// Eager singleton instantiation');
-      result.push(...instantiations);
+    // Then add lazy initialization variables for singletons
+    if (lazyInitializations.length > 0) {
+      result.push('// Lazy initialization variables for singletons');
+      result.push(...lazyInitializations);
+      result.push('');
+    }
+    
+    // Then add lazy getter functions for singletons
+    if (lazyGetters.length > 0) {
+      result.push('// Lazy getter functions for singletons');
+      result.push(...lazyGetters);
     }
 
     return result.join('\n');
