@@ -3,6 +3,7 @@
 import { Command } from 'commander';
 import { generateCommand } from './commands/generate';
 import { analyzeCommand } from './commands/analyze';
+import { visualizeCommand } from './commands/visualize';
 
 
 import {initializeOneLogger} from "@notjustcoders/one-logger-client-sdk"
@@ -16,6 +17,7 @@ program
 // Register commands
 program.addCommand(generateCommand);
 program.addCommand(analyzeCommand);
+program.addCommand(visualizeCommand);
 
 program.parse();
 
