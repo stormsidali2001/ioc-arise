@@ -19,6 +19,7 @@ vi.mock('../../container', () => ({
       extractTypeAliases: vi.fn(),
       extractJSDocComments: vi.fn(),
       findClassesImplementingInterfaces: vi.fn(),
+      findAllClasses: vi.fn(),
       extractClassName: vi.fn(),
       extractInterfaceName: vi.fn(),
       extractConstructorParameters: vi.fn(),
@@ -40,6 +41,7 @@ describe('ClassAnalyzer', () => {
     extractTypeAliases: Mock;
     extractJSDocComments: Mock;
     findClassesImplementingInterfaces: Mock;
+    findAllClasses: Mock;
     extractClassName: Mock;
     extractInterfaceName: Mock;
     extractConstructorParameters: Mock;
@@ -81,6 +83,7 @@ describe('ClassAnalyzer', () => {
       mockAstParser.extractTypeAliases.mockReturnValue(new Map());
       mockAstParser.extractJSDocComments.mockReturnValue(new Map());
       mockAstParser.findClassesImplementingInterfaces.mockReturnValue([mockClassNode]);
+      mockAstParser.findAllClasses.mockReturnValue([]);
       mockAstParser.extractClassName.mockReturnValue('UserService');
       mockAstParser.extractInterfaceName.mockReturnValue('IUserService');
       mockAstParser.extractConstructorParameters.mockReturnValue(mockConstructorParams);
@@ -202,6 +205,84 @@ describe('ClassAnalyzer', () => {
         const result = await classAnalyzer.analyzeFile(testCase.filePath);
         expect(result[0]?.importPath).toBe(testCase.expected);
       }
+    });
+
+    it('should analyze classes without interfaces', async () => {
+      const mockClassNodeWithoutInterface = { kind: 'ClassDeclaration' };
+      
+      // Setup: no classes with interfaces, but one class without interface
+      mockAstParser.findClassesImplementingInterfaces.mockReturnValue([]);
+      mockAstParser.findAllClasses.mockReturnValue([mockClassNodeWithoutInterface]);
+      mockAstParser.extractClassName.mockReturnValue('UserRepository');
+      mockAstParser.extractInterfaceName.mockReturnValue(null);
+      mockAstParser.extractConstructorParameters.mockReturnValue([]);
+      
+      const result = await classAnalyzer.analyzeFile(mockFilePath);
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        name: 'UserRepository',
+        filePath: mockFilePath,
+        interfaceName: undefined,
+        dependencies: [],
+        scope: 'transient' as InjectionScope
+      });
+    });
+
+    it('should analyze mixed classes (with and without interfaces)', async () => {
+      const mockClassWithInterface = { kind: 'ClassDeclaration', text: () => 'class UserService implements IUserService' };
+      const mockClassWithoutInterface = { kind: 'ClassDeclaration', text: () => 'class UserRepository' };
+      
+      // Setup: one class with interface, one without
+      mockAstParser.findClassesImplementingInterfaces.mockReturnValue([mockClassWithInterface]);
+      mockAstParser.findAllClasses.mockReturnValue([mockClassWithInterface, mockClassWithoutInterface]);
+      mockAstParser.extractClassName
+        .mockReturnValueOnce('UserService')
+        .mockReturnValueOnce('UserRepository');
+      mockAstParser.extractInterfaceName
+        .mockReturnValueOnce('IUserService')
+        .mockReturnValueOnce(null);
+      mockAstParser.extractConstructorParameters
+        .mockReturnValueOnce(mockConstructorParams)
+        .mockReturnValueOnce([]);
+      
+      const result = await classAnalyzer.analyzeFile(mockFilePath);
+
+      expect(result).toHaveLength(2);
+      expect(result[0]?.name).toBe('UserService');
+      expect(result[0]?.interfaceName).toBe('IUserService');
+      expect(result[1]?.name).toBe('UserRepository');
+      expect(result[1]?.interfaceName).toBeUndefined();
+    });
+
+    it('should skip classes without interfaces that implement interfaces (duplicate prevention)', async () => {
+      const mockClassWithInterface = { kind: 'ClassDeclaration', text: () => 'class UserService implements IUserService' };
+      
+      // Setup: same class appears in both lists
+      mockAstParser.findClassesImplementingInterfaces.mockReturnValue([mockClassWithInterface]);
+      mockAstParser.findAllClasses.mockReturnValue([mockClassWithInterface]);
+      mockAstParser.extractClassName.mockReturnValue('UserService');
+      mockAstParser.extractInterfaceName.mockReturnValue('IUserService');
+      mockAstParser.extractConstructorParameters.mockReturnValue(mockConstructorParams);
+      
+      const result = await classAnalyzer.analyzeFile(mockFilePath);
+
+      expect(result).toHaveLength(1); // Should not duplicate
+      expect(result[0]?.name).toBe('UserService');
+      expect(result[0]?.interfaceName).toBe('IUserService');
+    });
+
+    it('should skip classes that contain implements keyword but are not in interface classes list', async () => {
+      const mockClassWithImplements = { kind: 'ClassDeclaration', text: () => 'class UserService implements IUserService' };
+      
+      // Setup: class has implements but not found by findClassesImplementingInterfaces
+      mockAstParser.findClassesImplementingInterfaces.mockReturnValue([]);
+      mockAstParser.findAllClasses.mockReturnValue([mockClassWithImplements]);
+      mockAstParser.extractClassName.mockReturnValue('UserService');
+      
+      const result = await classAnalyzer.analyzeFile(mockFilePath);
+
+      expect(result).toHaveLength(0); // Should skip classes with 'implements' keyword
     });
   });
 

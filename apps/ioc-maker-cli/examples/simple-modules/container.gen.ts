@@ -1,7 +1,7 @@
-import { UserService } from './user/UserService';
-import { UserRepository } from './user/UserRepository';
 import { TodoService } from './todo/TodoService';
 import { TodoRepository } from './todo/TodoRepository';
+import { UserService } from './user/UserService';
+import { UserRepository } from './user/UserRepository';
 
 function createUserModuleContainer() {
 

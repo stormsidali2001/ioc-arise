@@ -52,6 +52,52 @@ class EmailService implements IEmailService {
   sendEmail(): void {}
 }
 `,
+
+  // findAllClasses test fixtures
+  mixedClasses: `
+interface IUserService {
+  getUser(): string;
+}
+
+class UserService implements IUserService {
+  constructor(private userRepo: UserRepository) {}
+  getUser(): string {
+    return 'user';
+  }
+}
+
+class UserRepository {
+  constructor() {}
+  findUser(): any {
+    return {};
+  }
+}
+
+class EmailService {
+  constructor(private logger: Logger) {}
+  sendEmail(): void {}
+}
+`,
+
+  onlyRegularClasses: `
+class UserRepository {
+  constructor() {}
+  findUser(): any {
+    return {};
+  }
+}
+
+class EmailService {
+  constructor(private logger: Logger) {}
+  sendEmail(): void {}
+}
+
+class Logger {
+  log(message: string): void {
+    console.log(message);
+  }
+}
+`,
   
   // extractClassName test fixtures
   simpleClassName: `

@@ -1,5 +1,11 @@
 # @notjustcoders/ioc-arise
 
+## 1.0.2
+
+### Patch Changes
+
+- Bug: classes that do not depend on any interface were ignored by the Analyzer (e use-cases )
+
 ## 1.0.1
 
 ### Patch Changes

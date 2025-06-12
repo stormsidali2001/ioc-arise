@@ -29,9 +29,10 @@ export class ClassAnalyzer {
       logger.log('JSDoc scopes for file', {filePath, jsDocScopes})
       
       // Find classes implementing interfaces
-      const classNodes = this.astParser.findClassesImplementingInterfaces(root);
+      const classNodesWithInterfaces = this.astParser.findClassesImplementingInterfaces(root);
+      const processedClassNames = new Set<string>();
 
-      for (const classNode of classNodes) {
+      for (const classNode of classNodesWithInterfaces) {
         const className = this.astParser.extractClassName(classNode);
         const interfaceName = this.astParser.extractInterfaceName(classNode);
         
@@ -48,8 +49,9 @@ export class ClassAnalyzer {
         const importPath = this.generateImportPath(filePath, className);
         const scope = this.astParser.extractScopeFromJSDoc(className, jsDocScopes);
         
+        processedClassNames.add(className);
 
-        logger.log(`Processing class: ${className}`);
+        logger.log(`Processing class with interface: ${className}`);
         logger.log(`Interface for ${className}:`, {interfaceName});
         logger.log(`Constructor params for ${className}:`, {constructorParams});
         logger.log(`Type aliases found:`, {count:Array.from(typeAliases.entries())});
@@ -62,6 +64,39 @@ export class ClassAnalyzer {
           dependencies,
           constructorParams,
           interfaceName,
+          importPath,
+          scope
+        });
+      }
+
+      // Find all classes (including those without interfaces)
+      const allClassNodes = this.astParser.findAllClasses(root);
+      
+      for (const classNode of allClassNodes) {
+        const className = this.astParser.extractClassName(classNode);
+        
+        if (!className || processedClassNames.has(className)) continue;
+        
+        // Skip if this class implements an interface (already processed above)
+        const classText = classNode.text();
+        if (classText.includes('implements')) continue;
+        
+        const constructorParams = this.astParser.extractConstructorParameters(classNode);
+        const dependencies = this.resolveDependencies(constructorParams, typeAliases);
+        const importPath = this.generateImportPath(filePath, className);
+        const scope = this.astParser.extractScopeFromJSDoc(className, jsDocScopes);
+        
+        logger.log(`Processing class without interface: ${className}`);
+        logger.log(`Constructor params for ${className}:`, {constructorParams});
+        logger.log(`Dependencies for ${className}:`, {dependencies});
+        logger.log(`Scope for ${className}:`, {scope});
+        
+        classes.push({
+          name: className,
+          filePath,
+          dependencies,
+          constructorParams,
+          interfaceName: undefined, // No interface for these classes
           importPath,
           scope
         });

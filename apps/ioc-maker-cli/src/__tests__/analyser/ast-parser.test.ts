@@ -86,6 +86,59 @@ describe('ASTParser', () => {
     });
   });
 
+  describe('findAllClasses', () => {
+    it('should find all classes including those without interfaces', () => {
+      const testFile = join(tempDir, 'mixed-classes.ts');
+      writeFileSync(testFile, testFileContents.mixedClasses);
+
+      const root = parser.parseFile(testFile);
+      const classes = parser.findAllClasses(root);
+      
+      expect(classes).toHaveLength(3);
+      const classTexts = classes.map(c => c.text());
+      expect(classTexts.some(text => text.includes('UserService implements IUserService'))).toBe(true);
+      expect(classTexts.some(text => text.includes('class UserRepository'))).toBe(true);
+      expect(classTexts.some(text => text.includes('class EmailService'))).toBe(true);
+    });
+
+    it('should find only regular classes when no interfaces are implemented', () => {
+      const testFile = join(tempDir, 'only-regular.ts');
+      writeFileSync(testFile, testFileContents.onlyRegularClasses);
+
+      const root = parser.parseFile(testFile);
+      const classes = parser.findAllClasses(root);
+      
+      expect(classes).toHaveLength(3);
+      const classTexts = classes.map(c => c.text());
+      expect(classTexts.some(text => text.includes('class UserRepository'))).toBe(true);
+      expect(classTexts.some(text => text.includes('class EmailService'))).toBe(true);
+      expect(classTexts.some(text => text.includes('class Logger'))).toBe(true);
+    });
+
+    it('should return empty array when no classes exist', () => {
+      const testFile = join(tempDir, 'no-classes.ts');
+      writeFileSync(testFile, testFileContents.emptyFile);
+
+      const root = parser.parseFile(testFile);
+      const classes = parser.findAllClasses(root);
+      
+      expect(classes).toHaveLength(0);
+    });
+
+    it('should find classes with and without interfaces separately', () => {
+      const testFile = join(tempDir, 'mixed-test.ts');
+      writeFileSync(testFile, testFileContents.mixedClasses);
+
+      const root = parser.parseFile(testFile);
+      const allClasses = parser.findAllClasses(root);
+      const interfaceClasses = parser.findClassesImplementingInterfaces(root);
+      
+      expect(allClasses).toHaveLength(3);
+      expect(interfaceClasses).toHaveLength(1);
+      expect(allClasses.length).toBeGreaterThan(interfaceClasses.length);
+    });
+  });
+
   describe('extractClassName', () => {
     it('should extract class name from class node', () => {
       const testFile = join(tempDir, 'class-name.ts');

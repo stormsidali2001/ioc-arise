@@ -20,8 +20,35 @@ export class ProjectAnalyzer {
     );
     
     const fileClassesArrays = await Promise.all(fileAnalysisPromises);
-    const classes = fileClassesArrays.flat();
+    const allClasses = fileClassesArrays.flat();
 
-    return classes;
+    // Filter classes to only include those that are used as dependencies
+    const filteredClasses = this.filterClassesByDependencyUsage(allClasses);
+
+    return filteredClasses;
+  }
+
+  private filterClassesByDependencyUsage(classes: ClassInfo[]): ClassInfo[] {
+    // Collect all dependencies from all classes
+    const allDependencies = new Set<string>();
+    
+    for (const classInfo of classes) {
+      for (const dependency of classInfo.dependencies) {
+        allDependencies.add(dependency);
+      }
+    }
+
+    // Filter classes to only include:
+    // 1. Classes that implement interfaces (these are typically services/repositories)
+    // 2. Classes without interfaces that are used as dependencies by other classes
+    return classes.filter(classInfo => {
+      // Always include classes with interfaces
+      if (classInfo.interfaceName) {
+        return true;
+      }
+      
+      // For classes without interfaces, only include if they are used as dependencies
+      return allDependencies.has(classInfo.name);
+    });
   }
 }

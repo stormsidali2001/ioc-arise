@@ -19,6 +19,14 @@ export class ASTParser {
     });
   }
 
+  findAllClasses(root: any): any[] {
+    return root.findAll({
+      rule: {
+        kind: 'class_declaration'
+      }
+    });
+  }
+
   extractClassName(classNode: any): string | undefined {
     logger.log('Extracting class name from node:', {result: classNode.text().substring(0, 100) + '...'});
     
