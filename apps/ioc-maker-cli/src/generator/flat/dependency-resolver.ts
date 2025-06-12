@@ -1,5 +1,5 @@
-import { ClassInfo, ConstructorParameter } from '../types';
-import { toVariableName } from '../utils/naming';
+import { ClassInfo, ConstructorParameter } from '../../types';
+import { toVariableName } from '../../utils/naming';
 
 export class DependencyResolver {
   private classes: ClassInfo[];

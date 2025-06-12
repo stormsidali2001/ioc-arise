@@ -21,10 +21,8 @@ export class ImportGenerator {
       for (const dep of classInfo.dependencies) {
         // If dependency is not a managed class, we need to import it
         if (!classMap.has(dep)) {
-          // Check if it's an interface (starts with 'I' by convention)
-          if (!dep.startsWith('I')) {
-            importSet.add(`import { ${dep} } from '${classInfo.importPath}';`);
-          }
+            //TODO: Think about this
+            // importSet.add(`import { ${dep} } from '${classInfo.importPath}';`);
         }
       }
     }

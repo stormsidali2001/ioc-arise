@@ -1,11 +1,12 @@
 import { BaseContainerGenerator } from './base-container-generator';
-import { FlatContainerGenerator } from './flat-container-generator';
-import { ModularContainerGenerator } from './modular-container-generator';
+import { FlatContainerGenerator } from './flat/flat-container-generator';
+import { ModularContainerGenerator } from './modular/modular-container-generator';
 import { DependencyResolver } from '../analyser/dependency-resolver';
 import { ModuleDependencyResolver } from '../analyser/module-dependency-resolver';
 import { ImportGenerator } from './import-generator';
-import { InstantiationGenerator } from './instantiation-generator';
-import { ContainerGenerator as ContainerCodeGenerator } from './container-generator';
+import { InstantiationGenerator } from './flat/instantiation-generator';
+import { ContainerGenerator as ContainerCodeGenerator } from './flat/container-generator';
+import { FileWriter } from './file-writer';
 import { GeneratorOptions, ClassInfo } from '../types';
 
 /**
@@ -26,6 +27,9 @@ export class ContainerGeneratorFactory {
     classesOrModules: ClassInfo[] | Map<string, ClassInfo[]>, 
     outputPath: string
   ): BaseContainerGenerator {
+    // Create FileWriter instance that will be injected into generators
+    const fileWriter = new FileWriter(outputPath);
+
     if (classesOrModules instanceof Map) {
       // Module-based generation - create dependencies and inject in constructor
       const moduleDependencyResolver = new ModuleDependencyResolver(classesOrModules);
@@ -33,7 +37,7 @@ export class ContainerGeneratorFactory {
       const importGenerator = new ImportGenerator(allClasses);
 
       return new ModularContainerGenerator(
-        outputPath,
+        fileWriter,
         classesOrModules,
         moduleDependencyResolver,
         importGenerator
@@ -46,7 +50,7 @@ export class ContainerGeneratorFactory {
       const containerCodeGenerator = new ContainerCodeGenerator(classesOrModules);
 
       return new FlatContainerGenerator(
-        outputPath,
+        fileWriter,
         classesOrModules,
         dependencyResolver,
         importGenerator,

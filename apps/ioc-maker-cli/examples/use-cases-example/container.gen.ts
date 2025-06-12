@@ -1,30 +1,30 @@
-import { EmailService } from './services/EmailService';
-import { ApplicationService } from './services/ApplicationService';
-import { UserRepository } from './repositories/UserRepository';
 import { UserController } from './use-cases/UserController';
 import { GetUserUseCase } from './use-cases/GetUserUseCase';
 import { CreateUserUseCase } from './use-cases/CreateUserUseCase';
+import { UserRepository } from './repositories/UserRepository';
+import { EmailService } from './services/EmailService';
+import { ApplicationService } from './services/ApplicationService';
 
 // Lazy initialization variables for singletons
 let applicationService: ApplicationService | undefined;
 let userController: UserController | undefined;
 let getUserUseCase: GetUserUseCase | undefined;
 let createUserUseCase: CreateUserUseCase | undefined;
-let userRepository: UserRepository | undefined;
 let emailService: EmailService | undefined;
+let userRepository: UserRepository | undefined;
 
 // Lazy getter functions for singletons
-const getEmailService = (): EmailService => {
-  if (!emailService) {
-    emailService = new EmailService();
-  }
-  return emailService;
-};
 const getUserRepository = (): UserRepository => {
   if (!userRepository) {
     userRepository = new UserRepository();
   }
   return userRepository;
+};
+const getEmailService = (): EmailService => {
+  if (!emailService) {
+    emailService = new EmailService();
+  }
+  return emailService;
 };
 const getCreateUserUseCase = (): CreateUserUseCase => {
   if (!createUserUseCase) {
@@ -52,15 +52,6 @@ const getApplicationService = (): ApplicationService => {
 };
 
 export const container = {
-  get IEmailService(): EmailService {
-    return getEmailService();
-  },
-  get IApplicationService(): ApplicationService {
-    return getApplicationService();
-  },
-  get IUserRepository(): UserRepository {
-    return getUserRepository();
-  },
   get UserController(): UserController {
     return getUserController();
   },
@@ -69,6 +60,15 @@ export const container = {
   },
   get CreateUserUseCase(): CreateUserUseCase {
     return getCreateUserUseCase();
+  },
+  get IUserRepository(): UserRepository {
+    return getUserRepository();
+  },
+  get IEmailService(): EmailService {
+    return getEmailService();
+  },
+  get IApplicationService(): ApplicationService {
+    return getApplicationService();
   },
 };
 

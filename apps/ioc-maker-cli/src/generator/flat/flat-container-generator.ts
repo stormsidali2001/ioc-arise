@@ -1,9 +1,10 @@
-import { ClassInfo } from '../types';
-import { DependencyResolver } from '../analyser/dependency-resolver';
+import { ClassInfo } from '../../types';
+import { DependencyResolver } from '../../analyser/dependency-resolver';
 import { ContainerGenerator as ContainerCodeGenerator } from './container-generator';
 import { InstantiationGenerator } from './instantiation-generator';
-import { BaseContainerGenerator } from './base-container-generator';
-import { ImportGenerator } from './import-generator';
+import { BaseContainerGenerator } from '../base-container-generator';
+import { ImportGenerator } from '../import-generator';
+import { FileWriter } from '../file-writer';
 
 /**
  * Generator for flat (non-modular) container structure.
@@ -16,14 +17,14 @@ export class FlatContainerGenerator extends BaseContainerGenerator {
   private classes: ClassInfo[];
 
   constructor(
-    outputPath: string,
+    fileWriter: FileWriter,
     classes: ClassInfo[],
     dependencyResolver: DependencyResolver,
     importGenerator: ImportGenerator,
     instantiationGenerator: InstantiationGenerator,
     containerCodeGenerator: ContainerCodeGenerator
   ) {
-    super(outputPath, importGenerator);
+    super(fileWriter, importGenerator);
     this.classes = classes;
     this.dependencyResolver = dependencyResolver;
     this.instantiationGenerator = instantiationGenerator;

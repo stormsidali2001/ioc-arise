@@ -1,24 +1,24 @@
-import { UserService } from './user/UserService';
-import { UserRepository } from './user/UserRepository';
 import { TodoService } from './todo/TodoService';
 import { TodoRepository } from './todo/TodoRepository';
+import { UserService } from './user/UserService';
+import { UserRepository } from './user/UserRepository';
 
 function createUserModuleContainer() {
 
-  let userRepository: UserRepository | undefined;
   let userService: UserService | undefined;
+  let userRepository: UserRepository | undefined;
 
-  const getUserRepository = (): UserRepository => {
-    if (!userRepository) {
-      userRepository = new UserRepository();
-    }
-    return userRepository;
-  };
   const getUserService = (): UserService => {
     if (!userService) {
       userService = new UserService(getUserRepository());
     }
     return userService;
+  };
+  const getUserRepository = (): UserRepository => {
+    if (!userRepository) {
+      userRepository = new UserRepository();
+    }
+    return userRepository;
   };
 
   return {
@@ -33,20 +33,20 @@ function createUserModuleContainer() {
 
 function createTodoModuleContainer(userModuleContainer: ReturnType<typeof createUserModuleContainer>) {
 
-  let todoRepository: TodoRepository | undefined;
   let todoService: TodoService | undefined;
+  let todoRepository: TodoRepository | undefined;
 
-  const getTodoRepository = (): TodoRepository => {
-    if (!todoRepository) {
-      todoRepository = new TodoRepository();
-    }
-    return todoRepository;
-  };
   const getTodoService = (): TodoService => {
     if (!todoService) {
       todoService = new TodoService(getTodoRepository(), userModuleContainer.IUserRepository);
     }
     return todoService;
+  };
+  const getTodoRepository = (): TodoRepository => {
+    if (!todoRepository) {
+      todoRepository = new TodoRepository();
+    }
+    return todoRepository;
   };
 
   return {

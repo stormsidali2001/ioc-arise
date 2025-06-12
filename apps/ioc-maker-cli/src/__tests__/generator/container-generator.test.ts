@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { ContainerGenerator } from '../../generator/container-generator';
+import { ContainerGenerator } from '../../generator/flat/container-generator';
 import { ClassInfo, InjectionScope } from '../../types';
 import {
   basicManagedClasses,

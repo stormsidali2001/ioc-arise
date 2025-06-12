@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { DependencyResolver } from '../../generator/dependency-resolver';
+import { DependencyResolver } from '../../generator/flat/dependency-resolver';
 import {
   basicManagedClasses,
   transientClasses,

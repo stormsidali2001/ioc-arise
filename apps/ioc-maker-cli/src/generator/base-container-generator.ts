@@ -10,8 +10,8 @@ export abstract class BaseContainerGenerator {
   protected fileWriter: FileWriter;
   protected importGenerator: ImportGenerator;
 
-  constructor(outputPath: string, importGenerator: ImportGenerator) {
-    this.fileWriter = new FileWriter(outputPath);
+  constructor(fileWriter: FileWriter, importGenerator: ImportGenerator) {
+    this.fileWriter = fileWriter;
     this.importGenerator = importGenerator;
   }
 

@@ -27,5 +27,5 @@ export function detectCircularDependencies(classes: ClassInfo[]): string[][] {
 // Re-export the factory for advanced usage
 export { ContainerGeneratorFactory } from './container-generator-factory';
 export { BaseContainerGenerator } from './base-container-generator';
-export { FlatContainerGenerator } from './flat-container-generator';
-export { ModularContainerGenerator } from './modular-container-generator';
+export { FlatContainerGenerator } from './flat/flat-container-generator';
+export { ModularContainerGenerator } from './modular/modular-container-generator';

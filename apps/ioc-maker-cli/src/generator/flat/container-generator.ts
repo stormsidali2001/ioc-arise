@@ -1,5 +1,5 @@
-import { ClassInfo } from '../types';
-import { toVariableName } from '../utils/naming';
+import { ClassInfo } from '../../types';
+import { toVariableName } from '../../utils/naming';
 
 export class ContainerGenerator {
   private classes: ClassInfo[];
