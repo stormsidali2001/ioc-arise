@@ -1,5 +1,11 @@
 # @notjustcoders/ioc-arise
 
+## 1.0.5
+
+### Patch Changes
+
+- Bug Fix: The cli now throws errors when none injectable values: primitive types and interfaces that have no methods.
+
 ## 1.0.4
 
 ### Patch Changes

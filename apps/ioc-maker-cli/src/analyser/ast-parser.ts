@@ -9,8 +9,8 @@ export class ASTParser {
     const content = readFileSync(filePath, 'utf-8');
     const ast = ts.parse(content);
     return ast.root();
-  }
 
+  }
   findClassesImplementingInterfaces(root: any): any[] {
     return root.findAll({
       rule: {
@@ -231,5 +231,52 @@ export class ASTParser {
     }
     
     return typeAliases;
+  }
+
+  extractInterfaces(root: any): string[] {
+    const interfaces: string[] = [];
+    
+    try {
+      // Find all interface declarations
+      const interfaceNodes = root.findAll({
+        rule: {
+          kind: 'interface_declaration'
+        }
+      });
+      
+      logger.log(`Found ${interfaceNodes.length} interface declarations`);
+      
+      for (const interfaceNode of interfaceNodes) {
+        const interfaceText = interfaceNode.text();
+        logger.log(`Interface text: ${interfaceText}`);
+        
+        // Extract interface name using regex
+        const interfaceMatch = interfaceText.match(/interface\s+([A-Za-z_][A-Za-z0-9_]*)/);
+        if (interfaceMatch) {
+          const interfaceName = interfaceMatch[1];
+          
+          // Check if interface has at least one method
+          const methodNodes = interfaceNode.findAll({
+            rule: {
+              kind: 'method_signature'
+            }
+          });
+          
+          
+          // Consider interface valid if it has at least one method 
+          if (methodNodes.length > 0 ) {
+            interfaces.push(interfaceName);
+            logger.log(`Found valid interface: ${interfaceName} with ${methodNodes.length} methods `);
+          } else {
+            logger.log(`Skipping empty interface: ${interfaceName}`);
+          }
+        }
+      }
+    } catch (error) {
+      logger.warn('Warning: Could not extract interfaces:', {error});
+    }
+    
+    logger.log(`Final interfaces:`, {interfaces});
+    return interfaces;
   }
 }

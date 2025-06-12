@@ -23,7 +23,8 @@ await initializeOneLogger({
   description:"ioc-maker",
   tracer:{
     batchSize:1,
-  }
+  },
+  isDev:process.env.NODE_ENV === "development",
 
 
 })
@@ -77,7 +78,7 @@ await initializeOneLogger({
         excludePatterns: mergedOptions.exclude
       });
 
-      logger.info("Analysis results------------\n",{classes})
+      console.dir({classes},{depth:100})
 
       if (classes.length === 0) {
         console.log('⚠️  No classes implementing interfaces found.');
@@ -86,6 +87,7 @@ await initializeOneLogger({
         } else {
           console.log('   Make sure classes implement interfaces using the "implements" keyword.');
         }
+        process.exit(-1)
         return;
       }
 

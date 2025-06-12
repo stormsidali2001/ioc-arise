@@ -30,6 +30,7 @@ export const analyzeCommand = new Command('analyze')
       console.log("Analysis results------------\n")
       if (classes.length === 0) {
         console.log('⚠️  No classes implementing interfaces found.');
+        process.exit(-1)
         return;
       }
 

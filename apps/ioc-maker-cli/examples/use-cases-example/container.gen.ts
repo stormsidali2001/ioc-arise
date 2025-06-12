@@ -1,32 +1,36 @@
-import { UserController } from './use-cases/UserController';
-import { GetUserUseCase } from './use-cases/GetUserUseCase';
-import { CreateUserUseCase } from './use-cases/CreateUserUseCase';
 import { EmailService } from './services/EmailService';
 import { ApplicationService } from './services/ApplicationService';
 import { UserRepository } from './repositories/UserRepository';
-
-// Lazy loading setup for transient dependencies
-const createUserUseCaseFactory = (): CreateUserUseCase => new CreateUserUseCase(getUserRepository(), getEmailService());
+import { UserController } from './use-cases/UserController';
+import { GetUserUseCase } from './use-cases/GetUserUseCase';
+import { CreateUserUseCase } from './use-cases/CreateUserUseCase';
 
 // Lazy initialization variables for singletons
 let applicationService: ApplicationService | undefined;
 let userController: UserController | undefined;
 let getUserUseCase: GetUserUseCase | undefined;
-let emailService: EmailService | undefined;
+let createUserUseCase: CreateUserUseCase | undefined;
 let userRepository: UserRepository | undefined;
+let emailService: EmailService | undefined;
 
 // Lazy getter functions for singletons
+const getEmailService = (): EmailService => {
+  if (!emailService) {
+    emailService = new EmailService();
+  }
+  return emailService;
+};
 const getUserRepository = (): UserRepository => {
   if (!userRepository) {
     userRepository = new UserRepository();
   }
   return userRepository;
 };
-const getEmailService = (): EmailService => {
-  if (!emailService) {
-    emailService = new EmailService();
+const getCreateUserUseCase = (): CreateUserUseCase => {
+  if (!createUserUseCase) {
+    createUserUseCase = new CreateUserUseCase(getUserRepository(), getEmailService());
   }
-  return emailService;
+  return createUserUseCase;
 };
 const getGetUserUseCase = (): GetUserUseCase => {
   if (!getUserUseCase) {
@@ -36,7 +40,7 @@ const getGetUserUseCase = (): GetUserUseCase => {
 };
 const getUserController = (): UserController => {
   if (!userController) {
-    userController = new UserController(createUserUseCaseFactory(), getGetUserUseCase());
+    userController = new UserController(getCreateUserUseCase(), getGetUserUseCase());
   }
   return userController;
 };
@@ -48,12 +52,6 @@ const getApplicationService = (): ApplicationService => {
 };
 
 export const container = {
-  get UserController(): UserController {
-    return getUserController();
-  },
-  get GetUserUseCase(): GetUserUseCase {
-    return getGetUserUseCase();
-  },
   get IEmailService(): EmailService {
     return getEmailService();
   },
@@ -63,8 +61,14 @@ export const container = {
   get IUserRepository(): UserRepository {
     return getUserRepository();
   },
+  get UserController(): UserController {
+    return getUserController();
+  },
+  get GetUserUseCase(): GetUserUseCase {
+    return getGetUserUseCase();
+  },
   get CreateUserUseCase(): CreateUserUseCase {
-    return createUserUseCaseFactory();
+    return getCreateUserUseCase();
   },
 };
 

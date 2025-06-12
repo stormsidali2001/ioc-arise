@@ -15,45 +15,16 @@ export class ProjectAnalyzer {
   async analyzeProject(): Promise<ClassInfo[]> {
     const tsFiles = await this.fileDiscovery.findTypeScriptFiles();
     
-    const fileAnalysisPromises = tsFiles.map(filePath => 
-      this.classAnalyzer.analyzeFile(filePath)
-    );
-    
-    const fileClassesArrays = await Promise.all(fileAnalysisPromises);
-    const allClasses = fileClassesArrays.flat();
+    // Analyze all files in a single batch operation for better performance
+    const allClasses = await this.classAnalyzer.analyzeFiles(tsFiles);
 
-    // Filter classes to only include those that are used as dependencies
-    const filteredClasses = this.filterClassesByDependencyUsage(allClasses);
 
     // Validate that no interface is implemented by multiple classes
-    this.validateUniqueInterfaceImplementations(filteredClasses);
+    this.validateUniqueInterfaceImplementations(allClasses);
 
-    return filteredClasses;
+    return allClasses;
   }
 
-  private filterClassesByDependencyUsage(classes: ClassInfo[]): ClassInfo[] {
-    // Collect all dependencies from all classes
-    const allDependencies = new Set<string>();
-    
-    for (const classInfo of classes) {
-      for (const dependency of classInfo.dependencies) {
-        allDependencies.add(dependency);
-      }
-    }
-
-    // Filter classes to only include:
-    // 1. Classes that implement interfaces (these are typically services/repositories)
-    // 2. Classes without interfaces that are used as dependencies by other classes
-    return classes.filter(classInfo => {
-      // Always include classes with interfaces
-      if (classInfo.interfaceName) {
-        return true;
-      }
-      
-      // For classes without interfaces, include if they are used as dependencies or they have dependencies
-      return allDependencies.has(classInfo.name) || classInfo.dependencies.length > 0;
-    });
-  }
 
   private validateUniqueInterfaceImplementations(classes: ClassInfo[]): void {
     const interfaceToClassMap = new Map<string, ClassInfo[]>();
