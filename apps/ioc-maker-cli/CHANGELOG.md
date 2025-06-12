@@ -1,5 +1,11 @@
 # @notjustcoders/ioc-arise
 
+## 1.0.6
+
+### Patch Changes
+
+- Refactor the module container generator.
+
 ## 1.0.5
 
 ### Patch Changes
