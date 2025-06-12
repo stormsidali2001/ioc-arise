@@ -1,5 +1,11 @@
 # @notjustcoders/ioc-arise
 
+## 1.0.7
+
+### Patch Changes
+
+- refactor(ioc): extract shared instantiation and dependency resolution utilities
+
 ## 1.0.6
 
 ### Patch Changes
