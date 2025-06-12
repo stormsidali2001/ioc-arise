@@ -1,5 +1,11 @@
 # @notjustcoders/ioc-arise
 
+## 1.0.4
+
+### Patch Changes
+
+- Bug fix: include classes that have at least one dependency
+
 ## 1.0.3
 
 ### Patch Changes

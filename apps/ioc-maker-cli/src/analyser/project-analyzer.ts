@@ -50,8 +50,8 @@ export class ProjectAnalyzer {
         return true;
       }
       
-      // For classes without interfaces, only include if they are used as dependencies
-      return allDependencies.has(classInfo.name);
+      // For classes without interfaces, include if they are used as dependencies or they have dependencies
+      return allDependencies.has(classInfo.name) || classInfo.dependencies.length > 0;
     });
   }
 
