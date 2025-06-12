@@ -1,4 +1,5 @@
 import { ClassInfo } from '../../types';
+import { InstantiationUtils } from '../shared';
 
 /**
  * Responsible for generating module instantiation code.
@@ -58,6 +59,6 @@ export class ModuleInstantiationGenerator {
    * Utility method to convert strings to camelCase.
    */
   private camelCase(str: string): string {
-    return str.charAt(0).toLowerCase() + str.slice(1).replace(/[^a-zA-Z0-9]/g, '');
+    return InstantiationUtils.toCamelCase(str);
   }
 }

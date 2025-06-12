@@ -1,6 +1,6 @@
 import { ClassInfo } from '../../types';
-import { toVariableName } from '../../utils/naming';
 import { DependencyResolver } from './dependency-resolver';
+import { InstantiationUtils, DependencyResolverUtils } from '../shared';
 
 export class InstantiationGenerator {
   private classes: ClassInfo[];
@@ -29,10 +29,7 @@ export class InstantiationGenerator {
   }
 
   private separateClassesByScope() {
-    return {
-      singletonClasses: this.classes.filter(c => c.scope === 'singleton'),
-      transientClasses: this.classes.filter(c => c.scope === 'transient')
-    };
+    return InstantiationUtils.filterClassesByScope(this.classes);
   }
 
   private filterSingletonClassNames(sortedClasses: string[], singletonClasses: ClassInfo[]): string[] {
@@ -55,21 +52,18 @@ export class InstantiationGenerator {
   }
 
   private createTransientFactory(classInfo: ClassInfo): string {
-    const variableName = toVariableName(classInfo.name);
     const constructorArgs = this.generateConstructorArguments(classInfo);
-    
-    return constructorArgs
-      ? `const ${variableName}Factory = (): ${classInfo.name} => new ${classInfo.name}(${constructorArgs});`
-      : `const ${variableName}Factory = (): ${classInfo.name} => new ${classInfo.name}();`;
+    return InstantiationUtils.generateTransientFactory(classInfo, constructorArgs);
   }
 
   private generateSingletonVariables(singletonClassNames: string[]): string {
     if (singletonClassNames.length === 0) return '';
 
     const variables = singletonClassNames.map(className => {
-      const variableName = toVariableName(className);
-      return `let ${variableName}: ${className} | undefined;`;
-    });
+      const classInfo = this.classMap.get(className);
+      if (!classInfo) return '';
+      return InstantiationUtils.generateSingletonVariable(classInfo);
+    }).filter(Boolean);
 
     return [
       '// Lazy initialization variables for singletons',
@@ -94,15 +88,8 @@ export class InstantiationGenerator {
     const classInfo = this.classMap.get(className);
     if (!classInfo) return null;
 
-    const variableName = toVariableName(className);
-    const getterName = `get${className}`;
     const constructorArgs = this.generateConstructorArguments(classInfo);
-    
-    const instantiation = constructorArgs
-      ? `new ${className}(${constructorArgs})`
-      : `new ${className}()`;
-
-    return `const ${getterName} = (): ${className} => {\n  if (!${variableName}) {\n    ${variableName} = ${instantiation};\n  }\n  return ${variableName};\n};`;
+    return InstantiationUtils.generateSingletonGetter(classInfo, constructorArgs);
   }
 
   private generateConstructorArguments(classInfo: ClassInfo): string {
@@ -142,9 +129,6 @@ export class InstantiationGenerator {
   }
 
   private createManagedDependencyCall(depClassInfo: ClassInfo, implementingClass: string): string {
-    if (depClassInfo.scope === 'transient') {
-      return `${toVariableName(implementingClass)}Factory()`;
-    }
-    return `get${implementingClass}()`;
+    return InstantiationUtils.createManagedDependencyCall(depClassInfo, implementingClass);
   }
 }

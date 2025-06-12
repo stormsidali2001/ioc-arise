@@ -1,5 +1,6 @@
 import { ClassInfo } from '../../types';
 import { TopologicalSorter } from '../../utils/topological-sorter';
+import { InstantiationUtils, DependencyResolverUtils } from '../shared';
 
 /**
  * Responsible for generating module container functions.
@@ -98,9 +99,8 @@ export class ModuleContainerFunctionGenerator {
     
     for (const classInfo of moduleClasses) {
       if (classInfo.scope === 'transient') {
-        const instanceName = this.camelCase(classInfo.name);
-        const factoryName = `${instanceName}Factory`;
-        factoryFunctions.push(`  const ${factoryName} = (): ${classInfo.name} => new ${classInfo.name}();`);
+        const factory = InstantiationUtils.generateTransientFactory(classInfo);
+        factoryFunctions.push(`  ${factory}`);
       }
     }
     
@@ -116,8 +116,8 @@ export class ModuleContainerFunctionGenerator {
     const lazyInitializations: string[] = [];
     
     for (const classInfo of sortedSingletons) {
-      const instanceName = this.camelCase(classInfo.name);
-      lazyInitializations.push(`  let ${instanceName}: ${classInfo.name} | undefined;`);
+      const variable = InstantiationUtils.generateSingletonVariable(classInfo);
+      lazyInitializations.push(`  ${variable}`);
     }
     
     return lazyInitializations;
@@ -143,15 +143,12 @@ export class ModuleContainerFunctionGenerator {
    * Creates a getter function for a singleton class.
    */
   private createSingletonGetter(classInfo: ClassInfo, moduleClasses: ClassInfo[], moduleDeps: Set<string>): string {
-    const instanceName = this.camelCase(classInfo.name);
-    const getterName = `get${classInfo.name}`;
     const constructorArgs = this.buildConstructorArguments(classInfo, moduleClasses, moduleDeps);
+    const constructorArgsStr = constructorArgs.length > 0 ? constructorArgs.join(', ') : undefined;
     
-    const instantiation = constructorArgs.length > 0 ?
-      `new ${classInfo.name}(${constructorArgs.join(', ')})` :
-      `new ${classInfo.name}()`;
-    
-    return `  const ${getterName} = (): ${classInfo.name} => {\n    if (!${instanceName}) {\n      ${instanceName} = ${instantiation};\n    }\n    return ${instanceName};\n  };`;
+    const getter = InstantiationUtils.generateSingletonGetter(classInfo, constructorArgsStr);
+    // Add indentation for module context
+    return `  ${getter.replace(/\n/g, '\n  ')}`;
   }
 
   /**
@@ -205,15 +202,9 @@ export class ModuleContainerFunctionGenerator {
    * Finds a dependency from the same module.
    */
   private findInternalModuleDependency(dependency: string, moduleClasses: ClassInfo[]): string | null {
-    const depClass = moduleClasses.find(c => c.interfaceName === dependency);
+    const depClass = DependencyResolverUtils.findClassByInterface(dependency, moduleClasses);
     if (depClass) {
-      if (depClass.scope === 'transient') {
-        const depInstanceName = this.camelCase(depClass.name);
-        return `${depInstanceName}Factory()`;
-      } else {
-        const depGetterName = `get${depClass.name}`;
-        return `${depGetterName}()`;
-      }
+      return InstantiationUtils.createManagedDependencyCall(depClass, depClass.name);
     }
     return null;
   }
@@ -282,6 +273,6 @@ export class ModuleContainerFunctionGenerator {
    * Utility method to convert strings to camelCase.
    */
   private camelCase(str: string): string {
-    return str.charAt(0).toLowerCase() + str.slice(1).replace(/[^a-zA-Z0-9]/g, '');
+    return InstantiationUtils.toCamelCase(str);
   }
 }

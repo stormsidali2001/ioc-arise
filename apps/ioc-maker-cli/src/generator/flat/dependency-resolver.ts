@@ -1,5 +1,5 @@
 import { ClassInfo, ConstructorParameter } from '../../types';
-import { toVariableName } from '../../utils/naming';
+import { InstantiationUtils, DependencyResolverUtils } from '../shared';
 
 export class DependencyResolver {
   private classes: ClassInfo[];
@@ -9,13 +9,7 @@ export class DependencyResolver {
   }
 
   createInterfaceToClassMap(): Map<string, string> {
-    const interfaceToClassMap = new Map<string, string>();
-    for (const classInfo of this.classes) {
-      if (classInfo.interfaceName) {
-        interfaceToClassMap.set(classInfo.interfaceName, classInfo.name);
-      }
-    }
-    return interfaceToClassMap;
+    return DependencyResolverUtils.createInterfaceToClassMap(this.classes);
   }
 
   resolveDependencies(
@@ -31,17 +25,17 @@ export class DependencyResolver {
           const depClassInfo = classMap.get(implementingClass);
           if (depClassInfo && depClassInfo.scope === 'transient') {
             // For transient dependencies, use factory call
-            return `${toVariableName(implementingClass)}Factory()`;
+            return `${InstantiationUtils.toCamelCase(implementingClass)}Factory()`;
           }
-          return toVariableName(implementingClass);
+          return InstantiationUtils.toCamelCase(implementingClass);
         }
         // Check if dependency is a class name
         if (classMap.has(dep)) {
           const depClassInfo = classMap.get(dep);
           if (depClassInfo && depClassInfo.scope === 'transient') {
-            return `${toVariableName(dep)}Factory()`;
+            return `${InstantiationUtils.toCamelCase(dep)}Factory()`;
           }
-          return toVariableName(dep);
+          return InstantiationUtils.toCamelCase(dep);
         }
         // Check if dependency is a class that exists in the same file but not managed
         return this.createUnmanagedDependencyInstance(dep);
@@ -53,41 +47,20 @@ export class DependencyResolver {
   private createUnmanagedDependencyInstance(className: string): string {
     // Find the class info for this unmanaged dependency
     const classInfo = this.classes.find(c => c.name === className);
-    if (!classInfo || !classInfo.constructorParams.length) {
-      return `new ${className}()`;
-    }
-    
-    const args = this.generateConstructorArgs(classInfo.constructorParams);
-    return `new ${className}(${args})`;
+    return DependencyResolverUtils.createUnmanagedDependencyInstance(className, classInfo);
   }
 
   private generateConstructorArgs(params: ConstructorParameter[]): string {
-    return params.map(param => this.getDefaultValueForType(param.type, param.isOptional)).join(', ');
+    return DependencyResolverUtils.generateConstructorArgs(params);
   }
 
   getDefaultValueForType(type: string, isOptional: boolean): string {
-    if (isOptional) {
-      return 'undefined';
+    // For class types, try to find if it's a managed dependency
+    const classMap = new Map(this.classes.map(c => [c.name, c]));
+    if (classMap.has(type)) {
+      return InstantiationUtils.toCamelCase(type);
     }
     
-    // Handle primitive types
-    switch (type.toLowerCase()) {
-      case 'string':
-        return '"default"';
-      case 'number':
-        return '0';
-      case 'boolean':
-        return 'false';
-      case 'date':
-        return 'new Date()';
-      default:
-        // For class types, try to find if it's a managed dependency
-        const classMap = new Map(this.classes.map(c => [c.name, c]));
-        if (classMap.has(type)) {
-          return toVariableName(type);
-        }
-        // For unmanaged class types, create a simple instance
-        return `new ${type}()`;
-    }
+    return DependencyResolverUtils.getDefaultValueForType(type, isOptional);
   }
 }

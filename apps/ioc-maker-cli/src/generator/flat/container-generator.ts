@@ -1,5 +1,5 @@
 import { ClassInfo } from '../../types';
-import { toVariableName } from '../../utils/naming';
+import { InstantiationUtils } from '../shared/instantiation-utils';
 
 export class ContainerGenerator {
   private classes: ClassInfo[];
@@ -13,7 +13,7 @@ export class ContainerGenerator {
     const transientProperties: string[] = [];
 
     for (const classInfo of this.classes) {
-      const variableName = toVariableName(classInfo.name);
+      const variableName = InstantiationUtils.toCamelCase(classInfo.name);
       const interfaceName = classInfo.interfaceName || classInfo.name;
       const getterName = `get${classInfo.name}`;
       
