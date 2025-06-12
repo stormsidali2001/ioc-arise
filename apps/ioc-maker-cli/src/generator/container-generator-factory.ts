@@ -8,6 +8,9 @@ import { InstantiationGenerator } from './flat/instantiation-generator';
 import { ContainerGenerator as ContainerCodeGenerator } from './flat/container-generator';
 import { FileWriter } from './file-writer';
 import { GeneratorOptions, ClassInfo } from '../types';
+import { ModuleContainerFunctionGenerator } from './modular/module-container-function-generator';
+import { ModuleInstantiationGenerator } from './modular/module-instantiation-generator';
+import { ContainerAggregator } from './modular/container-aggregator';
 
 /**
  * Factory class for creating the appropriate container generator
@@ -35,12 +38,18 @@ export class ContainerGeneratorFactory {
       const moduleDependencyResolver = new ModuleDependencyResolver(classesOrModules);
       const allClasses = Array.from(classesOrModules.values()).flat();
       const importGenerator = new ImportGenerator(allClasses);
+      const moduleContainerFunctionGenerator = new ModuleContainerFunctionGenerator(classesOrModules);
+      const moduleInstantiationGenerator = new ModuleInstantiationGenerator(classesOrModules);
+      const containerAggregator = new ContainerAggregator();
 
       return new ModularContainerGenerator(
         fileWriter,
         classesOrModules,
         moduleDependencyResolver,
-        importGenerator
+        importGenerator,
+        moduleContainerFunctionGenerator,
+        moduleInstantiationGenerator,
+        containerAggregator
       );
     } else {
       // Backward compatibility: flat classes array - create dependencies and inject in constructor

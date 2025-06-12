@@ -23,14 +23,17 @@ export class ModularContainerGenerator extends BaseContainerGenerator {
     fileWriter: FileWriter,
     moduleGroupedClasses: Map<string, ClassInfo[]>,
     moduleDependencyResolver: ModuleDependencyResolver,
-    importGenerator: ImportGenerator
+    importGenerator: ImportGenerator,
+    moduleContainerFunctionGenerator: ModuleContainerFunctionGenerator,
+    moduleInstantiationGenerator: ModuleInstantiationGenerator,
+    containerAggregator: ContainerAggregator
   ) {
     super(fileWriter, importGenerator);
     this.moduleGroupedClasses = moduleGroupedClasses;
     this.moduleDependencyResolver = moduleDependencyResolver;
-    this.moduleContainerFunctionGenerator = new ModuleContainerFunctionGenerator(moduleGroupedClasses);
-    this.moduleInstantiationGenerator = new ModuleInstantiationGenerator(moduleGroupedClasses);
-    this.containerAggregator = new ContainerAggregator();
+    this.moduleContainerFunctionGenerator = moduleContainerFunctionGenerator;
+    this.moduleInstantiationGenerator = moduleInstantiationGenerator;
+    this.containerAggregator = containerAggregator;
   }
 
   generate(): void {
