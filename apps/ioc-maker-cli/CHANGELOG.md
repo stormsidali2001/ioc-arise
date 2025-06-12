@@ -1,5 +1,11 @@
 # @notjustcoders/ioc-arise
 
+## 1.0.3
+
+### Patch Changes
+
+- Throwing an error when an interface is implemented by two classes
+
 ## 1.0.2
 
 ### Patch Changes

@@ -25,6 +25,9 @@ export class ProjectAnalyzer {
     // Filter classes to only include those that are used as dependencies
     const filteredClasses = this.filterClassesByDependencyUsage(allClasses);
 
+    // Validate that no interface is implemented by multiple classes
+    this.validateUniqueInterfaceImplementations(filteredClasses);
+
     return filteredClasses;
   }
 
@@ -50,5 +53,38 @@ export class ProjectAnalyzer {
       // For classes without interfaces, only include if they are used as dependencies
       return allDependencies.has(classInfo.name);
     });
+  }
+
+  private validateUniqueInterfaceImplementations(classes: ClassInfo[]): void {
+    const interfaceToClassMap = new Map<string, ClassInfo[]>();
+    
+    // Group classes by their interface names
+    for (const classInfo of classes) {
+      if (classInfo.interfaceName) {
+        if (!interfaceToClassMap.has(classInfo.interfaceName)) {
+          interfaceToClassMap.set(classInfo.interfaceName, []);
+        }
+        interfaceToClassMap.get(classInfo.interfaceName)!.push(classInfo);
+      }
+    }
+
+    // Check for duplicate implementations
+    const duplicateInterfaces: string[] = [];
+    for (const [interfaceName, implementingClasses] of interfaceToClassMap) {
+      if (implementingClasses.length > 1) {
+        duplicateInterfaces.push(interfaceName);
+        console.error(`Error: Interface '${interfaceName}' is implemented by multiple classes:`);
+        for (const classInfo of implementingClasses) {
+          console.error(`  - ${classInfo.name} (${classInfo.filePath})`);
+        }
+      }
+    }
+
+    if (duplicateInterfaces.length > 0) {
+      throw new Error(
+        `Multiple classes implement the same interface(s): ${duplicateInterfaces.join(', ')}. ` +
+        'Each interface should only be implemented by one class for proper dependency injection.'
+      );
+    }
   }
 }
