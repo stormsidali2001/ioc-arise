@@ -5,12 +5,33 @@ import { ProductRepository } from './product/ProductRepository';
 import { ProductController } from './product/ProductController';
 import { CreateItemUseCase as ProductCreateItemUseCase } from './product/CreateItemUseCase';
 
-function createUserModuleContainer() {
+function createCoreModuleContainer() {
 
+  let productCreateItemUseCase: ProductCreateItemUseCase | undefined;
+  let productController: ProductController | undefined;
+  let productRepository: ProductRepository | undefined;
   let createItemUseCase: CreateItemUseCase | undefined;
   let userController: UserController | undefined;
   let userRepository: UserRepository | undefined;
 
+  const getProductCreateItemUseCase = (): ProductCreateItemUseCase => {
+    if (!productCreateItemUseCase) {
+      productCreateItemUseCase = new ProductCreateItemUseCase(getProductRepository());
+    }
+    return productCreateItemUseCase;
+  };
+  const getProductController = (): ProductController => {
+    if (!productController) {
+      productController = new ProductController(getProductCreateItemUseCase());
+    }
+    return productController;
+  };
+  const getProductRepository = (): ProductRepository => {
+    if (!productRepository) {
+      productRepository = new ProductRepository();
+    }
+    return productRepository;
+  };
   const getCreateItemUseCase = (): CreateItemUseCase => {
     if (!createItemUseCase) {
       createItemUseCase = new CreateItemUseCase(getUserRepository());
@@ -39,36 +60,7 @@ function createUserModuleContainer() {
         },
         get CreateItemUseCase(): CreateItemUseCase {
           return getCreateItemUseCase();
-        }
-  };
-}
-
-function createProductModuleContainer() {
-
-  let productCreateItemUseCase: ProductCreateItemUseCase | undefined;
-  let productController: ProductController | undefined;
-  let productRepository: ProductRepository | undefined;
-
-  const getProductCreateItemUseCase = (): ProductCreateItemUseCase => {
-    if (!productCreateItemUseCase) {
-      productCreateItemUseCase = new ProductCreateItemUseCase(getProductRepository());
-    }
-    return productCreateItemUseCase;
-  };
-  const getProductController = (): ProductController => {
-    if (!productController) {
-      productController = new ProductController(getProductCreateItemUseCase());
-    }
-    return productController;
-  };
-  const getProductRepository = (): ProductRepository => {
-    if (!productRepository) {
-      productRepository = new ProductRepository();
-    }
-    return productRepository;
-  };
-
-  return {
+        },
         get ProductRepository(): ProductRepository {
           return getProductRepository();
         },
@@ -81,11 +73,10 @@ function createProductModuleContainer() {
   };
 }
 
-const userModuleContainer = createUserModuleContainer();
-const productModuleContainer = createProductModuleContainer();
+const coreModuleContainer = createCoreModuleContainer();
 
 export const container = {
-  userModule: userModuleContainer,  productModule: productModuleContainer
+  coreModule: coreModuleContainer
 };
 
 export type Container = typeof container;

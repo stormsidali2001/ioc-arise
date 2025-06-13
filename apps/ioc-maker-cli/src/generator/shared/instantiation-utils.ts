@@ -1,5 +1,6 @@
 import { ClassInfo, ConstructorParameter } from '../../types';
 import { TopologicalSorter } from '../../utils/topological-sorter';
+import { ImportGenerator } from '../import-generator';
 
 /**
  * Shared utility class for instantiation-related functionality used by both
@@ -385,7 +386,7 @@ export class InstantiationUtils {
     dependency: string, 
     availableClasses: ClassInfo[], 
     interfaceToClassMap?: Map<string, string>,
-    importGenerator?: any,
+    importGenerator?: ImportGenerator,
     requestingClass?: ClassInfo
   ): string | null {
     // Try to find by direct class name match first (highest priority)

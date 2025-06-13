@@ -1,5 +1,11 @@
 # @notjustcoders/ioc-arise
 
+## 1.0.10
+
+### Patch Changes
+
+- refactor(ioc-maker-cli): improve module name sanitization and merge containers
+
 ## 1.0.9
 
 ### Patch Changes

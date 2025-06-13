@@ -50,8 +50,12 @@ export class ImportGenerator {
     for (let i = pathParts.length - 2; i >= 0; i--) {
       const part = pathParts[i];
       if (part && part !== '.' && part !== '..') {
-        moduleName = part.charAt(0).toUpperCase() + part.slice(1);
-        break;
+        // Sanitize the module name to ensure it's a valid variable name
+        const sanitized = part.replace(/[^a-zA-Z0-9]/g, '');
+        if (sanitized) {
+          moduleName = sanitized.charAt(0).toUpperCase() + sanitized.slice(1);
+          break;
+        }
       }
     }
     
@@ -60,7 +64,9 @@ export class ImportGenerator {
       moduleName = `Module${index + 1}`;
     }
     
-    return `${moduleName}${className}`;
+    // Ensure the final alias is a valid Pascal case variable name
+    const alias = `${moduleName}${className}`;
+    return alias.replace(/[^a-zA-Z0-9]/g, '');
   }
 
   /**
