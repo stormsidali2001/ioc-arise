@@ -22,12 +22,12 @@ function createUserModuleContainer() {
   };
 
   return {
-    get IUserService(): UserService {
-      return getUserService();
-    },
-    get IUserRepository(): UserRepository {
-      return getUserRepository();
-    }
+        get IUserService(): UserService {
+          return getUserService();
+        },
+        get IUserRepository(): UserRepository {
+          return getUserRepository();
+        }
   };
 }
 
@@ -50,12 +50,12 @@ function createTodoModuleContainer(userModuleContainer: ReturnType<typeof create
   };
 
   return {
-    get ITodoService(): TodoService {
-      return getTodoService();
-    },
-    get ITodoRepository(): TodoRepository {
-      return getTodoRepository();
-    }
+        get ITodoService(): TodoService {
+          return getTodoService();
+        },
+        get ITodoRepository(): TodoRepository {
+          return getTodoRepository();
+        }
   };
 }
 
@@ -63,8 +63,7 @@ const userModuleContainer = createUserModuleContainer();
 const todoModuleContainer = createTodoModuleContainer(userModuleContainer);
 
 export const container = {
-  userModule: userModuleContainer,
-  todoModule: todoModuleContainer
+  userModule: userModuleContainer,  todoModule: todoModuleContainer
 };
 
 export type Container = typeof container;

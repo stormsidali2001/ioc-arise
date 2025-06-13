@@ -1,5 +1,11 @@
 # @notjustcoders/ioc-arise
 
+## 1.0.8
+
+### Patch Changes
+
+- Refactor: Deleting the flat module generation for maintainability purposes, if no modules are specified all the classes get grouped into a core module. Refactoring the generator architecture.
+
 ## 1.0.7
 
 ### Patch Changes

@@ -1,14 +1,13 @@
 import { BaseContainerGenerator } from './base-container-generator';
-import { FlatContainerGenerator } from './flat/flat-container-generator';
 import { ModularContainerGenerator } from './modular/modular-container-generator';
-import { DependencyResolver } from '../analyser/dependency-resolver';
 import { ModuleDependencyResolver } from '../analyser/module-dependency-resolver';
 import { ImportGenerator } from './import-generator';
-import { InstantiationGenerator } from './flat/instantiation-generator';
-import { ContainerGenerator as ContainerCodeGenerator } from './flat/container-generator';
 import { FileWriter } from './file-writer';
-import { GeneratorOptions, ClassInfo } from '../types';
+import {  ClassInfo } from '../types';
 import { ModuleContainerFunctionGenerator } from './modular/module-container-function-generator';
+import { ModuleFunctionSignatureGenerator } from './modular/module-function-signature-generator';
+import { ModuleDependencyResolver as ModularModuleDependencyResolver } from './modular/module-dependency-resolver';
+import { ModuleFunctionBodyGenerator } from './modular/module-function-body-generator';
 import { ModuleInstantiationGenerator } from './modular/module-instantiation-generator';
 import { ContainerAggregator } from './modular/container-aggregator';
 
@@ -27,19 +26,26 @@ export class ContainerGeneratorFactory {
    * @returns The appropriate container generator instance with dependencies injected
    */
   static create(
-    classesOrModules: ClassInfo[] | Map<string, ClassInfo[]>, 
+    classesOrModules:  Map<string, ClassInfo[]>, 
     outputPath: string
   ): BaseContainerGenerator {
     // Create FileWriter instance that will be injected into generators
     const fileWriter = new FileWriter(outputPath);
 
-    if (classesOrModules instanceof Map) {
       // Module-based generation - create dependencies and inject in constructor
       const moduleDependencyResolver = new ModuleDependencyResolver(classesOrModules);
       const allClasses = Array.from(classesOrModules.values()).flat();
       const importGenerator = new ImportGenerator(allClasses);
-      const moduleContainerFunctionGenerator = new ModuleContainerFunctionGenerator(classesOrModules);
-      const moduleInstantiationGenerator = new ModuleInstantiationGenerator(classesOrModules);
+      const moduleFunctionSignatureGenerator = new ModuleFunctionSignatureGenerator();
+      const modularModuleDependencyResolver = new ModularModuleDependencyResolver(classesOrModules);
+      const moduleFunctionBodyGenerator = new ModuleFunctionBodyGenerator(modularModuleDependencyResolver);
+      const moduleContainerFunctionGenerator = new ModuleContainerFunctionGenerator(
+        classesOrModules,
+        moduleFunctionSignatureGenerator,
+        modularModuleDependencyResolver,
+        moduleFunctionBodyGenerator
+      );
+      const moduleInstantiationGenerator = new ModuleInstantiationGenerator();
       const containerAggregator = new ContainerAggregator();
 
       return new ModularContainerGenerator(
@@ -51,22 +57,7 @@ export class ContainerGeneratorFactory {
         moduleInstantiationGenerator,
         containerAggregator
       );
-    } else {
-      // Backward compatibility: flat classes array - create dependencies and inject in constructor
-      const dependencyResolver = new DependencyResolver(classesOrModules);
-      const importGenerator = new ImportGenerator(classesOrModules);
-      const instantiationGenerator = new InstantiationGenerator(classesOrModules);
-      const containerCodeGenerator = new ContainerCodeGenerator(classesOrModules);
-
-      return new FlatContainerGenerator(
-        fileWriter,
-        classesOrModules,
-        dependencyResolver,
-        importGenerator,
-        instantiationGenerator,
-        containerCodeGenerator
-      );
-    }
+  
   }
 
   /**
@@ -99,11 +90,7 @@ export class ContainerGeneratorFactory {
    * @param classesOrModules - The input to count modules from
    * @returns The number of modules, or 1 for flat structure
    */
-  static getModuleCount(classesOrModules: ClassInfo[] | Map<string, ClassInfo[]>): number {
-    if (classesOrModules instanceof Map) {
+  static getModuleCount(classesOrModules:  Map<string, ClassInfo[]>): number {
       return classesOrModules.size;
-    } else {
-      return 1; // Flat structure is considered as one implicit module
-    }
   }
 }

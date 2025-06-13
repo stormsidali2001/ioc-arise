@@ -110,7 +110,7 @@ await initializeOneLogger({
         }
       } else {
         // Backward compatibility: single default module
-        moduleGroupedClasses = new Map([['default', classes]]);
+        moduleGroupedClasses = new Map([['CoreModule', classes]]);
         
         if (mergedOptions.verbose) {
           console.log(`\n📋 Found ${classes.length} classes:`);
@@ -140,13 +140,7 @@ await initializeOneLogger({
 
       console.log("Generating container: generateContainerFile------------------>")
       // Generate container file
-      if (moduleResolver) {
         generateContainerFile(moduleGroupedClasses, outputPath);
-      } else {
-        // Backward compatibility
-        generateContainerFile(classes, outputPath);
-      }
-
 
       console.log(`✅ Container generated successfully!`);
       console.log(`   File: ${outputPath}`);

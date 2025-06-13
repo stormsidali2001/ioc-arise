@@ -61,33 +61,33 @@ function createUserModuleContainer() {
   };
 
   return {
-    get IGetUserInputPort(): GetUserUseCase {
-      return getGetUserUseCase();
-    },
-    get IGetTodosByUserInputPort(): GetTodosByUserUseCase {
-      return getGetTodosByUserUseCase();
-    },
-    get IDeleteUserInputPort(): DeleteUserUseCase {
-      return getDeleteUserUseCase();
-    },
-    get ICreateUserInputPort(): CreateUserUseCase {
-      return getCreateUserUseCase();
-    },
-    get IUserRepository(): UserRepository {
-      return getUserRepository();
-    },
-    get IGetUserOutputPort(): GetUserPresenter {
-      return getUserPresenterFactory();
-    },
-    get IGetTodosByUserOutputPort(): GetTodosByUserPresenter {
-      return getTodosByUserPresenterFactory();
-    },
-    get IDeleteUserOutputPort(): DeleteUserPresenter {
-      return deleteUserPresenterFactory();
-    },
-    get ICreateUserOutputPort(): CreateUserPresenter {
-      return createUserPresenterFactory();
-    }
+        get IGetUserInputPort(): GetUserUseCase {
+          return getGetUserUseCase();
+        },
+        get IGetTodosByUserInputPort(): GetTodosByUserUseCase {
+          return getGetTodosByUserUseCase();
+        },
+        get IDeleteUserInputPort(): DeleteUserUseCase {
+          return getDeleteUserUseCase();
+        },
+        get ICreateUserInputPort(): CreateUserUseCase {
+          return getCreateUserUseCase();
+        },
+        get IUserRepository(): UserRepository {
+          return getUserRepository();
+        },
+        get IGetUserOutputPort(): GetUserPresenter {
+          return getUserPresenterFactory();
+        },
+        get IGetTodosByUserOutputPort(): GetTodosByUserPresenter {
+          return getTodosByUserPresenterFactory();
+        },
+        get IDeleteUserOutputPort(): DeleteUserPresenter {
+          return deleteUserPresenterFactory();
+        },
+        get ICreateUserOutputPort(): CreateUserPresenter {
+          return createUserPresenterFactory();
+        }
   };
 }
 
@@ -135,33 +135,33 @@ function createTodoModuleContainer(userModuleContainer: ReturnType<typeof create
   };
 
   return {
-    get IUpdateTodoInputPort(): UpdateTodoUseCase {
-      return getUpdateTodoUseCase();
-    },
-    get IGetTodoInputPort(): GetTodoUseCase {
-      return getGetTodoUseCase();
-    },
-    get IDeleteTodoInputPort(): DeleteTodoUseCase {
-      return getDeleteTodoUseCase();
-    },
-    get ICreateTodoInputPort(): CreateTodoUseCase {
-      return getCreateTodoUseCase();
-    },
-    get ITodoRepository(): TodoRepository {
-      return getTodoRepository();
-    },
-    get IUpdateTodoOutputPort(): UpdateTodoPresenter {
-      return updateTodoPresenterFactory();
-    },
-    get IGetTodoOutputPort(): GetTodoPresenter {
-      return getTodoPresenterFactory();
-    },
-    get IDeleteTodoOutputPort(): DeleteTodoPresenter {
-      return deleteTodoPresenterFactory();
-    },
-    get ICreateTodoOutputPort(): CreateTodoPresenter {
-      return createTodoPresenterFactory();
-    }
+        get IUpdateTodoInputPort(): UpdateTodoUseCase {
+          return getUpdateTodoUseCase();
+        },
+        get IGetTodoInputPort(): GetTodoUseCase {
+          return getGetTodoUseCase();
+        },
+        get IDeleteTodoInputPort(): DeleteTodoUseCase {
+          return getDeleteTodoUseCase();
+        },
+        get ICreateTodoInputPort(): CreateTodoUseCase {
+          return getCreateTodoUseCase();
+        },
+        get ITodoRepository(): TodoRepository {
+          return getTodoRepository();
+        },
+        get IUpdateTodoOutputPort(): UpdateTodoPresenter {
+          return updateTodoPresenterFactory();
+        },
+        get IGetTodoOutputPort(): GetTodoPresenter {
+          return getTodoPresenterFactory();
+        },
+        get IDeleteTodoOutputPort(): DeleteTodoPresenter {
+          return deleteTodoPresenterFactory();
+        },
+        get ICreateTodoOutputPort(): CreateTodoPresenter {
+          return createTodoPresenterFactory();
+        }
   };
 }
 
@@ -169,8 +169,7 @@ const userModuleContainer = createUserModuleContainer();
 const todoModuleContainer = createTodoModuleContainer(userModuleContainer);
 
 export const container = {
-  userModule: userModuleContainer,
-  todoModule: todoModuleContainer
+  userModule: userModuleContainer,  todoModule: todoModuleContainer
 };
 
 export type Container = typeof container;
