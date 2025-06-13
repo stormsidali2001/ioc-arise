@@ -4,9 +4,15 @@ import { CreateItemUseCase } from './user/CreateItemUseCase';
 import { ProductRepository } from './product/ProductRepository';
 import { ProductController } from './product/ProductController';
 import { CreateItemUseCase as ProductCreateItemUseCase } from './product/CreateItemUseCase';
+import { OrderRepository } from './order/OrderRepository';
+import { OrderController } from './order/OrderController';
+import { CreateItemUseCase as OrderCreateItemUseCase } from './order/CreateItemUseCase';
 
 function createCoreModuleContainer() {
 
+  let orderCreateItemUseCase: OrderCreateItemUseCase | undefined;
+  let orderController: OrderController | undefined;
+  let orderRepository: OrderRepository | undefined;
   let productCreateItemUseCase: ProductCreateItemUseCase | undefined;
   let productController: ProductController | undefined;
   let productRepository: ProductRepository | undefined;
@@ -14,6 +20,24 @@ function createCoreModuleContainer() {
   let userController: UserController | undefined;
   let userRepository: UserRepository | undefined;
 
+  const getOrderCreateItemUseCase = (): OrderCreateItemUseCase => {
+    if (!orderCreateItemUseCase) {
+      orderCreateItemUseCase = new OrderCreateItemUseCase(getOrderRepository());
+    }
+    return orderCreateItemUseCase;
+  };
+  const getOrderController = (): OrderController => {
+    if (!orderController) {
+      orderController = new OrderController(getOrderCreateItemUseCase());
+    }
+    return orderController;
+  };
+  const getOrderRepository = (): OrderRepository => {
+    if (!orderRepository) {
+      orderRepository = new OrderRepository();
+    }
+    return orderRepository;
+  };
   const getProductCreateItemUseCase = (): ProductCreateItemUseCase => {
     if (!productCreateItemUseCase) {
       productCreateItemUseCase = new ProductCreateItemUseCase(getProductRepository());
@@ -69,6 +93,15 @@ function createCoreModuleContainer() {
         },
         get ProductCreateItemUseCase(): ProductCreateItemUseCase {
           return getProductCreateItemUseCase();
+        },
+        get OrderRepository(): OrderRepository {
+          return getOrderRepository();
+        },
+        get OrderController(): OrderController {
+          return getOrderController();
+        },
+        get OrderCreateItemUseCase(): OrderCreateItemUseCase {
+          return getOrderCreateItemUseCase();
         }
   };
 }
