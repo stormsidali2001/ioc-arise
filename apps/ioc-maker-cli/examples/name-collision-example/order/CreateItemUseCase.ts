@@ -12,4 +12,8 @@ export class CreateItemUseCase {
 // Simple interface for demonstration
 export interface IOrderRepository {
   saveOrderItem(item: { name: string; quantity: number; unitPrice: number }): Promise<void>;
+  updateOrderItem(id: string, item: { name: string; quantity: number; unitPrice: number }): Promise<void>;
+  deleteOrderItem(id: string): Promise<void>;
+  getOrderItem(id: string): Promise<{ name: string; quantity: number; unitPrice: number } | null>;
+  listOrderItems(): Promise<{ id: string; name: string; quantity: number; unitPrice: number }[]>;
 }

@@ -12,4 +12,8 @@ export class CreateItemUseCase {
 // Simple interface for demonstration
 export interface IProductRepository {
   saveProduct(item: { name: string; price: number; category: string }): Promise<void>;
+  updateProduct(id: string, item: { name: string; price: number; category: string }): Promise<void>;
+  deleteProduct(id: string): Promise<void>;
+  getProduct(id: string): Promise<{ name: string; price: number; category: string } | null>;
+  listProducts(): Promise<{ id: string; name: string; price: number; category: string }[]>;
 }

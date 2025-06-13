@@ -12,4 +12,8 @@ export class CreateItemUseCase {
 // Simple interface for demonstration
 export interface IUserRepository {
   saveUserItem(item: { name: string; description: string }): Promise<void>;
+  updateUserItem(id: string, item: { name: string; description: string }): Promise<void>;
+  deleteUserItem(id: string): Promise<void>;
+  getUserItem(id: string): Promise<{ name: string; description: string } | null>;
+  listUserItems(): Promise<{ id: string; name: string; description: string }[]>;
 }
