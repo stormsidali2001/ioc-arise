@@ -30,12 +30,12 @@ export class DependencyResolver {
       
       for (const dep of classInfo.dependencies) {
         // Check if dependency is a direct class name
-        if (classNames.has(dep)) {
-          managedDependencies.push(dep);
+        if (classNames.has(dep.name)) {
+          managedDependencies.push(dep.name);
         }
         // Check if dependency is an interface that maps to a managed class
-        else if (interfaceToClassMap.has(dep)) {
-          const implementingClass = interfaceToClassMap.get(dep)!;
+        else if (interfaceToClassMap.has(dep.name)) {
+          const implementingClass = interfaceToClassMap.get(dep.name)!;
           managedDependencies.push(implementingClass);
         }
       }

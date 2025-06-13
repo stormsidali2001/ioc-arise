@@ -1,9 +1,9 @@
 import { UserController } from './use-cases/UserController';
 import { GetUserUseCase } from './use-cases/GetUserUseCase';
 import { CreateUserUseCase } from './use-cases/CreateUserUseCase';
-import { UserRepository } from './repositories/UserRepository';
 import { EmailService } from './services/EmailService';
 import { ApplicationService } from './services/ApplicationService';
+import { UserRepository } from './repositories/UserRepository';
 
 function createCoreModuleContainer() {
 
@@ -52,14 +52,32 @@ function createCoreModuleContainer() {
   };
 
   return {
-        get IUserRepository(): UserRepository {
-          return getUserRepository();
+        get UserController(): UserController {
+          return getUserController();
+        },
+        get GetUserUseCase(): GetUserUseCase {
+          return getGetUserUseCase();
+        },
+        get CreateUserUseCase(): CreateUserUseCase {
+          return getCreateUserUseCase();
+        },
+        get EmailService(): EmailService {
+          return getEmailService();
         },
         get IEmailService(): EmailService {
           return getEmailService();
         },
+        get ApplicationService(): ApplicationService {
+          return getApplicationService();
+        },
         get IApplicationService(): ApplicationService {
           return getApplicationService();
+        },
+        get UserRepository(): UserRepository {
+          return getUserRepository();
+        },
+        get IUserRepository(): UserRepository {
+          return getUserRepository();
         }
   };
 }

@@ -97,7 +97,7 @@ export class ConsoleAnalysisRenderer implements RenderAnalysis {
           const isLastDep = depIndex === cls.dependencies.length - 1;
           const depPrefix = isLast ? '   ' : '│  ';
           const depSymbol = isLastDep ? '└─' : '├─';
-          const truncatedDep = this.truncateText(dep, 26);
+          const truncatedDep = this.truncateText(dep.name, 26);
           
           console.log(colors.blue + '│ ' + depPrefix + ' ' + colors.cyan + depSymbol + ' 🔗 ' + colors.yellow + truncatedDep + colors.reset);
         });

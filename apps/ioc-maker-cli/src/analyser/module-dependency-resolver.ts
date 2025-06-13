@@ -56,7 +56,7 @@ export class ModuleDependencyResolver {
       for (const classInfo of classes) {
         for (const dependency of classInfo.dependencies) {
           // Check if this dependency is an interface from another module
-          const dependencyModule = this.interfaceToModuleMap.get(dependency);
+          const dependencyModule = this.interfaceToModuleMap.get(dependency.name);
           
           if (dependencyModule && dependencyModule !== moduleName) {
             moduleDeps.add(dependencyModule);

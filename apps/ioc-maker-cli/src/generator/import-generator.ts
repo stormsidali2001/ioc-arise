@@ -110,9 +110,9 @@ export class ImportGenerator {
     for (const classInfo of this.classes) {
       for (const dep of classInfo.dependencies) {
         // If dependency is not a managed class, we need to import it
-        if (!classMap.has(dep)) {
+        if (!classMap.has(dep.name)) {
             //TODO: Think about this
-            // importSet.add(`import { ${dep} } from '${classInfo.importPath}';`);
+            // importSet.add(`import { ${dep.name} } from '${dep.importPath}';`);
         }
       }
     }

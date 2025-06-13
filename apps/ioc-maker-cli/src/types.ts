@@ -7,10 +7,15 @@ export interface ConstructorParameter {
   accessModifier?: 'private' | 'public' | 'protected';
 }
 
+export interface DependencyInfo {
+  name: string;
+  importPath: string;
+}
+
 export interface ClassInfo {
   name: string;
   filePath: string;
-  dependencies: string[];
+  dependencies: DependencyInfo[];
   constructorParams: ConstructorParameter[];
   interfaceName?: string;
   importPath: string;

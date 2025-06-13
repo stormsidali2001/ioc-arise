@@ -19,7 +19,7 @@ export class ModuleDependencyResolver {
     const constructorArgs: string[] = [];
     
     for (const dep of classInfo.dependencies) {
-      const arg = this.resolveDependencyArgument(dep, moduleClasses, moduleDeps, importGenerator, classInfo);
+      const arg = this.resolveDependencyArgument(dep.name, moduleClasses, moduleDeps, importGenerator, classInfo);
       if (arg) {
         constructorArgs.push(arg);
       }

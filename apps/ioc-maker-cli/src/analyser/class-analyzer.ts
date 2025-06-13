@@ -1,5 +1,5 @@
 import { relative } from 'path';
-import { ClassInfo, ConstructorParameter, InjectionScope } from '../types';
+import { ClassInfo, ConstructorParameter, InjectionScope, DependencyInfo } from '../types';
 import { ASTParser } from './ast-parser';
 import { container } from '../container';
 import {logger} from "@notjustcoders/one-logger-client-sdk"
@@ -77,6 +77,9 @@ export class ClassAnalyzer {
       // Extract import aliases for type resolution
       const typeAliases = this.astParser.extractTypeAliases(root);
       
+      // Extract import mappings for dependency paths
+      const importMappings = this.astParser.extractImportMappings(root);
+      
       // Extract JSDoc scope annotations at file level for this specific file
       const jsDocScopes = this.astParser.extractJSDocComments(root);
       logger.log('JSDoc scopes for file', {filePath, jsDocScopes})
@@ -100,7 +103,7 @@ export class ClassAnalyzer {
         }
         
         const constructorParams = this.astParser.extractConstructorParameters(classNode);
-        const dependencies = this.resolveDependencies(constructorParams, typeAliases, allInterfaces, allClassNames);
+        const dependencies = this.resolveDependencies(constructorParams, typeAliases, importMappings, allInterfaces, allClassNames);
         const importPath = this.generateImportPath(filePath, className);
         const scope = this.astParser.extractScopeFromJSDoc(className, jsDocScopes);
         
@@ -135,7 +138,7 @@ export class ClassAnalyzer {
         if (classText.includes('implements')) continue;
         
         const constructorParams = this.astParser.extractConstructorParameters(classNode);
-        const dependencies = this.resolveDependencies(constructorParams, typeAliases, allInterfaces, allClassNames);
+        const dependencies = this.resolveDependencies(constructorParams, typeAliases, importMappings, allInterfaces, allClassNames);
         const importPath = this.generateImportPath(filePath, className);
         const scope = this.astParser.extractScopeFromJSDoc(className, jsDocScopes);
         
@@ -164,27 +167,42 @@ export class ClassAnalyzer {
   private resolveDependencies(
     constructorParams: ConstructorParameter[], 
     typeAliases: Map<string, string>, 
+    importMappings: Map<string, string>,
     allInterfaces: Set<string>, 
     allClassNames: Set<string>
-  ): string[] {
+  ): DependencyInfo[] {
 
     const result = constructorParams
       .map(param => {
         // Resolve type aliases to actual interface names
         const resolvedType = typeAliases.get(param.type) || param.type;
-        return resolvedType;
+        return {
+          originalType: param.type,
+          resolvedType: resolvedType
+        };
       })
-      .filter(type => {
+      .filter(typeInfo => {
         
         console.log("all interfaces",allInterfaces)
         console.log("all classes",allClassNames)
         
-        const isValidInterface =  allInterfaces.has(type) ;
-        const isValidClass = allClassNames.has(type);
+        const isValidInterface = allInterfaces.has(typeInfo.resolvedType);
+        const isValidClass = allClassNames.has(typeInfo.resolvedType);
 
         return isValidClass || isValidInterface;
+      })
+      .map(typeInfo => {
+        // Get import path from import mappings, fallback to resolvedType if not found
+        const importPath = importMappings.get(typeInfo.originalType) || 
+                          importMappings.get(typeInfo.resolvedType) || 
+                          `./${typeInfo.resolvedType}`; // fallback for local types
+        
+        return {
+          name: typeInfo.resolvedType,
+          importPath: importPath
+        };
       });
-      return result
+      return result;
 
   }
 
@@ -195,7 +213,7 @@ export class ClassAnalyzer {
     
     classes.forEach(classInfo => {
       classInfo.dependencies.forEach(dep => {
-        referencedTypes.add(dep);
+        referencedTypes.add(dep.name);
       });
     });
     

@@ -334,16 +334,29 @@ export class InstantiationUtils {
       ? importGenerator.getClassAlias(classInfo) 
       : classInfo.name;
     
-    // Use aliased class name for property name to avoid duplicates
-    const propertyName = className;
+    const getters: string[] = [];
     
+    // Always create a getter for the class name
     if (this.isTransient(classInfo)) {
       const factoryCall = this.generateFunctionCall(this.generateFactoryName(className));
-      return this.generateGetterProperty(propertyName, className, factoryCall, '    ');
+      getters.push(this.generateGetterProperty(className, className, factoryCall, '    '));
     } else {
       const getterCall = this.generateFunctionCall(this.generateGetterName(className));
-      return this.generateGetterProperty(propertyName, className, getterCall, '    ');
+      getters.push(this.generateGetterProperty(className, className, getterCall, '    '));
     }
+    
+    // If there's an interface name and it's different from the class name, create an additional getter
+    if (classInfo.interfaceName && classInfo.interfaceName !== classInfo.name) {
+      if (this.isTransient(classInfo)) {
+        const factoryCall = this.generateFunctionCall(this.generateFactoryName(className));
+        getters.push(this.generateGetterProperty(classInfo.interfaceName, className, factoryCall, '    '));
+      } else {
+        const getterCall = this.generateFunctionCall(this.generateGetterName(className));
+        getters.push(this.generateGetterProperty(classInfo.interfaceName, className, getterCall, '    '));
+      }
+    }
+    
+    return getters.join(',\n');
   }
 
   /**
@@ -361,7 +374,7 @@ export class InstantiationUtils {
       
       // Only include dependencies that are within the same module and are singletons
       for (const dep of classInfo.dependencies) {
-        const depClass = allModuleClasses.find(c => c.interfaceName === dep && c.scope !== 'transient');
+        const depClass = allModuleClasses.find(c => c.interfaceName === dep.name && c.scope !== 'transient');
         if (depClass && classes.includes(depClass)) {
           dependencies.push(getUniqueId(depClass));
         }

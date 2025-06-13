@@ -43,7 +43,7 @@ export const analyzeCommand = new Command('analyze')
           console.log(`   Implements: ${cls.interfaceName}`);
         }
         if (cls.dependencies.length > 0) {
-          console.log(`   Dependencies: ${cls.dependencies.join(', ')}`);
+          console.log(`   Dependencies: ${cls.dependencies.map(dep => dep.name).join(', ')}`);
         } else {
           console.log(`   Dependencies: none`);
         }

@@ -233,6 +233,65 @@ export class ASTParser {
     return typeAliases;
   }
 
+  extractImportMappings(root: any): Map<string, string> {
+    const importMappings = new Map<string, string>();
+    
+    try {
+      // Find all import statements
+      const allImports = root.findAll({
+        rule: {
+          kind: 'import_statement'
+        }
+      });
+      
+      logger.log(`Found ${allImports.length} import statements for mapping`);
+      
+      for (const importNode of allImports) {
+        const importText = importNode.text();
+        logger.log(`Processing import: ${importText}`);
+        
+        // Extract import path
+        const pathMatch = importText.match(/from\s+['"]([^'"]+)['"]/);
+        if (!pathMatch) continue;
+        
+        const importPath = pathMatch[1];
+        
+        // Handle different import patterns
+        // Named imports: import { A, B } from './path'
+        const namedImportsMatch = importText.match(/import\s*{\s*([^}]+)\s*}\s*from/);
+        if (namedImportsMatch) {
+          const namedImports = namedImportsMatch[1].split(',');
+          for (const namedImport of namedImports) {
+            const trimmed = namedImport.trim();
+            // Handle aliases: A as B
+            const aliasMatch = trimmed.match(/([\w]+)\s+as\s+([\w]+)/);
+            if (aliasMatch) {
+              const [, original, alias] = aliasMatch;
+              importMappings.set(alias.trim(), importPath);
+              logger.log(`Mapped alias ${alias.trim()} -> ${importPath}`);
+            } else {
+              importMappings.set(trimmed, importPath);
+              logger.log(`Mapped named import ${trimmed} -> ${importPath}`);
+            }
+          }
+        }
+        
+        // Default imports: import A from './path'
+        const defaultImportMatch = importText.match(/import\s+([\w]+)\s+from/);
+        if (defaultImportMatch && !namedImportsMatch) {
+          const defaultImport = defaultImportMatch[1];
+          importMappings.set(defaultImport, importPath);
+          logger.log(`Mapped default import ${defaultImport} -> ${importPath}`);
+        }
+      }
+    } catch (error) {
+      logger.warn('Warning: Could not extract import mappings:', {error});
+    }
+    
+    logger.log(`Final import mappings:`, {importMappings});
+    return importMappings;
+  }
+
   extractInterfaces(root: any): string[] {
     const interfaces: string[] = [];
     

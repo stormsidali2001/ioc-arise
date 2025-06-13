@@ -20,8 +20,14 @@ function createCoreModuleContainer() {
   };
 
   return {
+        get TodoService(): TodoService {
+          return getTodoService();
+        },
         get ITodoService(): TodoService {
           return getTodoService();
+        },
+        get InMemoryTodoRepository(): InMemoryTodoRepository {
+          return getInMemoryTodoRepository();
         },
         get ITodoRepository(): InMemoryTodoRepository {
           return getInMemoryTodoRepository();

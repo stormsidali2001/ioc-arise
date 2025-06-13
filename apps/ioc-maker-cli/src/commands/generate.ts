@@ -6,6 +6,7 @@ import { generateContainerFile, detectCircularDependencies } from '../generator'
 import { ConfigManager } from '../utils/configManager';
 import { ModuleResolver } from '../utils/moduleResolver';
 import { initializeOneLogger ,logger} from '@notjustcoders/one-logger-client-sdk';
+import { DependencyInfo, ClassInfo } from '../types';
 
 export const generateCommand = new Command('generate')
   .description('Generate IoC container from TypeScript classes')
@@ -92,7 +93,7 @@ await initializeOneLogger({
       }
 
       // Group classes by modules if module resolver is available
-      let moduleGroupedClasses: Map<string, any[]>;
+      let moduleGroupedClasses: Map<string, ClassInfo[]>;
       if (moduleResolver) {
         moduleGroupedClasses = moduleResolver.groupClassesByModule(classes);
         
@@ -103,7 +104,7 @@ await initializeOneLogger({
             moduleClasses.forEach(cls => {
               console.log(`      • ${cls.name} (${cls.dependencies.length} dependencies)`);
               if (cls.dependencies.length > 0) {
-                console.log(`        Dependencies: ${cls.dependencies.join(', ')}`);
+                console.log(`        Dependencies: ${cls.dependencies.map(dep => dep.name).join(', ')}`);
               }
             });
           }
@@ -117,7 +118,7 @@ await initializeOneLogger({
           classes.forEach(cls => {
             console.log(`   • ${cls.name} (${cls.dependencies.length} dependencies)`);
             if (cls.dependencies.length > 0) {
-              console.log(`     Dependencies: ${cls.dependencies.join(', ')}`);
+              console.log(`     Dependencies: ${cls.dependencies.map(dep => dep.name).join(', ')}`);
             }
           });
         }

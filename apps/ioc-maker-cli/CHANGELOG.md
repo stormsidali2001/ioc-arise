@@ -1,5 +1,11 @@
 # @notjustcoders/ioc-arise
 
+## 1.0.11
+
+### Patch Changes
+
+- feat: enhance dependency tracking with import paths and concrete class access
+
 ## 1.0.10
 
 ### Patch Changes

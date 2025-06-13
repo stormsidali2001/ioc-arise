@@ -79,6 +79,9 @@ function createCoreModuleContainer() {
         get UserRepository(): UserRepository {
           return getUserRepository();
         },
+        get IUserRepository(): UserRepository {
+          return getUserRepository();
+        },
         get UserController(): UserController {
           return getUserController();
         },
@@ -88,6 +91,9 @@ function createCoreModuleContainer() {
         get ProductRepository(): ProductRepository {
           return getProductRepository();
         },
+        get IProductRepository(): ProductRepository {
+          return getProductRepository();
+        },
         get ProductController(): ProductController {
           return getProductController();
         },
@@ -95,6 +101,9 @@ function createCoreModuleContainer() {
           return getProductCreateItemUseCase();
         },
         get OrderRepository(): OrderRepository {
+          return getOrderRepository();
+        },
+        get IOrderRepository(): OrderRepository {
           return getOrderRepository();
         },
         get OrderController(): OrderController {
