@@ -1,5 +1,11 @@
 # @notjustcoders/ioc-arise
 
+## 1.0.9
+
+### Patch Changes
+
+- feat(ioc): add name collision handling with import aliases
+
 ## 1.0.8
 
 ### Patch Changes

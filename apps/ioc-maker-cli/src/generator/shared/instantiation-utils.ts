@@ -48,11 +48,35 @@ export class InstantiationUtils {
   /**
    * Creates a map of interface names to their implementing class names.
    */
-  static createInterfaceToClassMap(classes: ClassInfo[]): Map<string, string> {
+  static createInterfaceToClassMap(classes: ClassInfo[], importGenerator?: any): Map<string, string> {
     const interfaceToClassMap = new Map<string, string>();
+    const classNameCounts = new Map<string, number>();
+    
+    // First pass: count occurrences of each class name
     for (const classInfo of classes) {
+      const count = classNameCounts.get(classInfo.name) || 0;
+      classNameCounts.set(classInfo.name, count + 1);
+    }
+    
+    const classNameIndices = new Map<string, number>();
+    
+    for (const classInfo of classes) {
+      const className = importGenerator ? importGenerator.getClassAlias(classInfo) : classInfo.name;
+      
       if (classInfo.interfaceName) {
-        interfaceToClassMap.set(classInfo.interfaceName, classInfo.name);
+        // Map interface name to class name
+        interfaceToClassMap.set(classInfo.interfaceName, className);
+      } else {
+        // For classes without interfaces, map class name to itself
+        // If there are multiple classes with the same name, use the aliased name
+        const baseClassName = classInfo.name;
+        if (classNameCounts.get(baseClassName)! > 1) {
+          // Use the aliased name for disambiguation
+          interfaceToClassMap.set(baseClassName, className);
+        } else {
+          // Single occurrence, use the original name
+          interfaceToClassMap.set(baseClassName, className);
+        }
       }
     }
     return interfaceToClassMap;
@@ -133,6 +157,16 @@ export class InstantiationUtils {
    * Generates a constructor instantiation expression.
    */
   static generateConstructorCall(className: string, constructorArgs?: string): string {
+    return constructorArgs
+      ? `new ${className}(${constructorArgs})`
+      : `new ${className}()`;
+  }
+
+  /**
+   * Generates a constructor instantiation expression with alias support.
+   */
+  static generateConstructorCallWithAlias(classInfo: any, constructorArgs?: string, importGenerator?: any): string {
+    const className = importGenerator ? importGenerator.getClassAlias(classInfo) : classInfo.name;
     return constructorArgs
       ? `new ${className}(${constructorArgs})`
       : `new ${className}()`;
@@ -225,30 +259,33 @@ export class InstantiationUtils {
   /**
    * Generates factory functions for transient classes.
    */
-  static generateTransientFactory(classInfo: ClassInfo, constructorArgs?: string): string {
-    const factoryName = this.generateFactoryName(classInfo.name);
-    const constructorCall = this.generateConstructorCall(classInfo.name, constructorArgs);
+  static generateTransientFactory(classInfo: ClassInfo, constructorArgs?: string, importGenerator?: any): string {
+    const className = importGenerator ? importGenerator.getClassAlias(classInfo) : classInfo.name;
+    const factoryName = this.generateFactoryName(className);
+    const constructorCall = this.generateConstructorCallWithAlias(classInfo, constructorArgs, importGenerator);
     
-    return `const ${factoryName} = (): ${classInfo.name} => ${constructorCall};`;
+    return `const ${factoryName} = (): ${className} => ${constructorCall};`;
   }
 
   /**
    * Generates a singleton variable declaration.
    */
-  static generateSingletonVariable(classInfo: ClassInfo): string {
-    const instanceName = this.generateInstanceName(classInfo.name);
-    return `let ${instanceName}: ${classInfo.name} | undefined;`;
+  static generateSingletonVariable(classInfo: ClassInfo, importGenerator?: any): string {
+    const className = importGenerator ? importGenerator.getClassAlias(classInfo) : classInfo.name;
+    const instanceName = this.generateInstanceName(className);
+    return `let ${instanceName}: ${className} | undefined;`;
   }
 
   /**
    * Generates a singleton getter function.
    */
-  static generateSingletonGetter(classInfo: ClassInfo, constructorArgs?: string): string {
-    const instanceName = this.generateInstanceName(classInfo.name);
-    const getterName = this.generateGetterName(classInfo.name);
-    const instantiation = this.generateConstructorCall(classInfo.name, constructorArgs);
+  static generateSingletonGetter(classInfo: ClassInfo, constructorArgs?: string, importGenerator?: any): string {
+    const className = importGenerator ? importGenerator.getClassAlias(classInfo) : classInfo.name;
+    const instanceName = this.generateInstanceName(className);
+    const getterName = this.generateGetterName(className);
+    const instantiation = this.generateConstructorCallWithAlias(classInfo, constructorArgs, importGenerator);
     
-    return `const ${getterName} = (): ${classInfo.name} => {\n  if (!${instanceName}) {\n    ${instanceName} = ${instantiation};\n  }\n  return ${instanceName};\n};`;
+    return `const ${getterName} = (): ${className} => {\n  if (!${instanceName}) {\n    ${instanceName} = ${instantiation};\n  }\n  return ${instanceName};\n};`;
   }
 
   /**
@@ -264,12 +301,15 @@ export class InstantiationUtils {
   /**
    * Creates a managed dependency call based on class scope.
    */
-  static createManagedDependencyCall(classInfo: ClassInfo, implementingClass: string): string {
+  static createManagedDependencyCall(classInfo: ClassInfo, implementingClass: string, importGenerator?: any): string {
+    // Use aliased class name if available
+    const aliasedClassName = importGenerator ? importGenerator.getClassAlias(classInfo) : implementingClass;
+    
     if (this.isTransient(classInfo)) {
-      const factoryName = this.generateFactoryName(implementingClass);
+      const factoryName = this.generateFactoryName(aliasedClassName);
       return this.generateFunctionCall(factoryName);
     }
-    const getterName = this.generateGetterName(implementingClass);
+    const getterName = this.generateGetterName(aliasedClassName);
     return this.generateFunctionCall(getterName);
   }
 
@@ -285,15 +325,23 @@ export class InstantiationUtils {
   /**
    * Creates a module export getter.
    */
-  static createModuleExportGetter(classInfo: ClassInfo): string {
+  static createModuleExportGetter(classInfo: ClassInfo, importGenerator?: any): string {
     const interfaceName = this.getInterfaceOrClassName(classInfo);
     
+    // Use alias if available, otherwise use class name
+    const className = importGenerator && importGenerator.getClassAlias 
+      ? importGenerator.getClassAlias(classInfo) 
+      : classInfo.name;
+    
+    // Use aliased class name for property name to avoid duplicates
+    const propertyName = className;
+    
     if (this.isTransient(classInfo)) {
-      const factoryCall = this.generateFunctionCall(this.generateFactoryName(classInfo.name));
-      return this.generateGetterProperty(interfaceName, classInfo.name, factoryCall, '    ');
+      const factoryCall = this.generateFunctionCall(this.generateFactoryName(className));
+      return this.generateGetterProperty(propertyName, className, factoryCall, '    ');
     } else {
-      const getterCall = this.generateFunctionCall(this.generateGetterName(classInfo.name));
-      return this.generateGetterProperty(interfaceName, classInfo.name, getterCall, '    ');
+      const getterCall = this.generateFunctionCall(this.generateGetterName(className));
+      return this.generateGetterProperty(propertyName, className, getterCall, '    ');
     }
   }
 
@@ -304,6 +352,9 @@ export class InstantiationUtils {
     // Build dependency graph for classes within the module
     const dependencyGraph = new Map<string, string[]>();
     
+    // Create unique identifiers for classes to handle name collisions
+    const getUniqueId = (classInfo: ClassInfo) => `${classInfo.name}:${classInfo.filePath}`;
+    
     for (const classInfo of classes) {
       const dependencies: string[] = [];
       
@@ -311,19 +362,19 @@ export class InstantiationUtils {
       for (const dep of classInfo.dependencies) {
         const depClass = allModuleClasses.find(c => c.interfaceName === dep && c.scope !== 'transient');
         if (depClass && classes.includes(depClass)) {
-          dependencies.push(depClass.name);
+          dependencies.push(getUniqueId(depClass));
         }
       }
       
-      dependencyGraph.set(classInfo.name, dependencies);
+      dependencyGraph.set(getUniqueId(classInfo), dependencies);
     }
     
     // Use TopologicalSorter to sort the classes
     const sortResult = TopologicalSorter.sort(dependencyGraph);
     
-    // Map sorted class names back to ClassInfo objects
-    const classMap = new Map(classes.map(c => [c.name, c]));
-    return sortResult.sorted.map(className => classMap.get(className)!).filter(Boolean);
+    // Map sorted unique IDs back to ClassInfo objects
+    const classMap = new Map(classes.map(c => [getUniqueId(c), c]));
+    return sortResult.sorted.map(uniqueId => classMap.get(uniqueId)!).filter(Boolean);
   }
 
   /**
@@ -333,27 +384,47 @@ export class InstantiationUtils {
   static resolveBasicDependency(
     dependency: string, 
     availableClasses: ClassInfo[], 
-    interfaceToClassMap?: Map<string, string>
+    interfaceToClassMap?: Map<string, string>,
+    importGenerator?: any,
+    requestingClass?: ClassInfo
   ): string | null {
-    // Try to find by interface name first
+    // Try to find by direct class name match first (highest priority)
+    const directClassMatches = availableClasses.filter(c => c.name === dependency);
+    if (directClassMatches.length > 0) {
+      let selectedMatch = directClassMatches[0];
+      
+      // If there are multiple matches and we have context about the requesting class,
+      // prefer the one from the same directory/domain
+      if (directClassMatches.length > 1 && requestingClass) {
+        const requestingDir = requestingClass.filePath.split('/').slice(0, -1).join('/');
+        const sameDirectoryMatch = directClassMatches.find(c => {
+          const candidateDir = c.filePath.split('/').slice(0, -1).join('/');
+          return candidateDir === requestingDir;
+        });
+        if (sameDirectoryMatch) {
+          selectedMatch = sameDirectoryMatch;
+        }
+      }
+      
+      if (selectedMatch) {
+        const aliasedName = importGenerator ? importGenerator.getClassAlias(selectedMatch) : selectedMatch.name;
+        return this.createManagedDependencyCall(selectedMatch, aliasedName, importGenerator);
+      }
+    }
+
+    // Try to find by interface name
     const depClass = availableClasses.find(c => c.interfaceName === dependency);
     if (depClass) {
-      return this.createManagedDependencyCall(depClass, depClass.name);
+      return this.createManagedDependencyCall(depClass, depClass.name, importGenerator);
     }
 
-    // Try to find by direct class name match
-    const directClassMatch = availableClasses.find(c => c.name === dependency);
-    if (directClassMatch) {
-      return this.createManagedDependencyCall(directClassMatch, directClassMatch.name);
-    }
-
-    // Try to find by class name using interface map
+    // Try to find by class name using interface map (lowest priority)
     if (interfaceToClassMap) {
       const implementingClass = interfaceToClassMap.get(dependency);
       if (implementingClass) {
         const depClassInfo = availableClasses.find(c => c.name === implementingClass);
         if (depClassInfo) {
-          return this.createManagedDependencyCall(depClassInfo, implementingClass);
+          return this.createManagedDependencyCall(depClassInfo, implementingClass, importGenerator);
         }
       }
     }
@@ -376,14 +447,15 @@ export class InstantiationUtils {
   static generateTransientFactoriesSection(
     classes: ClassInfo[], 
     constructorArgsResolver: (classInfo: ClassInfo) => string,
-    indentation: string = ''
+    indentation: string = '',
+    importGenerator?: any
   ): string[] {
     const transientClasses = this.getTransientClasses(classes);
     
     return this.generateCodeSection(transientClasses, 
       (classInfo) => {
         const constructorArgs = constructorArgsResolver(classInfo);
-        return this.generateTransientFactory(classInfo, constructorArgs);
+        return this.generateTransientFactory(classInfo, constructorArgs, importGenerator);
       }, 
       indentation
     );
@@ -395,13 +467,14 @@ export class InstantiationUtils {
    */
   static generateSingletonVariablesSection(
     classes: ClassInfo[], 
-    indentation: string = ''
+    indentation: string = '',
+    importGenerator?: any
   ): string[] {
     const singletonClasses = this.getSingletonClasses(classes);
     const sortedSingletons = this.sortClassesByDependencies(singletonClasses, classes);
     
     return this.generateCodeSection(sortedSingletons, 
-      (classInfo) => this.generateSingletonVariable(classInfo), 
+      (classInfo) => this.generateSingletonVariable(classInfo, importGenerator), 
       indentation
     );
   }
@@ -413,7 +486,8 @@ export class InstantiationUtils {
   static generateSingletonGettersSection(
     classes: ClassInfo[], 
     constructorArgsResolver: (classInfo: ClassInfo) => string,
-    indentation: string = ''
+    indentation: string = '',
+    importGenerator?: any
   ): string[] {
     const singletonClasses = this.getSingletonClasses(classes);
     const sortedSingletons = this.sortClassesByDependencies(singletonClasses, classes);
@@ -421,7 +495,7 @@ export class InstantiationUtils {
     return this.generateCodeSection(sortedSingletons, 
       (classInfo) => {
         const constructorArgs = constructorArgsResolver(classInfo);
-        return this.generateSingletonGetter(classInfo, constructorArgs);
+        return this.generateSingletonGetter(classInfo, constructorArgs, importGenerator);
       }, 
       indentation,
       true // multiline content
@@ -434,12 +508,13 @@ export class InstantiationUtils {
    */
   static generateModuleExportsSection(
     classes: ClassInfo[], 
-    indentation: string = ''
+    indentation: string = '',
+    importGenerator?: any
   ): string[] {
-    const classesWithInterface = classes.filter(c => c.interfaceName);
-    
-    return this.generateCodeSection(classesWithInterface, 
-      (classInfo) => this.createModuleExportGetter(classInfo), 
+    // Export all classes, not just those with interfaces
+    // Controllers and other concrete classes should also be accessible
+    return this.generateCodeSection(classes, 
+      (classInfo) => this.createModuleExportGetter(classInfo, importGenerator), 
       indentation,
       true // multiline content
     );
@@ -599,12 +674,13 @@ export class InstantiationUtils {
    */
   static generateModuleFunctionBody(
     moduleClasses: ClassInfo[], 
-    constructorArgsResolver: (classInfo: ClassInfo) => string
+    constructorArgsResolver: (classInfo: ClassInfo) => string,
+    importGenerator?: any
   ): string {
-    const factoryFunctions = this.generateTransientFactoriesSection(moduleClasses, constructorArgsResolver, '  ');
-    const lazyInitializations = this.generateSingletonVariablesSection(moduleClasses, '  ');
-    const lazyGetters = this.generateSingletonGettersSection(moduleClasses, constructorArgsResolver, '  ');
-    const moduleExports = this.generateModuleExportsSection(moduleClasses, '    ');
+    const factoryFunctions = this.generateTransientFactoriesSection(moduleClasses, constructorArgsResolver, '  ', importGenerator);
+    const lazyInitializations = this.generateSingletonVariablesSection(moduleClasses, '  ', importGenerator);
+    const lazyGetters = this.generateSingletonGettersSection(moduleClasses, constructorArgsResolver, '  ', importGenerator);
+    const moduleExports = this.generateModuleExportsSection(moduleClasses, '    ', importGenerator);
     
     const returnObject = this.generateModuleFunctionReturnObject(moduleExports);
     

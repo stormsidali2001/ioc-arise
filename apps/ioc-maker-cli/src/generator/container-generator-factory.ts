@@ -43,7 +43,8 @@ export class ContainerGeneratorFactory {
         classesOrModules,
         moduleFunctionSignatureGenerator,
         modularModuleDependencyResolver,
-        moduleFunctionBodyGenerator
+        moduleFunctionBodyGenerator,
+        importGenerator
       );
       const moduleInstantiationGenerator = new ModuleInstantiationGenerator();
       const containerAggregator = new ContainerAggregator();

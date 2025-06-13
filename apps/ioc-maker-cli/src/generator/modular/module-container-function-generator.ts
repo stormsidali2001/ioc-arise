@@ -12,17 +12,20 @@ export class ModuleContainerFunctionGenerator {
   private signatureGenerator: ModuleFunctionSignatureGenerator;
   private dependencyResolver: ModuleDependencyResolver;
   private bodyGenerator: ModuleFunctionBodyGenerator;
+  private importGenerator: any;
 
   constructor(
     moduleGroupedClasses: Map<string, ClassInfo[]>,
     signatureGenerator: ModuleFunctionSignatureGenerator,
     dependencyResolver: ModuleDependencyResolver,
-    bodyGenerator: ModuleFunctionBodyGenerator
+    bodyGenerator: ModuleFunctionBodyGenerator,
+    importGenerator: any
   ) {
     this.moduleGroupedClasses = moduleGroupedClasses;
     this.signatureGenerator = signatureGenerator;
     this.dependencyResolver = dependencyResolver;
     this.bodyGenerator = bodyGenerator;
+    this.importGenerator = importGenerator;
   }
 
   /**
@@ -51,7 +54,7 @@ export class ModuleContainerFunctionGenerator {
     
     const functionParams = this.signatureGenerator.generateFunctionParameters(moduleDeps);
     const functionSignature = this.signatureGenerator.createFunctionSignature(moduleFunctionName, functionParams);
-    const functionBody = this.bodyGenerator.generateModuleFunctionBody(moduleClasses, moduleDeps);
+    const functionBody = this.bodyGenerator.generateModuleFunctionBody(moduleClasses, moduleDeps, this.importGenerator);
     
     return `${functionSignature} {\n${functionBody}\n}`;
   }

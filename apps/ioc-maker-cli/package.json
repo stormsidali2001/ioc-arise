@@ -1,6 +1,6 @@
 {
   "name": "@notjustcoders/ioc-arise",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "A CLI tool to generate type-safe IoC containers for TypeScript projects with automatic dependency injection",
   "main": "dist/index.js",
   "bin": {

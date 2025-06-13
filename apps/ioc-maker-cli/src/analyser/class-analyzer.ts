@@ -189,9 +189,6 @@ export class ClassAnalyzer {
   }
 
   private filterUnusedClasses(classes: ClassInfo[]): ClassInfo[] {
-    // Create sets of all class names and interface names for quick lookup
-    const allClassNames = new Set(classes.map(c => c.name));
-    const allInterfaceNames = new Set(classes.map(c => c.interfaceName).filter(Boolean));
     
     // Create a set of all dependencies (class names and interface names referenced by others)
     const referencedTypes = new Set<string>();
@@ -205,15 +202,15 @@ export class ClassAnalyzer {
     // Filter out classes that:
     // 1. Have zero dependencies AND
     // 2. Are not referenced by any other class (neither their class name nor interface name)
+    // Note: Controllers and other entry points should be kept even if not referenced
     const filteredClasses = classes.filter(classInfo => {
-      const hasNoDependencies = classInfo.dependencies.length === 0;
       const isClassReferenced = referencedTypes.has(classInfo.name);
       const isInterfaceReferenced = classInfo.interfaceName ? referencedTypes.has(classInfo.interfaceName) : false;
       
       // Keep the class if:
-      // - It has dependencies, OR
+      // - It has dependencies (including controllers that inject services), OR
       // - It is referenced by others (either by class name or interface name)
-      const shouldKeep = !hasNoDependencies || isClassReferenced || isInterfaceReferenced;
+      const shouldKeep = classInfo.dependencies.length > 0 || isClassReferenced || isInterfaceReferenced;
       
       if (!shouldKeep) {
         logger.log(`Filtering out unused class: ${classInfo.name} (no dependencies and not referenced by others)`);
