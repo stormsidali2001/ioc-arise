@@ -7,7 +7,7 @@ hero:
     alt: A terminal
     file: ../../assets/hero-terminal.png
   tagline: |
-    Zero decorators. Zero configuration. Maximum productivity.
+    Arise type-safe IoC containers from your code. Zero overhead, zero coupling.
   actions:
     - text: Get Started Now
       link: /guides/getting-started/
@@ -23,7 +23,7 @@ hero:
       variant: minimal
 ---
 
-import { Card, CardGrid, Badge, Tabs, TabItem,Steps } from '@astrojs/starlight/components';
+import { Card, CardGrid, Badge, Tabs, TabItem,Steps,FileTree } from '@astrojs/starlight/components';
 
 ## Get Started in 3 Simple Steps
 
@@ -31,27 +31,37 @@ import { Card, CardGrid, Badge, Tabs, TabItem,Steps } from '@astrojs/starlight/c
 
 1. **Create Your Interfaces and Classes**
 
-   Define your TypeScript interfaces and classes with proper dependency injection patterns:
-   ```typescript
+   Organize your TypeScript interfaces and classes with proper dependency injection patterns:
 
-   // interfaces/IUserService.ts
-   export interface IUserService {
-     getUser(id: string): Promise<User>;
-   }
-   // interfaces/IUserRepository.ts
-   export interface IUserRepository {
-     findById(id: string): Promise<User | null>;
-   }
-   ```
+   <FileTree>
+   - src/
+     - user/
+       - interfaces/
+         - IUserService.ts
+         - IUserRepository.ts
+       - services/
+         - UserService.ts
+         - UserRepository.ts
+     - todo/
+       - interfaces/
+         - ITodoService.ts
+         - ITodoRepository.ts
+       - services/
+         - TodoService.ts
+         - TodoRepository.ts
+   </FileTree>
 
+   Each service class uses constructor injection for its dependencies:
    ```typescript
-   // services/UserService.ts
    export class UserService implements IUserService {
      constructor(private userRepository: IUserRepository) {}
-       // ...code
    }
-   // repositories/UserRepository.ts
-   export class UserRepository implements IUserRepository {/* code*/}
+   export class TodoService implements ITodoService {
+     constructor(
+       private todoRepository: ITodoRepository,
+       private userRepository: IUserRepository
+     ) {}
+   }
    ```
 
 2. **Configure Your IoC Modules**
@@ -61,12 +71,6 @@ import { Card, CardGrid, Badge, Tabs, TabItem,Steps } from '@astrojs/starlight/c
    ```json
    {
      "source": ".",
-     "output": "container.gen.ts",
-     "exclude": [
-       "**/*.test.ts",
-       "**/*.spec.ts"
-     ],
-     "verbose": true,
      "modules": {
        "UserModule": [
          "user/**"
@@ -86,29 +90,56 @@ import { Card, CardGrid, Badge, Tabs, TabItem,Steps } from '@astrojs/starlight/c
    npx @notjustcoders/ioc-arise generate
    ```
 
+   This generates a type-safe container with all dependencies automatically resolved:
+
+   ```typescript
+   // container.gen.ts (generated)
+   import { createUserModuleContainer } from './UserModule.gen';
+   import { createTodoModuleContainer } from './TodoModule.gen';
+
+   const userModuleContainer = createUserModuleContainer();
+   const todoModuleContainer = createTodoModuleContainer(userModuleContainer);
+
+   export const container = {
+     userModule: userModuleContainer,
+     todoModule: todoModuleContainer
+   };
+
+   export type Container = typeof container;
+   ```
+
    Then use your generated container in your application:
 
    ```typescript
    import { container } from './container.gen';
 
    // Get fully resolved instances with all dependencies injected
-   const userService = container.coreModule.UserService;
-   const user = await userService.getUser('123');
+   const userService = container.userModule.UserService;
+   const user = await userService.createUser('John Doe', 'john@example.com');
+
+   const todoService = container.todoModule.TodoService;
+   const todo = await todoService.createTodo('Learn IoC Arise', user.id);
    ```
 
 </Steps>
 
 <CardGrid>
   <Card title="🚀 Zero Configuration" icon="rocket">
-    No decorators, no manual wiring. Just write clean TypeScript code and let IoC Arise handle the rest.
+    No decorators, annotations, or manual wiring required. Write pure TypeScript classes and interfaces - IoC Arise automatically discovers and wires your dependencies.
   </Card>
-  <Card title="🔒 Type Safety" icon="approve-check-circle">
-    Full TypeScript support with compile-time dependency validation and IntelliSense autocompletion.
+  <Card title="🔒 100% Type Safe" icon="approve-check">
+    Generated containers are fully typed with compile-time validation. Get IntelliSense autocompletion and catch dependency errors before runtime.
   </Card>
-  <Card title="⚡ Lightning Fast" icon="rocket">
-    Generates optimized containers in milliseconds. Perfect for both development and production builds.
+  <Card title="⚡ Blazing Fast" icon="forward">
+     Powered by AST-grep (built with Rust) for lightning-fast AST parsing and analysis. Generates optimized dependency containers in milliseconds with zero runtime overhead.
+   </Card>
+  <Card title="🎯 Smart Dependency Analysis" icon="magnifier">
+    Automatically detects circular dependencies, missing implementations, and provides clear error messages with suggested fixes.
   </Card>
-  <Card title="🎯 Smart Analysis" icon="magnifier">
-    Automatically detects circular dependencies and provides helpful error messages for quick resolution.
+  <Card title="🏗️ Modular Architecture" icon="puzzle">
+    Organize code into logical modules with cross-module dependency support. Perfect for microservices and large-scale applications.
+  </Card>
+  <Card title="🔄 Zero Coupling" icon="seti:config">
+    Your business logic stays clean and framework-agnostic. No vendor lock-in - remove IoC Arise anytime without code changes.
   </Card>
 </CardGrid>

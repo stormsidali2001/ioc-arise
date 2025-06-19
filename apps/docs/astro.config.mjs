@@ -18,7 +18,7 @@ export default defineConfig({
           title: 'IoC Arise',
           description: 'A powerful TypeScript IoC container generator CLI tool',
           social: [
-              { icon: 'github', label: 'GitHub', href: 'https://github.com/spithacode/ioc-maker' },
+              { icon: 'github', label: 'GitHub', href: 'https://github.com/stormsidali2001/ioc-arise' },
               { icon: 'external', label: 'NotJustCoders', href: 'https://notjustcoders.com' }
           ],
           customCss: [
