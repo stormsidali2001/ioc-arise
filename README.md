@@ -1,84 +1,193 @@
-# Turborepo starter
+# IoC Arise
 
-This Turborepo starter is maintained by the Turborepo core team.
+> **Arise type-safe IoC containers from your code. Zero overhead, zero coupling.**
 
-## Using this example
+A powerful TypeScript IoC container generator CLI tool that automatically creates type-safe dependency injection containers from your existing code. No decorators, no annotations, no manual wiring required.
 
-Run the following command:
+[![npm version](https://badge.fury.io/js/@notjustcoders%2Fioc-arise.svg)](https://www.npmjs.com/package/@notjustcoders/ioc-arise)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Documentation](https://img.shields.io/badge/docs-ioc--arise.notjustcoders.com-blue)](https://ioc-arise.notjustcoders.com)
 
-```sh
-npx create-turbo@latest
+## ✨ Features
+
+- 🚀 **Zero Configuration** - No decorators, annotations, or manual wiring required
+- 🔒 **100% Type Safe** - Generated containers are fully typed with compile-time validation
+- ⚡ **Blazing Fast** - Powered by AST-grep (built with Rust) for lightning-fast analysis
+- 🎯 **Smart Dependency Analysis** - Automatically detects circular dependencies and missing implementations
+- 🏗️ **Modular Architecture** - Organize code into logical modules with cross-module dependency support
+- 🔄 **Zero Coupling** - Your business logic stays clean and framework-agnostic
+- 📊 **Advanced Features** - Supports scopes (singleton/transient), name collision handling, and more
+
+## 🚀 Quick Start
+
+### Installation
+
+```bash
+# Install globally
+npm install -g @notjustcoders/ioc-arise
+
+# Or use with your package manager
+pnpm add -D @notjustcoders/ioc-arise
 ```
 
-## What's inside?
+### Basic Usage
 
-This Turborepo includes the following packages/apps:
+1. **Create your interfaces and classes:**
 
-### Apps and Packages
+```typescript
+// IUserService.ts
+export interface IUserService {
+  createUser(name: string, email: string): Promise<User>;
+}
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+// UserService.ts
+export class UserService implements IUserService {
+  constructor(private userRepository: IUserRepository) {}
+  
+  async createUser(name: string, email: string): Promise<User> {
+    // Implementation
+  }
+}
+```
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+2. **Generate your container:**
 
-### Utilities
+```bash
+npx ioc-arise generate
+```
 
-This Turborepo has some additional tools already setup for you:
+3. **Use the generated container:**
 
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
+```typescript
+import { container } from './container.gen';
 
-### Build
+const userService = container.coreModule.UserService;
+const user = await userService.createUser('John Doe', 'john@example.com');
+```
 
-To build all apps and packages, run the following command:
+## 📖 Documentation
+
+For comprehensive documentation, examples, and advanced usage patterns, visit:
+
+**🌐 [ioc-arise.notjustcoders.com](https://ioc-arise.notjustcoders.com)**
+
+### Key Documentation Sections:
+
+- [**Getting Started**](https://ioc-arise.notjustcoders.com/guides/getting-started/) - Quick setup guide
+- [**Examples**](https://ioc-arise.notjustcoders.com/examples/) - Real-world usage patterns
+- [**CLI Reference**](https://ioc-arise.notjustcoders.com/reference/cli-reference/) - Complete command reference
+- [**Configuration**](https://ioc-arise.notjustcoders.com/reference/configuration/) - Advanced configuration options
+
+## 🏗️ Project Structure
+
+This is a monorepo containing:
 
 ```
-cd my-turborepo
+ioc-maker/
+├── apps/
+│   ├── docs/                    # Documentation website (Astro + Starlight)
+│   └── ioc-maker-cli/           # CLI tool package
+├── packages/
+│   ├── eslint-config/           # Shared ESLint configuration
+│   └── typescript-config/       # Shared TypeScript configuration
+└── examples/                    # Example projects
+```
+
+## 🛠️ Development
+
+### Prerequisites
+
+- Node.js >= 18
+- pnpm (recommended package manager)
+
+### Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/spithacode/ioc-maker.git
+cd ioc-maker
+
+# Install dependencies
+pnpm install
+
+# Build all packages
 pnpm build
-```
 
-### Develop
-
-To develop all apps and packages, run the following command:
-
-```
-cd my-turborepo
+# Start development
 pnpm dev
 ```
 
-### Remote Caching
+### Available Scripts
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
+- `pnpm build` - Build all packages
+- `pnpm dev` - Start development mode
+- `pnpm lint` - Run linting
+- `pnpm format` - Format code with Prettier
+- `pnpm check-types` - Type checking
 
-Turborepo can use a technique known as [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
+### Working with the CLI
 
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
+```bash
+# Navigate to CLI package
+cd apps/ioc-maker-cli
 
+# Build the CLI
+pnpm build
+
+# Test with examples
+pnpm test1:generate  # Clean architecture example
+pnpm test2:generate  # Circular dependencies example
+pnpm test3:generate  # Simple modules example
+# ... more test scripts available
 ```
-cd my-turborepo
-npx turbo login
+
+### Working with Documentation
+
+```bash
+# Navigate to docs
+cd apps/docs
+
+# Start development server
+pnpm dev
+
+# Build for production
+pnpm build
 ```
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
+## 📝 Examples
 
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
+The repository includes comprehensive examples demonstrating various patterns:
 
-```
-npx turbo link
-```
+- **Minimal Todo** - Basic repository pattern
+- **Simple Modules** - Cross-module dependencies
+- **Clean Architecture** - Advanced architectural patterns
+- **Use Cases** - Classes without interfaces
+- **Name Collision** - Handling duplicate class names
+- **Circular Dependencies** - Error detection and handling
+- **Scope Management** - Singleton vs Transient lifecycles
 
-## Useful Links
+## 🤝 Contributing
 
-Learn more about the power of Turborepo:
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
-- [Tasks](https://turborepo.com/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.com/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.com/docs/reference/configuration)
-- [CLI Usage](https://turborepo.com/docs/reference/command-line-reference)
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🔗 Links
+
+- **Documentation**: [ioc-arise.notjustcoders.com](https://ioc-arise.notjustcoders.com)
+- **npm Package**: [@notjustcoders/ioc-arise](https://www.npmjs.com/package/@notjustcoders/ioc-arise)
+- **GitHub**: [spithacode/ioc-maker](https://github.com/spithacode/ioc-maker)
+- **Website**: [NotJustCoders](https://notjustcoders.com)
+
+## 🙏 Acknowledgments
+
+- Built with [AST-grep](https://ast-grep.github.io/) for fast TypeScript parsing
+- Documentation powered by [Astro](https://astro.build/) and [Starlight](https://starlight.astro.build/)
+- Monorepo managed with [Turbo](https://turbo.build/)
+
+---
+
+**Made with ❤️ by the NotJustCoders team**

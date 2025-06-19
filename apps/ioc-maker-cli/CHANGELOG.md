@@ -1,5 +1,11 @@
 # @notjustcoders/ioc-arise
 
+## 1.1.0
+
+### Minor Changes
+
+- Chore: docs: update package metadata and add contributing guide
+
 ## 1.0.12
 
 ### Patch Changes
