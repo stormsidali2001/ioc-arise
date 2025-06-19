@@ -6,8 +6,7 @@ import tailwindcss from '@tailwindcss/vite';
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://stormsidali2001.github.io',
-  base: '/ioc-arise',
+  site: 'https://ioc-arise.notjustcoders.com',
   markdown:{
 
 	},
