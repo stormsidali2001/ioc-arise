@@ -1,0 +1,370 @@
+---
+title: CLI Reference
+description: Complete reference for IoC Arise CLI commands and options
+sidebar:
+  order: 1
+---
+
+# CLI Reference
+
+IoC Arise provides a powerful command-line interface for generating type-safe IoC containers, analyzing dependencies, and visualizing project structure.
+
+## Installation
+
+```bash
+npm install -g @notjustcoders/ioc-arise
+# or
+pnpm add -g @notjustcoders/ioc-arise
+```
+
+## Global Usage
+
+```bash
+ioc-arise [command] [options]
+```
+
+If no command is provided, the help message will be displayed.
+
+## Commands
+
+### `generate`
+
+Generate IoC container from TypeScript classes.
+
+```bash
+ioc-arise generate [options]
+```
+
+#### Options
+
+| Option | Short | Description | Default |
+|--------|-------|-------------|----------|
+| `--source <dir>` | `-s` | Source directory to scan | `src` |
+| `--output <file>` | `-o` | Output file path | `container.gen.ts` |
+| `--interface <pattern>` | `-i` | Interface name pattern to match (regex) | `I[A-Z].*` |
+| `--exclude <patterns...>` | `-e` | Exclude patterns for files | `[]` |
+| `--check-cycles` | | Only check for circular dependencies without generating | `false` |
+| `--verbose` | | Enable verbose logging | `false` |
+
+#### Examples
+
+```bash
+# Basic generation
+ioc-arise generate
+
+# Custom source and output
+ioc-arise generate --source ./src --output ./generated/container.ts
+
+# With interface pattern
+ioc-arise generate --interface "I[A-Z].*"
+
+# Exclude test files
+ioc-arise generate --exclude "**/*.test.ts" "**/*.spec.ts"
+
+# Check for circular dependencies only
+ioc-arise generate --check-cycles
+
+# Verbose output
+ioc-arise generate --verbose
+```
+
+### `analyze`
+
+Analyze project and show detected classes without generating container.
+
+```bash
+ioc-arise analyze [options]
+```
+
+#### Options
+
+| Option | Short | Description | Default |
+|--------|-------|-------------|----------|
+| `--source <dir>` | `-s` | Source directory to scan | `src` |
+| `--interface <pattern>` | `-i` | Interface name pattern to match (regex) | `I[A-Z].*` |
+| `--exclude <patterns...>` | `-e` | Exclude patterns for files | `[]` |
+
+#### Examples
+
+```bash
+# Basic analysis
+ioc-arise analyze
+
+# Analyze specific directory
+ioc-arise analyze --source ./modules
+
+# With custom interface pattern
+ioc-arise analyze --interface ".*Service$"
+
+# Exclude specific files
+ioc-arise analyze --exclude "**/*.test.ts"
+```
+
+#### Sample Output
+
+```
+🔍 Analyzing directory: /path/to/src
+
+📋 Found 3 classes:
+
+📦 UserService
+   File: /path/to/src/services/UserService.ts
+   Implements: IUserService
+   Dependencies: IUserRepository, IEmailService
+
+📦 UserRepository
+   File: /path/to/src/repositories/UserRepository.ts
+   Implements: IUserRepository
+   Dependencies: none
+
+📦 EmailService
+   File: /path/to/src/services/EmailService.ts
+   Implements: IEmailService
+   Dependencies: none
+
+✅ No circular dependencies found.
+```
+
+### `visualize`
+
+Visualize project dependencies and analysis results.
+
+```bash
+ioc-arise visualize [options]
+```
+
+#### Options
+
+| Option | Short | Description | Default |
+|--------|-------|-------------|----------|
+| `--source <dir>` | `-s` | Source directory to scan | `src` |
+| `--interface <pattern>` | `-i` | Interface name pattern to match (regex) | `I[A-Z].*` |
+| `--exclude <patterns...>` | `-e` | Exclude patterns for files | `[]` |
+| `--renderer <type>` | `-r` | Renderer type (console) | `console` |
+
+#### Examples
+
+```bash
+# Basic visualization
+ioc-arise visualize
+
+# With console renderer (default)
+ioc-arise visualize --renderer console
+
+# Visualize specific directory
+ioc-arise visualize --source ./modules
+```
+
+## Configuration File
+
+IoC Arise supports configuration via `ioc.config.json` file in your project root. CLI options take precedence over configuration file settings.
+
+### Configuration Schema
+
+```json
+{
+  "source": "src",
+  "output": "container.gen.ts",
+  "interface": "I[A-Z].*",
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ],
+  "checkCycles": false,
+  "verbose": false,
+  "modules": {
+    "UserModule": ["user/**"],
+    "TodoModule": ["todo/**"]
+  }
+}
+```
+
+### Configuration Options
+
+| Option | Type | Description | Default |
+|--------|------|-------------|----------|
+| `source` | `string` | Source directory to scan | `"src"` |
+| `output` | `string` | Output file path | `"container.gen.ts"` |
+| `interface` | `string` | Interface name pattern (regex) | `"I[A-Z].*"` |
+| `exclude` | `string[]` | File patterns to exclude | `[]` |
+| `checkCycles` | `boolean` | Only check circular dependencies | `false` |
+| `verbose` | `boolean` | Enable verbose logging | `false` |
+| `modules` | `Record<string, string[]>` | Module definitions | `undefined` |
+
+### Module Configuration
+
+The `modules` option allows you to organize your classes into logical modules:
+
+```json
+{
+  "modules": {
+    "UserModule": [
+      "user/**",
+      "services/UserService.ts"
+    ],
+    "TodoModule": [
+      "todo/**",
+      "services/TodoService.ts"
+    ],
+    "SharedModule": [
+      "shared/**",
+      "utils/**"
+    ]
+  }
+}
+```
+
+## Interface Pattern Matching
+
+The `--interface` option accepts regular expressions to match interface names:
+
+### Common Patterns
+
+| Pattern | Description | Matches |
+|---------|-------------|----------|
+| `I[A-Z].*` | Interfaces starting with 'I' followed by uppercase | `IUserService`, `IRepository` |
+| `.*Service$` | Interfaces ending with 'Service' | `UserService`, `EmailService` |
+| `.*Repository$` | Interfaces ending with 'Repository' | `UserRepository`, `TodoRepository` |
+| `^(I\|Abstract).*` | Interfaces starting with 'I' or 'Abstract' | `IService`, `AbstractService` |
+
+### Examples
+
+```bash
+# Match interfaces starting with 'I'
+ioc-arise generate --interface "I[A-Z].*"
+
+# Match interfaces ending with 'Service'
+ioc-arise generate --interface ".*Service$"
+
+# Match multiple patterns (use config file)
+# ioc.config.json: { "interface": "(I[A-Z].*\|.*Service$)" }
+```
+
+## File Exclusion Patterns
+
+The `--exclude` option supports glob patterns to exclude files:
+
+### Common Exclusion Patterns
+
+```bash
+# Exclude test files
+ioc-arise generate --exclude "**/*.test.ts" "**/*.spec.ts"
+
+# Exclude specific directories
+ioc-arise generate --exclude "**/tests/**" "**/mocks/**"
+
+# Exclude by file extension
+ioc-arise generate --exclude "**/*.d.ts" "**/*.js"
+
+# Complex patterns
+ioc-arise generate --exclude "**/{test,spec,mock}/**" "**/*.{test,spec}.ts"
+```
+
+## Error Handling
+
+### Common Errors and Solutions
+
+#### Circular Dependencies
+
+```
+❌ Circular dependencies detected:
+   1. UserService → IEmailService (EmailService) → IUserService (UserService)
+```
+
+**Solution:** Refactor your code to break the circular dependency by introducing an abstraction or using events.
+
+#### No Classes Found
+
+```
+⚠️  No classes implementing interfaces found.
+   Make sure classes implement interfaces matching pattern: I[A-Z].*
+```
+
+**Solutions:**
+- Ensure your classes implement interfaces
+- Check the interface pattern matches your naming convention
+- Verify the source directory is correct
+
+#### Module Configuration Errors
+
+```
+❌ Module configuration errors:
+   Module 'UserModule' has no matching files
+```
+
+**Solution:** Check that module patterns match existing files in your project.
+
+## Integration Examples
+
+### Package.json Scripts
+
+```json
+{
+  "scripts": {
+    "ioc:generate": "ioc-arise generate",
+    "ioc:analyze": "ioc-arise analyze",
+    "ioc:check": "ioc-arise generate --check-cycles",
+    "ioc:verbose": "ioc-arise generate --verbose"
+  }
+}
+```
+
+### CI/CD Integration
+
+```yaml
+# GitHub Actions example
+- name: Generate IoC Container
+  run: |
+    npm install -g @notjustcoders/ioc-arise
+    ioc-arise generate --check-cycles
+    ioc-arise generate
+```
+
+### Pre-commit Hook
+
+```bash
+#!/bin/sh
+# .git/hooks/pre-commit
+ioc-arise generate --check-cycles
+if [ $? -ne 0 ]; then
+  echo "❌ Circular dependencies detected. Commit aborted."
+  exit 1
+fi
+```
+
+## Related Examples
+
+- [Minimal Todo Example](../examples/minimal-todo) - Basic IoC container generation
+- [Simple Modules Example](../examples/simple-modules) - Multi-module configuration
+- [Clean Architecture Example](../examples/clean-architecture) - Complex project structure
+- [Circular Dependencies Example](../examples/circular-deps-classes) - Handling circular dependencies
+- [Scope Example](../examples/scope-example) - Service lifecycle management
+
+## Troubleshooting
+
+### Debug Mode
+
+Use `--verbose` flag to get detailed information about the generation process:
+
+```bash
+ioc-arise generate --verbose
+```
+
+### Common Issues
+
+1. **TypeScript compilation errors**: Ensure your TypeScript project compiles successfully
+2. **Missing dependencies**: Check that all imported dependencies are properly installed
+3. **File permissions**: Ensure the CLI has write permissions to the output directory
+4. **Large projects**: Consider using `--exclude` patterns to reduce analysis scope
+
+### Getting Help
+
+```bash
+# Show general help
+ioc-arise --help
+
+# Show command-specific help
+ioc-arise generate --help
+ioc-arise analyze --help
+ioc-arise visualize --help
+```

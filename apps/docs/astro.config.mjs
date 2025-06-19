@@ -30,24 +30,22 @@ export default defineConfig({
           },
           sidebar: [
               {
-                  label: 'Getting Started',
+                  label: 'Guides',
                   items: [
+                      { label: 'Getting Started', link: '/guides/getting-started/' },
                   ],
               },
               {
-                  label: 'Guides',
-                  items: [
-                  ],
+                  label: 'Examples',
+                  autogenerate:{directory:"examples"}
               },
               {
                   label: 'Reference',
                   items: [
+                      { label: 'CLI Reference', link: '/reference/cli-reference/' },
+                      { label: 'Configuration', link: '/reference/configuration/' },
+                      { label: 'API Reference', link: '/reference/api-reference/' },
                   ],
-              },
-
-              {
-                  label: 'Examples',
-                  autogenerate:{directory:"examples"}
               },
           ],
       }),

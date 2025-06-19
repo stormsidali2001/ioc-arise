@@ -1,0 +1,75 @@
+---
+title: Getting Started
+description: Quick start guide for ioc-arise
+---
+
+## Installation
+
+```bash
+pnpm add -D ioc-arise
+```
+
+## Usage
+
+1. **Generate IoC Container**
+```bash
+   npx ioc-arise generate --source ./src --output ./src/container.ts
+```
+
+2. **Use the Container**
+ ```typescript
+ import { container } from './container';
+ 
+ const userService = container.coreModule.UserService;
+ ```
+
+## Simple Configuration
+
+Create `ioc.config.json` in your project root:
+
+```json
+{
+  "source": "./src",
+  "output": "./src/container.ts",
+  "interface": "I*",
+  "exclude": ["**/*.test.ts", "**/*.spec.ts"]
+}
+```
+
+### Modules Configuration
+
+Organize code into separate modules:
+
+```json
+{
+  "source": "./src",
+  "output": "./src/container.ts",
+  "modules": {
+    "UserModule": ["user/**"],
+    "TodoModule": ["todo/**"]
+  }
+}
+```
+
+Access: `container.userModule.UserService`
+
+### Scopes
+
+- **Singleton** (default): One instance per container
+- **Transient**: New instance each time
+
+```typescript
+/**
+ * @scope transient
+ */
+export class TempService {}
+```
+
+Then run:
+```bash
+npx ioc-arise generate
+```
+
+---
+
+**Next Steps:** Check out our [examples](/examples/) for more advanced usage patterns.

@@ -1,0 +1,534 @@
+---
+title: Configuration Reference
+description: Complete reference for IoC Arise configuration options and advanced settings
+sidebar:
+  order: 2
+---
+
+# Configuration Reference
+
+IoC Arise supports flexible configuration through the `ioc.config.json` file, allowing you to customize the behavior of dependency injection container generation.
+
+## Configuration File Location
+
+The configuration file should be placed in your project root directory:
+
+```
+your-project/
+├── src/
+├── package.json
+└── ioc.config.json  ← Configuration file
+```
+
+## Basic Configuration
+
+### Minimal Configuration
+
+```json
+{
+  "source": "src",
+  "output": "container.gen.ts"
+}
+```
+
+### Complete Configuration
+
+```json
+{
+  "source": "src",
+  "output": "container.gen.ts",
+  "interface": "I[A-Z].*",
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "**/mocks/**"
+  ],
+  "checkCycles": false,
+  "verbose": true,
+  "modules": {
+    "UserModule": ["user/**", "auth/**"],
+    "TodoModule": ["todo/**"],
+    "SharedModule": ["shared/**", "utils/**"]
+  }
+}
+```
+
+## Configuration Options
+
+### `source`
+
+**Type:** `string`  
+**Default:** `"src"`  
+**Description:** Source directory to scan for TypeScript files.
+
+```json
+{
+  "source": "./src"
+}
+```
+
+**Examples:**
+```json
+// Scan from src directory
+{ "source": "src" }
+
+// Scan from lib directory
+{ "source": "lib" }
+
+// Scan from multiple levels up
+{ "source": "../shared/src" }
+
+// Scan from absolute path
+{ "source": "/path/to/project/src" }
+```
+
+### `output`
+
+**Type:** `string`  
+**Default:** `"container.gen.ts"`  
+**Description:** Output file path for the generated container.
+
+```json
+{
+  "output": "generated/container.ts"
+}
+```
+
+**Examples:**
+```json
+// Default output
+{ "output": "container.gen.ts" }
+
+// Custom directory
+{ "output": "generated/ioc-container.ts" }
+
+// Different file extension
+{ "output": "container.generated.ts" }
+
+// Nested directory
+{ "output": "src/infrastructure/container.ts" }
+```
+
+### `interface`
+
+**Type:** `string`  
+**Default:** `"I[A-Z].*"`  
+**Description:** Regular expression pattern to match interface names.
+
+```json
+{
+  "interface": "I[A-Z].*"
+}
+```
+
+**Common Patterns:**
+```json
+// Interfaces starting with 'I' (default)
+{ "interface": "I[A-Z].*" }
+
+// Interfaces ending with 'Interface'
+{ "interface": ".*Interface$" }
+
+// Interfaces ending with 'Service'
+{ "interface": ".*Service$" }
+
+// Multiple patterns
+{ "interface": "(I[A-Z].*|.*Service$|.*Repository$)" }
+
+// Abstract classes
+{ "interface": "^Abstract.*" }
+
+// Any interface (not recommended)
+{ "interface": ".*" }
+```
+
+### `exclude`
+
+**Type:** `string[]`  
+**Default:** `[]`  
+**Description:** Array of glob patterns to exclude files from analysis.
+
+```json
+{
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "**/mocks/**"
+  ]
+}
+```
+
+**Common Exclusion Patterns:**
+```json
+{
+  "exclude": [
+    // Test files
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "**/__tests__/**",
+    
+    // Mock files
+    "**/mocks/**",
+    "**/*.mock.ts",
+    
+    // Type definitions
+    "**/*.d.ts",
+    
+    // Specific directories
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/build/**",
+    
+    // Specific files
+    "**/index.ts",
+    "**/main.ts",
+    
+    // Complex patterns
+    "**/{test,spec,mock,__tests__}/**",
+    "**/*.{test,spec,mock}.{ts,js}"
+  ]
+}
+```
+
+### `checkCycles`
+
+**Type:** `boolean`  
+**Default:** `false`  
+**Description:** Only check for circular dependencies without generating the container.
+
+```json
+{
+  "checkCycles": true
+}
+```
+
+**Use Cases:**
+- CI/CD pipeline validation
+- Pre-commit hooks
+- Development workflow checks
+
+### `verbose`
+
+**Type:** `boolean`  
+**Default:** `false`  
+**Description:** Enable detailed logging during container generation.
+
+```json
+{
+  "verbose": true
+}
+```
+
+**Verbose Output Includes:**
+- Configuration file detection
+- Module organization details
+- Class discovery information
+- Dependency resolution steps
+- Generation progress
+
+### `modules`
+
+**Type:** `Record<string, string[]>`  
+**Default:** `undefined`  
+**Description:** Define logical modules to organize your classes.
+
+```json
+{
+  "modules": {
+    "UserModule": ["user/**", "auth/**"],
+    "TodoModule": ["todo/**"],
+    "SharedModule": ["shared/**", "utils/**"]
+  }
+}
+```
+
+## Module Configuration
+
+### Basic Module Setup
+
+```json
+{
+  "modules": {
+    "CoreModule": ["core/**"],
+    "FeatureModule": ["features/**"]
+  }
+}
+```
+
+### Advanced Module Patterns
+
+```json
+{
+  "modules": {
+    "UserModule": [
+      "user/**",
+      "auth/**",
+      "services/UserService.ts"
+    ],
+    "TodoModule": [
+      "todo/**",
+      "!todo/**/*.test.ts"  // Exclude test files
+    ],
+    "InfrastructureModule": [
+      "infrastructure/**",
+      "repositories/**",
+      "external/**"
+    ],
+    "PresentationModule": [
+      "controllers/**",
+      "presenters/**",
+      "views/**"
+    ]
+  }
+}
+```
+
+### Module Benefits
+
+1. **Logical Organization**: Group related classes together
+2. **Namespace Separation**: Avoid naming conflicts
+3. **Selective Access**: Access only needed modules
+4. **Better Testing**: Test modules in isolation
+5. **Cleaner Architecture**: Enforce architectural boundaries
+
+## Configuration Validation
+
+IoC Arise validates your configuration and provides helpful error messages:
+
+### Module Validation Errors
+
+```bash
+❌ Module configuration errors:
+   Module 'UserModule' has no matching files
+   Module 'TodoModule' pattern 'invalid/**' matches no files
+```
+
+### Interface Pattern Validation
+
+```bash
+⚠️  No classes implementing interfaces found.
+   Make sure classes implement interfaces matching pattern: I[A-Z].*
+```
+
+## Environment-Specific Configuration
+
+### Development Configuration
+
+```json
+{
+  "source": "src",
+  "output": "container.dev.ts",
+  "verbose": true,
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ]
+}
+```
+
+### Production Configuration
+
+```json
+{
+  "source": "dist",
+  "output": "container.prod.ts",
+  "verbose": false,
+  "checkCycles": true,
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "**/*.d.ts"
+  ]
+}
+```
+
+### Testing Configuration
+
+```json
+{
+  "source": "src",
+  "output": "container.test.ts",
+  "verbose": true,
+  "exclude": [
+    "**/*.prod.ts"
+  ],
+  "modules": {
+    "TestModule": ["**/*.test.ts", "mocks/**"]
+  }
+}
+```
+
+## Configuration Inheritance
+
+### CLI Override Priority
+
+CLI options take precedence over configuration file:
+
+```bash
+# This overrides config file settings
+ioc-arise generate --source lib --output custom.ts --verbose
+```
+
+**Priority Order:**
+1. CLI arguments (highest)
+2. Configuration file
+3. Default values (lowest)
+
+### Multiple Configuration Files
+
+For complex projects, you can use different configuration files:
+
+```bash
+# Use specific config file
+ioc-arise generate --config ioc.dev.json
+ioc-arise generate --config ioc.prod.json
+ioc-arise generate --config ioc.test.json
+```
+
+## Best Practices
+
+### 1. Consistent Naming Conventions
+
+```json
+{
+  "interface": "I[A-Z].*",  // IUserService, IRepository
+  "modules": {
+    "UserModule": ["user/**"],
+    "TodoModule": ["todo/**"]
+  }
+}
+```
+
+### 2. Comprehensive Exclusions
+
+```json
+{
+  "exclude": [
+    "**/*.{test,spec}.ts",
+    "**/{test,spec,mock,__tests__}/**",
+    "**/*.d.ts",
+    "**/node_modules/**"
+  ]
+}
+```
+
+### 3. Logical Module Organization
+
+```json
+{
+  "modules": {
+    "DomainModule": ["domain/**"],
+    "ApplicationModule": ["application/**"],
+    "InfrastructureModule": ["infrastructure/**"],
+    "PresentationModule": ["presentation/**"]
+  }
+}
+```
+
+### 4. Development vs Production
+
+```json
+{
+  "verbose": true,     // Development: detailed logs
+  "checkCycles": true, // Production: strict validation
+  "exclude": [         // Always exclude test files
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ]
+}
+```
+
+## Configuration Examples by Project Type
+
+### Monorepo Configuration
+
+```json
+{
+  "source": "packages",
+  "output": "shared/container.ts",
+  "modules": {
+    "CoreModule": ["packages/core/**"],
+    "UIModule": ["packages/ui/**"],
+    "APIModule": ["packages/api/**"]
+  },
+  "exclude": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/*.test.ts"
+  ]
+}
+```
+
+### Microservices Configuration
+
+```json
+{
+  "source": "src",
+  "output": "container.gen.ts",
+  "modules": {
+    "UserService": ["user/**"],
+    "OrderService": ["order/**"],
+    "PaymentService": ["payment/**"],
+    "SharedModule": ["shared/**"]
+  }
+}
+```
+
+### Clean Architecture Configuration
+
+```json
+{
+  "source": "src",
+  "output": "infrastructure/container.ts",
+  "interface": "(I[A-Z].*|.*UseCase$|.*Repository$)",
+  "modules": {
+    "DomainModule": ["domain/**"],
+    "UseCaseModule": ["use-cases/**"],
+    "RepositoryModule": ["repositories/**"],
+    "ControllerModule": ["controllers/**"]
+  }
+}
+```
+
+## Troubleshooting Configuration
+
+### Common Configuration Issues
+
+1. **Invalid JSON syntax**
+   ```bash
+   ⚠️  Warning: Failed to parse config file at /path/to/ioc.config.json
+   ```
+   **Solution:** Validate JSON syntax using a JSON validator.
+
+2. **Module patterns not matching files**
+   ```bash
+   ❌ Module 'UserModule' has no matching files
+   ```
+   **Solution:** Check that glob patterns match existing files.
+
+3. **Interface pattern too restrictive**
+   ```bash
+   ⚠️  No classes implementing interfaces found.
+   ```
+   **Solution:** Adjust interface pattern or ensure classes implement interfaces.
+
+### Debugging Configuration
+
+Use verbose mode to debug configuration issues:
+
+```bash
+ioc-arise generate --verbose
+```
+
+This will show:
+- Configuration file detection
+- Merged configuration values
+- Module resolution details
+- File matching results
+
+## Related Documentation
+
+- [CLI Reference](./cli-reference) - Complete CLI command reference
+- [Simple Modules Example](../examples/simple-modules) - Basic module configuration
+- [Clean Architecture Example](../examples/clean-architecture) - Advanced configuration patterns
+- [Scope Example](../examples/scope-example) - Service lifecycle configuration
