@@ -1,0 +1,314 @@
+---
+title: Circular Dependencies (Classes) Example
+description: Demonstrates how IoC Arise detects and handles circular dependencies between classes
+sidebar:
+  order: 7
+---
+
+This example demonstrates how IoC Arise detects **circular dependencies** between classes - a problematic pattern where two or more classes depend on each other, creating an impossible instantiation scenario.
+
+## Project Structure
+
+```
+circular-deps-classes/
+├── interfaces/
+│   ├── IClassA.ts           # Interface for ClassA
+│   └── IClassB.ts           # Interface for ClassB
+├── services/
+│   ├── ClassA.ts            # Depends on IClassB
+│   └── ClassB.ts            # Depends on IClassA (circular!)
+├── ioc.config.json          # IoC configuration
+└── README.md                # Documentation
+```
+
+## The Circular Dependency Problem
+
+In this example, we have two classes that depend on each other:
+
+### Interface Definitions
+
+```typescript
+// interfaces/IClassA.ts
+export interface IClassA {
+  methodA(): string;
+}
+
+// interfaces/IClassB.ts
+export interface IClassB {
+  methodB(): string;
+}
+```
+
+### ClassA depends on ClassB
+
+```typescript
+// services/ClassA.ts
+import { IClassB } from '../interfaces/IClassB';
+
+export class ClassA implements IClassA {
+  constructor(private classB: IClassB) {}  // Depends on ClassB
+  
+  methodA(): string {
+    return 'ClassA calling: ' + this.classB.methodB();
+  }
+}
+```
+
+### ClassB depends on ClassA
+
+```typescript
+// services/ClassB.ts
+import { IClassA } from '../interfaces/IClassA';
+
+export class ClassB implements IClassB {
+  constructor(private classA: IClassA) {}  // Depends on ClassA
+  
+  methodB(): string {
+    return 'ClassB calling: ' + this.classA.methodA();
+  }
+}
+```
+
+## The Instantiation Problem
+
+This creates an impossible situation:
+
+1. To create `ClassA`, we need an instance of `ClassB`
+2. To create `ClassB`, we need an instance of `ClassA`
+3. But we can't create either without the other!
+
+```typescript
+// This is impossible:
+const classB = new ClassB(classA);  // classA doesn't exist yet
+const classA = new ClassA(classB);  // classB doesn't exist yet
+```
+
+## IoC Arise's Circular Dependency Detection
+
+IoC Arise uses **topological sorting** to detect circular dependencies during the container generation process.
+
+### Running the Example
+
+```bash
+npx @notjustcoders/ioc-arise generate
+```
+
+### Expected Error Output
+
+```
+Error: Circular dependency detected in the dependency graph.
+
+Circular dependency chain:
+  ClassA -> IClassB (ClassB) -> IClassA (ClassA)
+
+Classes involved in circular dependencies:
+  - ClassA (/path/to/services/ClassA.ts)
+  - ClassB (/path/to/services/ClassB.ts)
+
+Circular dependencies prevent proper instantiation order. 
+Please refactor your code to remove these circular references.
+```
+
+## Why Circular Dependencies Are Problematic
+
+### 🚫 Impossible Instantiation
+- No clear order for object creation
+- Constructor injection becomes impossible
+- Runtime errors or infinite loops
+
+### 🧠 Design Issues
+- Indicates tight coupling
+- Violates single responsibility principle
+- Makes code harder to test and maintain
+
+### 🔄 Infinite Recursion Risk
+- Method calls can create infinite loops
+- Stack overflow exceptions
+- Unpredictable behavior
+
+## Solutions to Break Circular Dependencies
+
+### Solution 1: Dependency Inversion
+
+Introduce an abstraction that both classes can depend on:
+
+```typescript
+// Create a shared service
+export interface ISharedService {
+  processData(data: string): string;
+}
+
+export class SharedService implements ISharedService {
+  processData(data: string): string {
+    return `Processed: ${data}`;
+  }
+}
+
+// Both classes depend on the shared service instead of each other
+export class ClassA implements IClassA {
+  constructor(private sharedService: ISharedService) {}
+  
+  methodA(): string {
+    return this.sharedService.processData('ClassA data');
+  }
+}
+
+export class ClassB implements IClassB {
+  constructor(private sharedService: ISharedService) {}
+  
+  methodB(): string {
+    return this.sharedService.processData('ClassB data');
+  }
+}
+```
+
+### Solution 2: Event-Driven Communication
+
+Use events or messaging to decouple the classes:
+
+```typescript
+export interface IEventBus {
+  emit(event: string, data: any): void;
+  on(event: string, handler: (data: any) => void): void;
+}
+
+export class ClassA implements IClassA {
+  constructor(private eventBus: IEventBus) {
+    this.eventBus.on('classB-event', this.handleClassBEvent.bind(this));
+  }
+  
+  methodA(): string {
+    this.eventBus.emit('classA-event', 'Hello from ClassA');
+    return 'ClassA method executed';
+  }
+  
+  private handleClassBEvent(data: any): void {
+    console.log('ClassA received:', data);
+  }
+}
+
+export class ClassB implements IClassB {
+  constructor(private eventBus: IEventBus) {
+    this.eventBus.on('classA-event', this.handleClassAEvent.bind(this));
+  }
+  
+  methodB(): string {
+    this.eventBus.emit('classB-event', 'Hello from ClassB');
+    return 'ClassB method executed';
+  }
+  
+  private handleClassAEvent(data: any): void {
+    console.log('ClassB received:', data);
+  }
+}
+```
+
+### Solution 3: Facade Pattern
+
+Create a facade that coordinates both classes:
+
+```typescript
+export interface ICoordinatorService {
+  executeWorkflow(): string;
+}
+
+export class CoordinatorService implements ICoordinatorService {
+  constructor(
+    private classA: ClassA,
+    private classB: ClassB
+  ) {}
+  
+  executeWorkflow(): string {
+    const resultA = this.classA.methodA();
+    const resultB = this.classB.methodB();
+    return `Workflow: ${resultA} + ${resultB}`;
+  }
+}
+
+// ClassA and ClassB no longer depend on each other
+export class ClassA implements IClassA {
+  methodA(): string {
+    return 'ClassA independent operation';
+  }
+}
+
+export class ClassB implements IClassB {
+  methodB(): string {
+    return 'ClassB independent operation';
+  }
+}
+```
+
+### Solution 4: Lazy Initialization
+
+Use factory functions for lazy dependency resolution:
+
+```typescript
+export class ClassA implements IClassA {
+  constructor(private classBFactory: () => IClassB) {}
+  
+  methodA(): string {
+    const classB = this.classBFactory(); // Lazy creation
+    return 'ClassA calling: ' + classB.methodB();
+  }
+}
+
+export class ClassB implements IClassB {
+  constructor(private classAFactory: () => IClassA) {}
+  
+  methodB(): string {
+    // Note: Be careful not to create infinite recursion!
+    return 'ClassB independent operation';
+  }
+}
+```
+
+## Configuration
+
+```json
+{
+  "source": ".",
+  "output": "container.gen.ts",
+  "interface": "I[A-Z].*",
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ],
+  "verbose": true,
+  "modules": {
+    "CircularModule": [
+      "services/*.ts",
+      "interfaces/*.ts"
+    ]
+  }
+}
+```
+
+## Best Practices to Avoid Circular Dependencies
+
+### ✅ Do
+- Design with clear dependency direction (top-down)
+- Use dependency inversion principle
+- Implement event-driven architectures
+- Create shared abstractions
+- Use facade or coordinator patterns
+
+### ❌ Don't
+- Create mutual dependencies between classes
+- Ignore circular dependency warnings
+- Use circular references as a quick fix
+- Create deep dependency chains
+
+## Detection Algorithm
+
+IoC Arise uses **Kahn's algorithm** for topological sorting:
+
+1. **Build dependency graph** from constructor parameters
+2. **Calculate in-degrees** for each class
+3. **Process classes** with zero dependencies first
+4. **Remove processed classes** and update in-degrees
+5. **Detect cycles** if classes remain with non-zero in-degrees
+
+## Example Source
+
+You can find the complete source code for this example in the [circular-deps-classes directory](https://github.com/spithacode/ioc-maker/tree/main/apps/ioc-maker-cli/examples/circular-deps-classes).

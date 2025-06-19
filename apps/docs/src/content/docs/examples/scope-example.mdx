@@ -1,0 +1,189 @@
+---
+title: "Scope Example - JSDoc @scope Feature"
+description: "Demonstrates IoC Arise's JSDoc @scope feature with singleton and transient service lifecycles"
+sidebar:
+  order: 9
+---
+
+# Scope Example - JSDoc @scope Feature
+
+This example demonstrates IoC Arise's powerful **JSDoc @scope feature** that allows you to control service lifecycles using simple JSDoc annotations. Learn how to create singleton and transient services and understand their behavior differences.
+
+## 🎯 What You'll Learn
+
+- How to use `@scope singleton` and `@scope transient` JSDoc tags
+- Difference between singleton and transient service lifecycles
+- How scoped services interact with each other
+- Practical examples of state management in different scopes
+
+## 📋 Example Contents
+
+### Services Overview
+
+1. **SingletonService** (`@scope singleton`)
+   - Created once and reused throughout the application
+   - Maintains state across multiple calls
+   - Perfect for shared resources, caches, or configuration
+
+2. **TransientService** (`@scope transient`)
+   - Created fresh for each request
+   - No state persistence between calls
+   - Ideal for stateless operations or request-specific processing
+
+3. **MixedService** (`@scope singleton`)
+   - Demonstrates how singleton services can depend on both singleton and transient services
+   - Shows dependency injection patterns with different scopes
+
+## 🔧 JSDoc Scope Annotations
+
+> **Important:** By default, all classes in IoC Arise are injected with **singleton scope**. You only need to explicitly specify the scope when you want a different behavior.
+
+### Default Behavior (Singleton)
+```typescript
+/**
+ * This class will be singleton by default (no @scope annotation needed)
+ */
+export class DefaultService {
+  // Implementation...
+}
+```
+
+### Explicit Singleton Scope
+```typescript
+/**
+ * A singleton service that maintains state across the application lifecycle.
+ * @scope singleton
+ */
+export class SingletonService implements ISingletonService {
+  // Implementation...
+}
+```
+
+### Transient Scope
+```typescript
+/**
+ * A transient service that is created fresh for each request.
+ * @scope transient
+ */
+export class TransientService implements ITransientService {
+  // Implementation...
+}
+```
+
+## 📁 Project Structure
+
+```
+scope-example/
+├── README.md                    # This documentation
+├── ioc.config.json             # IoC configuration
+├── demo.ts                     # Demonstration script
+├── container.gen.ts            # Generated IoC container
+└── services/
+    ├── ISingletonService.ts    # Singleton service interface
+    ├── SingletonService.ts     # Singleton implementation
+    ├── ITransientService.ts    # Transient service interface
+    ├── TransientService.ts     # Transient implementation
+    └── MixedService.ts         # Mixed scope demonstration
+```
+
+## 🚀 Running the Example
+
+1. **Generate the IoC container:**
+   ```bash
+   npx @notjustcoders/ioc-arise generate --source .
+   ```
+
+2. **Run the demonstration:**
+   ```bash
+   npx tsx demo.ts
+   ```
+
+## 📊 Expected Output
+
+The demo will show:
+
+### Singleton Behavior
+- Same instance ID across multiple calls
+- State persistence (counter increments)
+- Single creation log message
+
+### Transient Behavior
+- Different instance IDs for each call
+- Fresh instances with no shared state
+- Multiple creation log messages
+
+### Mixed Service Behavior
+- Singleton MixedService maintains same instance
+- Singleton dependencies are reused
+- Transient dependencies are recreated for each operation
+
+## 🔍 Key Concepts
+
+### Default Scope Behavior
+- **All classes are singleton by default** - no annotation required
+- Only use `@scope` annotations when you need different behavior
+- This design promotes efficient resource usage and shared state management
+
+### Singleton Services (Default)
+- **Lifecycle:** Created once, reused forever
+- **State:** Persistent across the application
+- **Annotation:** `@scope singleton` (optional, as it's the default)
+- **Use Cases:** 
+  - Database connections
+  - Configuration services
+  - Caches and shared resources
+  - Logging services
+
+### Transient Services
+- **Lifecycle:** Created fresh for each request
+- **State:** No persistence between calls
+- **Annotation:** `@scope transient` (required to override default)
+- **Use Cases:**
+  - Request processors
+  - Data transformers
+  - Stateless calculators
+  - One-time operations
+
+### Dependency Injection with Scopes
+- Singleton services can depend on both singleton and transient services
+- Transient dependencies are recreated each time the singleton is accessed
+- Singleton dependencies are reused across all operations
+
+## 💡 Best Practices
+
+1. **Leverage Default Behavior:**
+   - Remember that singleton is the default - no annotation needed
+   - Only add `@scope transient` when you specifically need fresh instances
+   - This keeps your code clean and follows the framework's conventions
+
+2. **Choose the Right Scope:**
+   - Use default (singleton) for stateful, shared services
+   - Use `@scope transient` for stateless, operation-specific services
+   - Consider the lifecycle needs of your service
+
+3. **State Management:**
+   - Keep singleton state thread-safe if needed
+   - Avoid storing request-specific data in singletons
+   - Use transients for request-scoped or operation-specific state
+
+4. **Performance Considerations:**
+   - Singletons (default) are more memory efficient for shared resources
+   - Transients provide better isolation but use more memory
+   - Consider the creation cost vs. memory usage trade-off
+
+5. **Testing:**
+   - Singletons may require state cleanup between tests
+   - Transients provide natural isolation for testing
+   - Consider using transient scope for test-specific services
+
+## 🔗 Related Examples
+
+- [Clean Architecture Example](../clean-architecture) - Shows architectural patterns with IoC
+- [Use Cases Example](../use-cases-example) - Demonstrates business logic organization
+- [Simple Modules Example](../simple-modules) - Basic dependency injection patterns
+
+## 📚 Additional Resources
+
+- [IoC Arise Documentation](https://ioc-arise.dev)
+- [Dependency Injection Patterns](https://martinfowler.com/articles/injection.html)
+- [Service Lifecycle Management](https://docs.microsoft.com/en-us/dotnet/core/extensions/dependency-injection#service-lifetimes)

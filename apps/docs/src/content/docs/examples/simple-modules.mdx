@@ -1,0 +1,156 @@
+---
+title: Simple Modules Example
+description: Demonstrates IoC Arise's module system with cross-module dependencies
+sidebar:
+  order: 2
+---
+
+This example demonstrates IoC Arise's **module system** with two separate modules that work together seamlessly, showcasing how dependencies can be resolved across different modules.
+
+## Project Structure
+
+```
+simple-modules/
+├── user/
+│   ├── User.ts              # User entity
+│   ├── IUserRepository.ts   # User repository interface
+│   ├── UserRepository.ts    # User repository implementation
+│   ├── IUserService.ts      # User service interface
+│   └── UserService.ts       # User service implementation
+├── todo/
+│   ├── Todo.ts              # Todo entity
+│   ├── ITodoRepository.ts   # Todo repository interface
+│   ├── TodoRepository.ts    # Todo repository implementation
+│   ├── ITodoService.ts      # Todo service interface
+│   └── TodoService.ts       # Todo service (depends on UserRepository!)
+├── ioc.config.json          # IoC configuration with modules
+├── container.gen.ts         # Generated container
+└── demo.ts                  # Demo application
+```
+
+## Module Configuration
+
+The `ioc.config.json` defines two separate modules:
+
+```json
+{
+  "source": ".",
+  "output": "container.gen.ts",
+  "exclude": ["**/*.test.ts", "**/*.spec.ts"],
+  "verbose": true,
+  "modules": {
+    "UserModule": ["user/**"],
+    "TodoModule": ["todo/**"]
+  }
+}
+```
+
+## Cross-Module Dependencies
+
+The magic happens when `TodoService` depends on `IUserRepository` from a different module:
+
+```typescript
+export class TodoService implements ITodoService {
+  constructor(
+    private todoRepository: ITodoRepository,     // Same module
+    private userRepository: IUserRepository      // Different module!
+  ) {}
+
+  async createTodo(title: string, userId: string): Promise<Todo> {
+    // Validate user exists before creating todo
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+    
+    return await this.todoRepository.create(title, userId);
+  }
+}
+```
+
+## Generated Container Structure
+
+IoC Arise generates a container with separate module containers:
+
+```typescript
+export const container = {
+  userModule: userModuleContainer,
+  todoModule: todoModuleContainer
+};
+```
+
+Each module container provides access to its services:
+
+```typescript
+export const container = {
+  userModule: {
+    get UserService(): UserService { /* ... */ },
+    get IUserService(): UserService { /* ... */ },
+    get UserRepository(): UserRepository { /* ... */ },
+    get IUserRepository(): UserRepository { /* ... */ }
+  },
+  todoModule: {
+    get TodoService(): TodoService { /* ... */ },
+    get ITodoService(): TodoService { /* ... */ },
+    get TodoRepository(): TodoRepository { /* ... */ },
+    get ITodoRepository(): TodoRepository { /* ... */ }
+  }
+};
+```
+
+## Accessing Module Services
+
+```typescript
+// Access UserModule services
+const userService = container.userModule.UserService;
+const userRepository = container.userModule.UserRepository;
+
+// Access TodoModule services
+const todoService = container.todoModule.TodoService;
+const todoRepository = container.todoModule.TodoRepository;
+```
+
+## Key Features Demonstrated
+
+### 🧑 UserModule
+- `User` entity with basic properties
+- `IUserRepository` interface for data access
+- `UserRepository` implementation
+- `IUserService` interface for business logic
+- `UserService` implementation
+
+### 📝 TodoModule
+- `Todo` entity with user association
+- `ITodoRepository` interface for data access
+- `TodoRepository` implementation
+- `ITodoService` interface for business logic
+- `TodoService` implementation with cross-module dependency
+
+## Usage
+
+1. **Generate the container:**
+   ```bash
+   npx @notjustcoders/ioc-arise generate
+   ```
+
+2. **Run the demo:**
+   ```bash
+   npx tsx demo.ts
+   ```
+
+3. **Use in your application:**
+   ```typescript
+   import { container } from './container.gen';
+   
+   // Create a user first
+   const userService = container.userModule.UserService;
+   const user = await userService.createUser('John Doe', 'john@example.com');
+   
+   // Then create a todo for that user
+   const todoService = container.todoModule.TodoService;
+   const todo = await todoService.createTodo('Learn modules', user.id);
+   ```
+
+## Example Source
+
+You can find the complete source code for this example in the [simple-modules directory](https://github.com/spithacode/ioc-maker/tree/main/apps/ioc-maker-cli/examples/simple-modules).
