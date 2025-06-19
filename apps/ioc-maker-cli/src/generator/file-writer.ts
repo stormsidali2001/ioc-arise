@@ -16,4 +16,8 @@ export class FileWriter {
     // Write the container file
     writeFileSync(this.outputPath, content, 'utf-8');
   }
+
+  getOutputPath(): string {
+    return this.outputPath;
+  }
 }

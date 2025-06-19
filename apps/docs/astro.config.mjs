@@ -12,6 +12,7 @@ export default defineConfig({
 
   integrations: [
       starlight({
+		
           
           title: 'IoC Arise',
           description: 'A powerful TypeScript IoC container generator CLI tool',

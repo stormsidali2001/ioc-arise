@@ -7,6 +7,7 @@ import { FileWriter } from '../file-writer';
 import { ModuleContainerFunctionGenerator } from './module-container-function-generator';
 import { ModuleInstantiationGenerator } from './module-instantiation-generator';
 import { ContainerAggregator } from './container-aggregator';
+import { SplitFileWriter } from './split-file-writer';
 
 /**
  * Generator for modular container structure.
@@ -53,8 +54,13 @@ export class ModularContainerGenerator extends BaseContainerGenerator {
       throw new Error(`Circular dependencies detected within classes: ${JSON.stringify(sortResult.cycles)}`);
     }
 
-    const containerCode = this.generateContainerCode(moduleResult.sortedModules, moduleResult.moduleDependencies);
-    this.writeContainer(containerCode);
+    // Check if we need to split files (more than 2 modules)
+    if (moduleResult.sortedModules.length >= 2) {
+      this.generateSplitFiles(moduleResult.sortedModules, moduleResult.moduleDependencies);
+    } else {
+      const containerCode = this.generateContainerCode(moduleResult.sortedModules, moduleResult.moduleDependencies);
+      this.writeContainer(containerCode);
+    }
   }
 
   protected generateContainerCode(sortedModules?: string[], moduleDependencies?: Map<string, Set<string>>): string {
@@ -79,7 +85,20 @@ export class ModularContainerGenerator extends BaseContainerGenerator {
     return moduleContainerFunctions.join('\n\n') + '\n\n' + moduleInstantiations.join('\n');
   }
 
-
-
-
+  /**
+   * Generates split files when there are more than 3 modules.
+   * Each module gets its own file, plus a main aggregator file.
+   */
+  private generateSplitFiles(sortedModules: string[], moduleDependencies: Map<string, Set<string>>): void {
+    const splitFileWriter = new SplitFileWriter(this.fileWriter.getOutputPath());
+    
+    splitFileWriter.writeSplitModules(
+      this.moduleGroupedClasses,
+      sortedModules,
+      moduleDependencies,
+      this.moduleContainerFunctionGenerator,
+      this.moduleInstantiationGenerator,
+      this.importGenerator
+    );
+  }
 }

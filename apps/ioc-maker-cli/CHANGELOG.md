@@ -1,5 +1,11 @@
 # @notjustcoders/ioc-arise
 
+## 1.0.12
+
+### Patch Changes
+
+- Support for splitting Modules into multiple files
+
 ## 1.0.11
 
 ### Patch Changes
