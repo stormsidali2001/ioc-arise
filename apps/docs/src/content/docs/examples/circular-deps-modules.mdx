@@ -5,25 +5,21 @@ sidebar:
   order: 8
 ---
 
-This example demonstrates how IoC Arise detects **circular dependencies between modules** - a scenario where services in different modules depend on each other, creating cross-module circular references.
-
 ## Project Structure
 
 ```
 circular-deps-modules/
 ├── interfaces/
-│   ├── IServiceA.ts         # Interface for ServiceA
-│   └── IServiceB.ts         # Interface for ServiceB
+│   ├── IServiceA.ts
+│   └── IServiceB.ts
 ├── services/
-│   ├── ServiceA.ts          # ModuleA service (depends on ServiceB)
-│   └── ServiceB.ts          # ModuleB service (depends on ServiceA)
-├── ioc.config.json          # Module configuration
-└── README.md                # Documentation
+│   ├── ServiceA.ts
+│   └── ServiceB.ts
+├── ioc.config.json
+└── README.md
 ```
 
 ## Module Configuration
-
-The configuration defines two separate modules with circular dependencies:
 
 ```json
 {
@@ -48,30 +44,25 @@ The configuration defines two separate modules with circular dependencies:
 }
 ```
 
-## The Cross-Module Circular Dependency
-
-### Interface Definitions
+## Interface Definitions
 
 ```typescript
-// interfaces/IServiceA.ts
 export interface IServiceA {
   doSomething(): string;
 }
 
-// interfaces/IServiceB.ts
 export interface IServiceB {
   doSomething(): string;
 }
 ```
 
-### ServiceA (ModuleA) depends on ServiceB (ModuleB)
+## ServiceA depends on ServiceB
 
 ```typescript
-// services/ServiceA.ts
 import { IServiceB } from '../interfaces/IServiceB';
 
 export class ServiceA implements IServiceA {
-  constructor(private serviceB: IServiceB) {}  // Cross-module dependency
+  constructor(private serviceB: IServiceB) {}
   
   doSomething(): string {
     return 'A: ' + this.serviceB.doSomething();
@@ -79,14 +70,13 @@ export class ServiceA implements IServiceA {
 }
 ```
 
-### ServiceB (ModuleB) depends on ServiceA (ModuleA)
+## ServiceB depends on ServiceA
 
 ```typescript
-// services/ServiceB.ts
 import { IServiceA } from '../interfaces/IServiceA';
 
 export class ServiceB implements IServiceB {
-  constructor(private serviceA: IServiceA) {}  // Cross-module dependency
+  constructor(private serviceA: IServiceA) {}
   
   doSomething(): string {
     return 'B: ' + this.serviceA.doSomething();
@@ -94,31 +84,7 @@ export class ServiceB implements IServiceB {
 }
 ```
 
-## The Module Dependency Problem
-
-This creates a circular dependency at the module level:
-
-1. **ModuleA** needs **ModuleB** (ServiceA depends on IServiceB)
-2. **ModuleB** needs **ModuleA** (ServiceB depends on IServiceA)
-3. Neither module can be instantiated without the other!
-
-```typescript
-// This is impossible:
-const moduleA = createModuleA(moduleB);  // moduleB doesn't exist yet
-const moduleB = createModuleB(moduleA);  // moduleA doesn't exist yet
-```
-
-## IoC Arise's Module-Level Detection
-
-IoC Arise detects circular dependencies not just between individual classes, but also between entire modules.
-
-### Running the Example
-
-```bash
-npx @notjustcoders/ioc-arise generate
-```
-
-### Expected Error Output
+## Expected Error
 
 ```
 Error: Circular dependency detected between modules.
@@ -132,211 +98,4 @@ Detailed circular dependency:
 Modules involved in circular dependencies:
   - ModuleA: services/ServiceA.ts, interfaces/IServiceA.ts
   - ModuleB: services/ServiceB.ts, interfaces/IServiceB.ts
-
-Circular module dependencies prevent proper module instantiation order.
-Please refactor your modules to remove these circular references.
 ```
-
-## Why Module Circular Dependencies Are Problematic
-
-### 🏗️ Module Instantiation Issues
-- No clear order for module creation
-- Container generation becomes impossible
-- Runtime initialization failures
-
-### 📦 Deployment Problems
-- Modules cannot be deployed independently
-- Tight coupling between modules
-- Difficult to maintain and scale
-
-### 🧪 Testing Challenges
-- Cannot test modules in isolation
-- Complex setup for unit tests
-- Integration testing becomes difficult
-
-## Solutions for Module Circular Dependencies
-
-### Solution 1: Shared Module Pattern
-
-Create a shared module with common interfaces and services:
-
-```typescript
-// Create a SharedModule
-// shared/ICommonService.ts
-export interface ICommonService {
-  processData(data: string): string;
-}
-
-// shared/CommonService.ts
-export class CommonService implements ICommonService {
-  processData(data: string): string {
-    return `Processed: ${data}`;
-  }
-}
-
-// ModuleA depends only on SharedModule
-export class ServiceA implements IServiceA {
-  constructor(private commonService: ICommonService) {}
-  
-  doSomething(): string {
-    return this.commonService.processData('ServiceA data');
-  }
-}
-
-// ModuleB depends only on SharedModule
-export class ServiceB implements IServiceB {
-  constructor(private commonService: ICommonService) {}
-  
-  doSomething(): string {
-    return this.commonService.processData('ServiceB data');
-  }
-}
-```
-
-### Solution 2: Event-Driven Module Communication
-
-Use events to decouple modules:
-
-```typescript
-// shared/IEventBus.ts
-export interface IEventBus {
-  emit(event: string, data: any): void;
-  on(event: string, handler: (data: any) => void): void;
-}
-
-// ModuleA
-export class ServiceA implements IServiceA {
-  constructor(private eventBus: IEventBus) {
-    this.eventBus.on('moduleB-event', this.handleModuleBEvent.bind(this));
-  }
-  
-  doSomething(): string {
-    this.eventBus.emit('moduleA-event', { source: 'ServiceA', data: 'Hello' });
-    return 'ServiceA operation completed';
-  }
-  
-  private handleModuleBEvent(data: any): void {
-    console.log('ServiceA received from ModuleB:', data);
-  }
-}
-
-// ModuleB
-export class ServiceB implements IServiceB {
-  constructor(private eventBus: IEventBus) {
-    this.eventBus.on('moduleA-event', this.handleModuleAEvent.bind(this));
-  }
-  
-  doSomething(): string {
-    this.eventBus.emit('moduleB-event', { source: 'ServiceB', data: 'World' });
-    return 'ServiceB operation completed';
-  }
-  
-  private handleModuleAEvent(data: any): void {
-    console.log('ServiceB received from ModuleA:', data);
-  }
-}
-```
-
-### Solution 3: Hierarchical Module Design
-
-Reorganize modules in a hierarchical structure:
-
-```typescript
-// CoreModule (base layer)
-export interface ICoreService {
-  getCoreData(): string;
-}
-
-export class CoreService implements ICoreService {
-  getCoreData(): string {
-    return 'Core data';
-  }
-}
-
-// ServiceModule (depends on CoreModule)
-export class ServiceA implements IServiceA {
-  constructor(private coreService: ICoreService) {}
-  
-  doSomething(): string {
-    return 'ServiceA: ' + this.coreService.getCoreData();
-  }
-}
-
-// ApplicationModule (depends on ServiceModule and CoreModule)
-export class ServiceB implements IServiceB {
-  constructor(
-    private serviceA: IServiceA,
-    private coreService: ICoreService
-  ) {}
-  
-  doSomething(): string {
-    return 'ServiceB: ' + this.serviceA.doSomething() + ' + ' + this.coreService.getCoreData();
-  }
-}
-```
-
-### Solution 4: Module Facade Pattern
-
-Create facades that coordinate between modules:
-
-```typescript
-// Create a coordination layer
-export interface IModuleCoordinator {
-  coordinateAB(): string;
-}
-
-export class ModuleCoordinator implements IModuleCoordinator {
-  constructor(
-    private serviceA: ServiceA,
-    private serviceB: ServiceB
-  ) {}
-  
-  coordinateAB(): string {
-    const resultA = this.serviceA.doIndependentWork();
-    const resultB = this.serviceB.doIndependentWork();
-    return `Coordinated: ${resultA} + ${resultB}`;
-  }
-}
-
-// Services become independent
-export class ServiceA implements IServiceA {
-  doIndependentWork(): string {
-    return 'ServiceA independent operation';
-  }
-}
-
-export class ServiceB implements IServiceB {
-  doIndependentWork(): string {
-    return 'ServiceB independent operation';
-  }
-}
-```
-
-## Module Design Best Practices
-
-### ✅ Do
-- Design modules with clear boundaries
-- Use shared modules for common functionality
-- Implement event-driven communication
-- Create hierarchical module structures
-- Use facade patterns for coordination
-
-### ❌ Don't
-- Create mutual dependencies between modules
-- Mix concerns across module boundaries
-- Ignore module circular dependency warnings
-- Create deep module dependency chains
-
-## Module Dependency Analysis
-
-IoC Arise analyzes module dependencies by:
-
-1. **Grouping classes** by module configuration
-2. **Analyzing cross-module dependencies** from constructor parameters
-3. **Building module dependency graph**
-4. **Detecting cycles** using topological sorting
-5. **Reporting circular dependencies** with detailed paths
-
-## Example Source
-
-You can find the complete source code for this example in the [circular-deps-modules directory](https://github.com/spithacode/ioc-maker/tree/main/apps/ioc-maker-cli/examples/circular-deps-modules).

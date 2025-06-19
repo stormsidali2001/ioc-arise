@@ -5,25 +5,23 @@ sidebar:
   order: 3
 ---
 
-This example showcases a sophisticated implementation of **Clean Architecture** principles using IoC Arise, featuring use cases, ports and adapters, DTOs, presenters, and proper separation of concerns.
-
 ## Project Structure
 
 ```
 clean-architecture/
 ├── entities/
-│   ├── Todo.ts              # Core business entities
+│   ├── Todo.ts
 │   └── User.ts
 ├── dtos/
-│   ├── TodoDTOs.ts          # Data Transfer Objects
+│   ├── TodoDTOs.ts
 │   └── UserDTOs.ts
 ├── ports/
-│   ├── IInputPort.ts        # Input port interfaces
-│   ├── IOutputPort.ts       # Output port interfaces
-│   ├── ITodoInputPort.ts    # Todo-specific input ports
-│   └── ITodoOutputPort.ts   # Todo-specific output ports
+│   ├── IInputPort.ts
+│   ├── IOutputPort.ts
+│   ├── ITodoInputPort.ts
+│   └── ITodoOutputPort.ts
 ├── use-cases/
-│   ├── CreateTodoUseCase.ts # Business logic use cases
+│   ├── CreateTodoUseCase.ts
 │   ├── GetTodoUseCase.ts
 │   ├── UpdateTodoUseCase.ts
 │   ├── DeleteTodoUseCase.ts
@@ -32,12 +30,12 @@ clean-architecture/
 │   ├── GetUserUseCase.ts
 │   └── DeleteUserUseCase.ts
 ├── repositories/
-│   ├── ITodoRepository.ts   # Repository interfaces
-│   ├── TodoRepository.ts    # Repository implementations
+│   ├── ITodoRepository.ts
+│   ├── TodoRepository.ts
 │   ├── IUserRepository.ts
 │   └── UserRepository.ts
 ├── presenters/
-│   ├── CreateTodoPresenter.ts # Output adapters
+│   ├── CreateTodoPresenter.ts
 │   ├── GetTodoPresenter.ts
 │   ├── UpdateTodoPresenter.ts
 │   ├── DeleteTodoPresenter.ts
@@ -46,17 +44,13 @@ clean-architecture/
 │   ├── GetUserPresenter.ts
 │   └── DeleteUserPresenter.ts
 ├── view-models/
-│   ├── TodoViewModels.ts    # View model definitions
+│   ├── TodoViewModels.ts
 │   └── UserViewModels.ts
-├── ioc.config.json          # Module-based configuration
-└── container.gen.ts         # Generated container
+├── ioc.config.json
+└── container.gen.ts
 ```
 
-## Clean Architecture Layers
-
-### 1. Entities (Core Business Logic)
-
-Pure business entities with no external dependencies:
+## Entities
 
 ```typescript
 export class User {
@@ -84,9 +78,7 @@ export class User {
 }
 ```
 
-### 2. Use Cases (Application Business Rules)
-
-Use cases implement specific business scenarios:
+## Use Cases
 
 ```typescript
 export class CreateTodoUseCase implements ICreateTodoInputPort {
@@ -97,30 +89,24 @@ export class CreateTodoUseCase implements ICreateTodoInputPort {
 
   async execute(todoData: CreateTodoRequestDTO): Promise<void> {
     try {
-      // Validate input
       if (!todoData.title.trim()) {
         this.outputPort.presentError('Todo title is required');
         return;
       }
 
-      // Get the user aggregate
       const user = await this.userRepository.findById(todoData.userId);
       if (!user) {
         this.outputPort.presentError('User not found');
         return;
       }
 
-      // Create todo through the user aggregate
       const todo = user.addTodo({
         title: todoData.title.trim(),
         description: todoData.description.trim(),
         userId: todoData.userId
       });
 
-      // Save the user aggregate
       await this.userRepository.save(user);
-      
-      // Present success
       this.outputPort.presentSuccess(this.mapToDTO(todo));
     } catch (error) {
       this.outputPort.presentError(error.message);
@@ -129,26 +115,20 @@ export class CreateTodoUseCase implements ICreateTodoInputPort {
 }
 ```
 
-### 3. Ports (Interfaces)
-
-Input and output ports define contracts:
+## Ports
 
 ```typescript
-// Input Port
 export interface ICreateTodoInputPort {
   execute(todoData: CreateTodoRequestDTO): Promise<void>;
 }
 
-// Output Port
 export interface ICreateTodoOutputPort {
   presentSuccess(todo: TodoResponseDTO): void;
   presentError(error: string): void;
 }
 ```
 
-### 4. DTOs (Data Transfer Objects)
-
-Structured data for communication between layers:
+## DTOs
 
 ```typescript
 export interface CreateTodoRequestDTO {
@@ -168,9 +148,7 @@ export interface TodoResponseDTO {
 }
 ```
 
-### 5. Presenters (Output Adapters)
-
-Presenters format output for specific delivery mechanisms:
+## Presenters
 
 ```typescript
 export class CreateTodoPresenter implements ICreateTodoOutputPort {
@@ -197,9 +175,7 @@ export class CreateTodoPresenter implements ICreateTodoOutputPort {
 }
 ```
 
-## Module Configuration
-
-The configuration organizes components into logical modules:
+## Configuration
 
 ```json
 {
@@ -221,43 +197,11 @@ The configuration organizes components into logical modules:
 }
 ```
 
-## Generated Container Structure
-
-IoC Arise generates a container with separate module containers:
-
-```typescript
-export const container = {
-  userModule: {
-    get CreateUserUseCase(): CreateUserUseCase { /* ... */ },
-    get DeleteUserUseCase(): DeleteUserUseCase { /* ... */ },
-    get GetUserUseCase(): GetUserUseCase { /* ... */ },
-    get GetTodosByUserUseCase(): GetTodosByUserUseCase { /* ... */ },
-    get UserRepository(): UserRepository { /* ... */ },
-    get CreateUserPresenter(): CreateUserPresenter { /* ... */ },
-    get DeleteUserPresenter(): DeleteUserPresenter { /* ... */ },
-    get GetUserPresenter(): GetUserPresenter { /* ... */ },
-    get GetTodosByUserPresenter(): GetTodosByUserPresenter { /* ... */ }
-  },
-  todoModule: {
-    get CreateTodoUseCase(): CreateTodoUseCase { /* ... */ },
-    get DeleteTodoUseCase(): DeleteTodoUseCase { /* ... */ },
-    get GetTodoUseCase(): GetTodoUseCase { /* ... */ },
-    get UpdateTodoUseCase(): UpdateTodoUseCase { /* ... */ },
-    get TodoRepository(): TodoRepository { /* ... */ },
-    get CreateTodoPresenter(): CreateTodoPresenter { /* ... */ },
-    get DeleteTodoPresenter(): DeleteTodoPresenter { /* ... */ },
-    get GetTodoPresenter(): GetTodoPresenter { /* ... */ },
-    get UpdateTodoPresenter(): UpdateTodoPresenter { /* ... */ }
-  }
-};
-```
-
-## Usage Example
+## Usage
 
 ```typescript
 import { container } from './container.gen';
 
-// Create a user
 const createUserUseCase = container.userModule.CreateUserUseCase;
 const createUserPresenter = container.userModule.CreateUserPresenter;
 
@@ -268,9 +212,6 @@ await createUserUseCase.execute({
 
 const userResult = createUserPresenter.getResult();
 if (userResult?.success) {
-  console.log('User created:', userResult.user);
-  
-  // Create a todo for the user
   const createTodoUseCase = container.todoModule.CreateTodoUseCase;
   const createTodoPresenter = container.todoModule.CreateTodoPresenter;
   
@@ -281,30 +222,5 @@ if (userResult?.success) {
   });
   
   const todoResult = createTodoPresenter.getResult();
-  if (todoResult?.success) {
-    console.log('Todo created:', todoResult.todo);
-  }
 }
 ```
-
-## Clean Architecture Benefits
-
-- **🎯 Separation of Concerns**: Each layer has a single responsibility
-- **🔄 Dependency Inversion**: Dependencies point inward toward business logic
-- **🧪 Testability**: Easy to unit test each layer independently
-- **🔧 Flexibility**: Easy to swap implementations without affecting business logic
-- **📱 Framework Independence**: Business logic is not tied to any framework
-- **🗄️ Database Independence**: Repository pattern abstracts data access
-
-## Key Patterns Demonstrated
-
-- **Use Case Pattern**: Encapsulates business scenarios
-- **Repository Pattern**: Abstracts data access
-- **Presenter Pattern**: Formats output for delivery
-- **DTO Pattern**: Structures data transfer
-- **Port and Adapter Pattern**: Defines clear interfaces
-- **Aggregate Pattern**: User aggregate manages todos
-
-## Example Source
-
-You can find the complete source code for this example in the [clean-architecture directory](https://github.com/spithacode/ioc-maker/tree/main/apps/ioc-maker-cli/examples/clean-architecture).

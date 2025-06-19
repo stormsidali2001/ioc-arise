@@ -5,47 +5,41 @@ sidebar:
   order: 5
 ---
 
-This example demonstrates how IoC Arise elegantly handles **name collisions** - situations where multiple classes have the same name but exist in different modules or directories.
-
 ## Project Structure
 
 ```
 name-collision-example/
 ├── user/
-│   ├── CreateItemUseCase.ts    # User item creation
-│   ├── DeleteItemUseCase.ts    # User item deletion
-│   ├── GetItemUseCase.ts       # User item retrieval
-│   ├── ListItemsUseCase.ts     # User items listing
-│   ├── UpdateItemUseCase.ts    # User item updates
-│   ├── UserController.ts       # User controller
-│   └── UserRepository.ts       # User repository
+│   ├── CreateItemUseCase.ts
+│   ├── DeleteItemUseCase.ts
+│   ├── GetItemUseCase.ts
+│   ├── ListItemsUseCase.ts
+│   ├── UpdateItemUseCase.ts
+│   ├── UserController.ts
+│   └── UserRepository.ts
 ├── product/
-│   ├── CreateItemUseCase.ts    # Product creation (same name!)
-│   ├── DeleteItemUseCase.ts    # Product deletion (same name!)
-│   ├── GetItemUseCase.ts       # Product retrieval (same name!)
-│   ├── ListItemsUseCase.ts     # Product listing (same name!)
-│   ├── UpdateItemUseCase.ts    # Product updates (same name!)
-│   ├── ProductController.ts    # Product controller
-│   └── ProductRepository.ts    # Product repository
+│   ├── CreateItemUseCase.ts
+│   ├── DeleteItemUseCase.ts
+│   ├── GetItemUseCase.ts
+│   ├── ListItemsUseCase.ts
+│   ├── UpdateItemUseCase.ts
+│   ├── ProductController.ts
+│   └── ProductRepository.ts
 ├── order/
-│   ├── CreateItemUseCase.ts    # Order creation (same name!)
-│   ├── DeleteItemUseCase.ts    # Order deletion (same name!)
-│   ├── GetItemUseCase.ts       # Order retrieval (same name!)
-│   ├── ListItemsUseCase.ts     # Order listing (same name!)
-│   ├── UpdateItemUseCase.ts    # Order updates (same name!)
-│   ├── OrderController.ts      # Order controller
-│   └── OrderRepository.ts      # Order repository
-├── ioc.config.json             # IoC configuration
-└── container.gen.ts            # Generated container
+│   ├── CreateItemUseCase.ts
+│   ├── DeleteItemUseCase.ts
+│   ├── GetItemUseCase.ts
+│   ├── ListItemsUseCase.ts
+│   ├── UpdateItemUseCase.ts
+│   ├── OrderController.ts
+│   └── OrderRepository.ts
+├── ioc.config.json
+└── container.gen.ts
 ```
 
-## The Name Collision Problem
+## User Domain
 
-In this example, we have **identical class names** across different domains:
-
-### User Domain
 ```typescript
-// user/ListItemsUseCase.ts
 export class ListItemsUseCase {
   constructor(private userRepository: IUserRepository) {}
 
@@ -56,10 +50,10 @@ export class ListItemsUseCase {
 }
 ```
 
-### Product Domain
+## Product Domain
+
 ```typescript
-// product/ListItemsUseCase.ts
-export class ListItemsUseCase {  // Same class name!
+export class ListItemsUseCase {
   constructor(private productRepository: IProductRepository) {}
 
   async execute(): Promise<{ id: string; name: string; price: number; category: string }[]> {
@@ -69,10 +63,10 @@ export class ListItemsUseCase {  // Same class name!
 }
 ```
 
-### Order Domain
+## Order Domain
+
 ```typescript
-// order/ListItemsUseCase.ts
-export class ListItemsUseCase {  // Same class name again!
+export class ListItemsUseCase {
   constructor(private orderRepository: IOrderRepository) {}
 
   async execute(): Promise<{ id: string; orderId: string; status: string }[]> {
@@ -85,6 +79,24 @@ export class ListItemsUseCase {  // Same class name again!
 ## IoC Arise's Solution
 
 IoC Arise resolves name collisions by using **file paths** to create unique identifiers:
+
+### Name Resolution Strategy
+
+IoC Arise uses the following strategy to resolve name collisions:
+
+1. **Directory-based Prefixing**: Classes get prefixed with their directory name
+   - `user/ListItemsUseCase.ts` → `UserListItemsUseCase`
+   - `product/ListItemsUseCase.ts` → `ProductListItemsUseCase`
+   - `order/ListItemsUseCase.ts` → `OrderListItemsUseCase`
+
+2. **Unique Import Aliases**: Generated imports use unique aliases
+   ```typescript
+   import { ListItemsUseCase as UserListItemsUseCase } from './user/ListItemsUseCase';
+   import { ListItemsUseCase as ProductListItemsUseCase } from './product/ListItemsUseCase';
+   import { ListItemsUseCase as OrderListItemsUseCase } from './order/ListItemsUseCase';
+   ```
+
+3. **Type-Safe Access**: Full TypeScript support with proper typing
 
 ### Generated Container Structure
 
@@ -121,24 +133,6 @@ export const container = {
 };
 ```
 
-## Name Resolution Strategy
-
-IoC Arise uses the following strategy to resolve name collisions:
-
-1. **Directory-based Prefixing**: Classes get prefixed with their directory name
-   - `user/ListItemsUseCase.ts` → `UserListItemsUseCase`
-   - `product/ListItemsUseCase.ts` → `ProductListItemsUseCase`
-   - `order/ListItemsUseCase.ts` → `OrderListItemsUseCase`
-
-2. **Unique Import Aliases**: Generated imports use unique aliases
-   ```typescript
-   import { ListItemsUseCase as UserListItemsUseCase } from './user/ListItemsUseCase';
-   import { ListItemsUseCase as ProductListItemsUseCase } from './product/ListItemsUseCase';
-   import { ListItemsUseCase as OrderListItemsUseCase } from './order/ListItemsUseCase';
-   ```
-
-3. **Type-Safe Access**: Full TypeScript support with proper typing
-
 ## Configuration
 
 ```json
@@ -147,51 +141,3 @@ IoC Arise uses the following strategy to resolve name collisions:
   "outputFile": "container.gen.ts"
 }
 ```
-
-## Usage Examples
-
-### Accessing Specific Domain Classes
-
-```typescript
-import { container } from './container.gen';
-
-// Access user domain services (no prefix for first occurrence)
-const userListUseCase = container.coreModule.ListItemsUseCase;
-const userController = container.coreModule.UserController;
-
-// Access product domain services (prefixed)
-const productListUseCase = container.coreModule.ProductListItemsUseCase;
-const productController = container.coreModule.ProductController;
-
-// Access order domain services (prefixed)
-const orderListUseCase = container.coreModule.OrderListItemsUseCase;
-const orderController = container.coreModule.OrderController;
-
-// Execute operations
-const userItems = await userListUseCase.execute();
-console.log('User items:', userItems);
-
-const products = await productListUseCase.execute();
-console.log('Products:', products);
-
-const orders = await orderListUseCase.execute();
-console.log('Orders:', orders);
-```
-
-### Using Controllers
-
-```typescript
-// Each controller manages its domain's use cases
-const userController = container.coreModule.UserController;
-const productController = container.coreModule.ProductController;
-const orderController = container.coreModule.OrderController;
-
-// Controllers automatically get the correct domain-specific use cases injected
-await userController.createItem({ name: 'User Profile', description: 'User settings' });
-await productController.createItem({ name: 'Laptop', price: 999, category: 'Electronics' });
-await orderController.createItem({ customerId: '123', items: ['item1', 'item2'] });
-```
-
-## Example Source
-
-You can find the complete source code for this example in the [name-collision-example directory](https://github.com/spithacode/ioc-maker/tree/main/apps/ioc-maker-cli/examples/name-collision-example).

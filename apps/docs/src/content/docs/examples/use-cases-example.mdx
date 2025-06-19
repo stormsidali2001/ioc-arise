@@ -5,36 +5,29 @@ sidebar:
   order: 4
 ---
 
-This example demonstrates how IoC Arise intelligently handles classes that do not implement interfaces but are still used as dependencies in your application, such as use cases in clean architecture patterns.
-
 ## Project Structure
 
 ```
 use-cases-example/
 ├── repositories/
-│   ├── IUserRepository.ts   # Repository interface
-│   └── UserRepository.ts    # Repository implementation
+│   ├── IUserRepository.ts
+│   └── UserRepository.ts
 ├── services/
-│   ├── IEmailService.ts     # Email service interface
-│   ├── EmailService.ts      # Email service implementation
-│   ├── IApplicationService.ts # Application service interface
-│   └── ApplicationService.ts  # Application service implementation
+│   ├── IEmailService.ts
+│   ├── EmailService.ts
+│   ├── IApplicationService.ts
+│   └── ApplicationService.ts
 ├── use-cases/
-│   ├── CreateUserUseCase.ts # Use case (no interface)
-│   ├── GetUserUseCase.ts    # Use case (no interface)
-│   └── UserController.ts    # Controller (no interface)
-├── ioc.config.json          # IoC configuration
-└── container.gen.ts         # Generated container
+│   ├── CreateUserUseCase.ts
+│   ├── GetUserUseCase.ts
+│   └── UserController.ts
+├── ioc.config.json
+└── container.gen.ts
 ```
 
-## Key Concept: Classes Without Interfaces
-
-Unlike traditional IoC containers that require explicit registration, IoC Arise automatically detects which classes should be included based on their usage patterns.
-
-### Classes WITH Interfaces (Always Included)
+## Classes WITH Interfaces
 
 ```typescript
-// Repository with interface
 export interface IUserRepository {
   save(user: User): Promise<void>;
   findById(id: string): Promise<User | null>;
@@ -51,10 +44,9 @@ export class UserRepository implements IUserRepository {
 }
 ```
 
-### Classes WITHOUT Interfaces (Included if Used as Dependencies)
+## Classes WITHOUT Interfaces
 
 ```typescript
-// Use case without interface - but used as dependency
 export class CreateUserUseCase {
   constructor(
     private userRepository: IUserRepository,
@@ -76,10 +68,9 @@ export class CreateUserUseCase {
 }
 ```
 
-### Controller Using Use Cases
+## Controller Using Use Cases
 
 ```typescript
-// Controller that depends on use cases
 export class UserController {
   constructor(
     private createUserUseCase: CreateUserUseCase,
@@ -96,18 +87,6 @@ export class UserController {
 }
 ```
 
-## IoC Arise's Smart Detection
-
-IoC Arise analyzes your codebase and includes classes in the container based on these rules:
-
-### ✅ Always Included
-- Classes that implement interfaces matching the interface pattern (e.g., `I[A-Z].*`)
-- Classes used as constructor dependencies by other classes
-
-### ❌ Excluded
-- Classes that don't implement interfaces AND are not used as dependencies
-- Utility classes, data models, or standalone classes
-
 ## Configuration
 
 ```json
@@ -123,49 +102,17 @@ IoC Arise analyzes your codebase and includes classes in the container based on 
 }
 ```
 
-## Generated Container
-
-The generated container includes all detected classes within a `coreModule`:
-
-```typescript
-export const container = {
-  coreModule: {
-    // Interface implementations
-    get IUserRepository(): UserRepository { /* ... */ },
-    get UserRepository(): UserRepository { /* ... */ },
-    get IEmailService(): EmailService { /* ... */ },
-    get EmailService(): EmailService { /* ... */ },
-    get IApplicationService(): ApplicationService { /* ... */ },
-    get ApplicationService(): ApplicationService { /* ... */ },
-    
-    // Use cases (no interfaces, but used as dependencies)
-    get CreateUserUseCase(): CreateUserUseCase { /* ... */ },
-    get GetUserUseCase(): GetUserUseCase { /* ... */ },
-    get UserController(): UserController { /* ... */ }
-  }
-};
-```
-
-## Usage Example
+## Usage
 
 ```typescript
 import { container } from './container.gen';
 
-// Use the controller which depends on use cases
 const userController = container.coreModule.UserController;
 
-// Create a new user
 await userController.createUser('John Doe', 'john@example.com');
 
-// Get a user
 const user = await userController.getUser('123');
-console.log('Retrieved user:', user);
 
-// Or use use cases directly
 const createUserUseCase = container.coreModule.CreateUserUseCase;
 await createUserUseCase.execute('Jane Doe', 'jane@example.com');
 ```
-
-## Example Source
-
-You can find the complete source code for this example in the [use-cases-example directory](https://github.com/spithacode/ioc-maker/tree/main/apps/ioc-maker-cli/examples/use-cases-example).

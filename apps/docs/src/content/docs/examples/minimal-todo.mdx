@@ -5,33 +5,22 @@ sidebar:
   order: 1
 ---
 
-This example demonstrates a simple todo list application using IoC Arise with:
-
-- Repository pattern with two implementations (in-memory and JSON file)
-- Service layer for business logic
-- Simple entity model
-
 ## Project Structure
 
 ```
 minimal-todo/
-├── entities/
-│   └── Todo.ts              # Todo entity
+├── entities/Todo.ts
 ├── repositories/
-│   ├── ITodoRepository.ts    # Repository interface
-│   └── InMemoryTodoRepository.ts # In-memory implementation
+│   ├── ITodoRepository.ts
+│   └── InMemoryTodoRepository.ts
 ├── services/
-│   ├── ITodoService.ts       # Service interface
-│   └── TodoService.ts        # Business logic service
-├── ioc.config.json          # IoC configuration
-└── container.gen.ts         # Generated container
+│   ├── ITodoService.ts
+│   └── TodoService.ts
+├── ioc.config.json
+└── container.gen.ts
 ```
 
-## Key Components
-
-### Todo Entity
-
-The `Todo` entity represents a simple todo item:
+## Todo Entity
 
 ```typescript
 export interface Todo {
@@ -44,9 +33,7 @@ export interface Todo {
 }
 ```
 
-### Repository Pattern
-
-The repository interface defines data access operations:
+## Repository Interface
 
 ```typescript
 export interface ITodoRepository {
@@ -58,9 +45,7 @@ export interface ITodoRepository {
 }
 ```
 
-### Service Layer
-
-The service layer contains business logic and depends on the repository:
+## Service Layer
 
 ```typescript
 export class TodoService implements ITodoService {
@@ -69,13 +54,10 @@ export class TodoService implements ITodoService {
   async createTodo(data: { title: string; description: string }): Promise<Todo> {
     return await this.todoRepository.create(data.title, data.description);
   }
-  // ... other methods
 }
 ```
 
 ## Configuration
-
-The `ioc.config.json` file configures IoC Arise:
 
 ```json
 {
@@ -84,39 +66,14 @@ The `ioc.config.json` file configures IoC Arise:
 }
 ```
 
-## Generated Container Structure
-
-IoC Arise generates a container with a `coreModule` structure:
-
-```typescript
-export const container = {
-  coreModule: {
-    get TodoService(): TodoService { /* ... */ },
-    get ITodoService(): TodoService { /* ... */ },
-    get InMemoryTodoRepository(): InMemoryTodoRepository { /* ... */ },
-    get ITodoRepository(): InMemoryTodoRepository { /* ... */ }
-  }
-};
-```
-
 ## Usage
 
-1. **Generate the container:**
-   ```bash
-   npx @notjustcoders/ioc-arise generate
-   ```
+```typescript
+import { container } from './container.gen';
 
-2. **Use the container in your application:**
-   ```typescript
-   import { container } from './container.gen';
-   
-   const todoService = container.coreModule.ITodoService;
-   await todoService.createTodo({ 
-     title: 'Learn IoC Arise', 
-     description: 'Study dependency injection' 
-   });
-   ```
-
-## Example Source
-
-You can find the complete source code for this example in the [minimal-todo directory](https://github.com/spithacode/ioc-maker/tree/main/apps/ioc-maker-cli/examples/minimal-todo).
+const todoService = container.coreModule.ITodoService;
+await todoService.createTodo({ 
+  title: 'Learn IoC Arise', 
+  description: 'Study dependency injection' 
+});
+```

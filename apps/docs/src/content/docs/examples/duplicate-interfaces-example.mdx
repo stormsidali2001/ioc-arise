@@ -5,39 +5,31 @@ sidebar:
   order: 6
 ---
 
-This example demonstrates how IoC Arise handles **duplicate interface implementations** - a common error scenario where multiple classes implement the same interface, creating ambiguity for dependency injection.
-
 ## Project Structure
 
 ```
 duplicate-interfaces-example/
 ├── services/
-│   ├── INotificationService.ts      # Single interface
-│   ├── EmailNotificationService.ts  # First implementation
-│   ├── SmsNotificationService.ts    # Second implementation (conflict!)
-│   └── PushNotificationService.ts  # Third implementation (conflict!)
-├── ioc.config.json                 # IoC configuration
-└── README.md                       # Documentation
+│   ├── INotificationService.ts
+│   ├── EmailNotificationService.ts
+│   ├── SmsNotificationService.ts
+│   └── PushNotificationService.ts
+├── ioc.config.json
+└── README.md
 ```
 
-## The Problem: Multiple Implementations
-
-In this example, we have **one interface** but **three implementations**:
-
-### The Interface
+## Interface
 
 ```typescript
-// services/INotificationService.ts
 export interface INotificationService {
   sendNotification(message: string, recipient: string): Promise<void>;
   getServiceName(): string;
 }
 ```
 
-### Implementation #1: Email
+## Email Implementation
 
 ```typescript
-// services/EmailNotificationService.ts
 export class EmailNotificationService implements INotificationService {
   async sendNotification(message: string, recipient: string): Promise<void> {
     console.log(`Sending EMAIL notification to ${recipient}: ${message}`);
@@ -50,10 +42,9 @@ export class EmailNotificationService implements INotificationService {
 }
 ```
 
-### Implementation #2: SMS
+## SMS Implementation
 
 ```typescript
-// services/SmsNotificationService.ts
 export class SmsNotificationService implements INotificationService {
   async sendNotification(message: string, recipient: string): Promise<void> {
     console.log(`Sending SMS notification to ${recipient}: ${message}`);
@@ -66,10 +57,9 @@ export class SmsNotificationService implements INotificationService {
 }
 ```
 
-### Implementation #3: Push
+## Push Implementation
 
 ```typescript
-// services/PushNotificationService.ts
 export class PushNotificationService implements INotificationService {
   async sendNotification(message: string, recipient: string): Promise<void> {
     console.log(`Sending PUSH notification to ${recipient}: ${message}`);
@@ -78,148 +68,6 @@ export class PushNotificationService implements INotificationService {
 
   getServiceName(): string {
     return 'Push Notification Service';
-  }
-}
-```
-
-## The Ambiguity Problem
-
-When another class depends on `INotificationService`, which implementation should be injected?
-
-```typescript
-export class OrderService {
-  constructor(
-    private notificationService: INotificationService  // Which one??
-  ) {}
-
-  async processOrder(order: Order): Promise<void> {
-    // Process order...
-    
-    // Send notification - but which service will be used?
-    await this.notificationService.sendNotification(
-      'Order processed successfully',
-      order.customerEmail
-    );
-  }
-}
-```
-
-## IoC Arise's Error Detection
-
-IoC Arise detects this ambiguity and provides a clear error message:
-
-### Running the Example
-
-```bash
-npx @notjustcoders/ioc-arise generate
-```
-
-### Expected Error Output
-
-```
-Error: Interface 'INotificationService' is implemented by multiple classes:
-  - EmailNotificationService (/path/to/services/EmailNotificationService.ts)
-  - SmsNotificationService (/path/to/services/SmsNotificationService.ts)
-  - PushNotificationService (/path/to/services/PushNotificationService.ts)
-
-Multiple classes implement the same interface(s): INotificationService. 
-Each interface should only be implemented by one class for proper dependency injection.
-```
-
-## Why This Is Important
-
-### 🚫 Prevents Runtime Errors
-Without this check, the container might:
-- Pick an arbitrary implementation
-- Cause unpredictable behavior
-- Lead to difficult-to-debug issues
-
-### 🎯 Enforces Clear Design
-This error encourages better architectural decisions:
-- Use composition over multiple implementations
-- Create specific interfaces for different behaviors
-- Implement proper abstraction patterns
-
-### 🛡️ Type Safety
-Ensures that dependency injection remains predictable and type-safe.
-
-## Solutions to Resolve This Error
-
-### Solution 1: Specific Interfaces
-
-Create specific interfaces for each notification type:
-
-```typescript
-// Specific interfaces
-export interface IEmailService {
-  sendEmail(message: string, recipient: string): Promise<void>;
-}
-
-export interface ISmsService {
-  sendSms(message: string, recipient: string): Promise<void>;
-}
-
-export interface IPushService {
-  sendPush(message: string, recipient: string): Promise<void>;
-}
-
-// Specific implementations
-export class EmailService implements IEmailService { /* ... */ }
-export class SmsService implements ISmsService { /* ... */ }
-export class PushService implements IPushService { /* ... */ }
-```
-
-### Solution 2: Composite Pattern
-
-Create a composite service that uses all implementations:
-
-```typescript
-export interface INotificationService {
-  sendNotification(message: string, recipient: string, type: 'email' | 'sms' | 'push'): Promise<void>;
-}
-
-export class NotificationService implements INotificationService {
-  constructor(
-    private emailService: EmailNotificationService,
-    private smsService: SmsNotificationService,
-    private pushService: PushNotificationService
-  ) {}
-
-  async sendNotification(message: string, recipient: string, type: 'email' | 'sms' | 'push'): Promise<void> {
-    switch (type) {
-      case 'email':
-        return this.emailService.sendNotification(message, recipient);
-      case 'sms':
-        return this.smsService.sendNotification(message, recipient);
-      case 'push':
-        return this.pushService.sendNotification(message, recipient);
-    }
-  }
-}
-```
-
-### Solution 3: Factory Pattern
-
-Use a factory to create the appropriate implementation:
-
-```typescript
-export interface INotificationFactory {
-  createEmailService(): EmailNotificationService;
-  createSmsService(): SmsNotificationService;
-  createPushService(): PushNotificationService;
-}
-
-export class NotificationFactory implements INotificationFactory {
-  createEmailService(): EmailNotificationService {
-    return new EmailNotificationService();
-  }
-  
-  createSmsService(): SmsNotificationService {
-    return new SmsNotificationService();
-  }
-  
-  createPushService(): PushNotificationService {
-    return new PushNotificationService();
   }
 }
 ```
@@ -244,20 +92,14 @@ export class NotificationFactory implements INotificationFactory {
 }
 ```
 
-## Best Practices
+## Expected Error
 
-### ✅ Do
-- Create specific interfaces for different behaviors
-- Use composition when you need multiple implementations
-- Implement factory patterns for dynamic selection
-- Keep interfaces focused and cohesive
+```
+Error: Interface 'INotificationService' is implemented by multiple classes:
+  - EmailNotificationService (/path/to/services/EmailNotificationService.ts)
+  - SmsNotificationService (/path/to/services/SmsNotificationService.ts)
+  - PushNotificationService (/path/to/services/PushNotificationService.ts)
 
-### ❌ Don't
-- Create multiple implementations of the same interface
-- Use generic interfaces for different purposes
-- Ignore the duplicate interface error
-- Try to work around the error without fixing the design
-
-## Example Source
-
-You can find the complete source code for this example in the [duplicate-interfaces-example directory](https://github.com/spithacode/ioc-maker/tree/main/apps/ioc-maker-cli/examples/duplicate-interfaces-example).
+Multiple classes implement the same interface(s): INotificationService. 
+Each interface should only be implemented by one class for proper dependency injection.
+```
