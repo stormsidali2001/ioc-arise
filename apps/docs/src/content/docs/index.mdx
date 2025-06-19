@@ -1,84 +1,115 @@
 ---
 title: IoC Arise
-description: Automatic type-safe IoC container generation for TypeScript projects
+description: The most powerful TypeScript IoC container generator - Zero configuration, maximum productivity
 template: splash
 hero:
-  tagline: Generate type-safe IoC containers automatically from your TypeScript code!
   image:
-    file: ../../assets/houston.webp
+    alt: A terminal
+    file: ../../assets/hero-terminal.png
+  tagline: |
+    .
+    Zero decorators. Zero configuration. Maximum productivity.
   actions:
-    - text: Get Started
+    - text: Get Started Now
       link: /guides/getting-started/
       icon: right-arrow
-    - text: View Examples
-      link: /guides/examples/
+      variant: primary
+    - text: Explore Examples
+      link: /examples/minimal-todo/
       icon: document
+      variant: secondary
+    - text: View on GitHub
+      link: https://github.com/spithacode/ioc-maker
+      icon: external
       variant: minimal
 ---
 
-import { Card, CardGrid } from '@astrojs/starlight/components';
+import { Card, CardGrid, Badge, Tabs, TabItem,Steps } from '@astrojs/starlight/components';
 
-## Why IoC Arise?
+## Get Started in 3 Simple Steps
 
-<CardGrid stagger>
-	<Card title="🔍 Automatic Detection" icon="magnifier">
-		Finds all classes implementing specific interfaces without manual registration.
-	</Card>
-	<Card title="🧠 Smart Analysis" icon="puzzle">
-		Parses constructor dependencies from TypeScript code using AST analysis.
-	</Card>
-	<Card title="📊 Dependency Resolution" icon="list-format">
-		Ensures correct instantiation order with topological sorting.
-	</Card>
-	<Card title="🛡️ Type Safety" icon="approve-check">
-		Generates fully typed containers with IDE autocompletion support.
-	</Card>
-	<Card title="🚫 No Decorators" icon="warning">
-		Pure static analysis - no runtime registration or decorators needed.
-	</Card>
-	<Card title="⚠️ Cycle Detection" icon="error">
-		Detects and warns about circular dependencies in your code.
-	</Card>
+<Steps>
+
+1. **Create Your Interfaces and Classes**
+
+   Define your TypeScript interfaces and classes with proper dependency injection patterns:
+   ```typescript
+
+   // interfaces/IUserService.ts
+   export interface IUserService {
+     getUser(id: string): Promise<User>;
+   }
+   // interfaces/IUserRepository.ts
+   export interface IUserRepository {
+     findById(id: string): Promise<User | null>;
+   }
+   ```
+
+   ```typescript
+   // services/UserService.ts
+   export class UserService implements IUserService {
+     constructor(private userRepository: IUserRepository) {}
+       // ...code
+   }
+   // repositories/UserRepository.ts
+   export class UserRepository implements IUserRepository {/* code*/}
+   ```
+
+2. **Configure Your IoC Modules**
+
+   Create an `ioc.config.json` file to define your dependency injection modules:
+
+   ```json
+   {
+     "source": ".",
+     "output": "container.gen.ts",
+     "exclude": [
+       "**/*.test.ts",
+       "**/*.spec.ts"
+     ],
+     "verbose": true,
+     "modules": {
+       "UserModule": [
+         "user/**"
+       ],
+       "TodoModule": [
+         "todo/**"
+       ]
+     }
+   }
+   ```
+
+3. **Generate Your Container**
+
+   Run the IoC Arise command to automatically generate your type-safe container:
+
+   ```bash
+   npx @notjustcoders/ioc-arise generate
+   ```
+
+   Then use your generated container in your application:
+
+   ```typescript
+   import { container } from './container.gen';
+
+   // Get fully resolved instances with all dependencies injected
+   const userService = container.coreModule.UserService;
+   const user = await userService.getUser('123');
+   ```
+
+</Steps>
+
+<CardGrid>
+  <Card title="🚀 Zero Configuration" icon="rocket">
+    No decorators, no manual wiring. Just write clean TypeScript code and let IoC Arise handle the rest.
+  </Card>
+  <Card title="🔒 Type Safety" icon="approve-check">
+    Full TypeScript support with compile-time dependency validation and IntelliSense autocompletion.
+  </Card>
+  <Card title="⚡ Lightning Fast" icon="lightning">
+    Generates optimized containers in milliseconds. Perfect for both development and production builds.
+  </Card>
+  <Card title="🎯 Smart Analysis" icon="magnifier">
+    Automatically detects circular dependencies and provides helpful error messages for quick resolution.
+  </Card>
 </CardGrid>
-
-## Key Features
-
-- **Module Support**: Organize dependencies into logical modules
-- **Configuration Driven**: Flexible configuration via JSON files or CLI options
-- **Clean Architecture Ready**: Perfect for clean architecture patterns
-- **Zero Runtime Overhead**: All analysis happens at build time
-- **TypeScript First**: Built specifically for TypeScript projects
-
-## Quick Example
-
-Given these TypeScript classes:
-
-```typescript
-// IUserService.ts
-export interface IUserService {
-  getUser(id: string): Promise<User>;
-}
-
-// UserService.ts
-export class UserService implements IUserService {
-  constructor(private userRepository: IUserRepository) {}
-  
-  async getUser(id: string): Promise<User> {
-    return this.userRepository.findById(id);
-  }
-}
-```
-
-IoC Arise automatically generates:
-
-```typescript
-// container.gen.ts
-export const container = {
-  userRepository: new UserRepository(),
-  userService: new UserService(container.userRepository)
-};
-```
-
-## Ready to Start?
-
-Check out our [Getting Started Guide](/guides/getting-started/) to begin using IoC Arise in your TypeScript project.

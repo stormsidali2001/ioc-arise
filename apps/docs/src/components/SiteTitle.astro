@@ -1,0 +1,26 @@
+---
+import type { Props } from '@astrojs/starlight/props';
+import config from 'virtual:starlight/user-config';
+
+const { logo } = config;
+---
+
+<a href="/" class="flex items-center gap-2 no-underline text-inherit">
+	<!-- {logo && (
+		<img src={typeof logo === 'string' ? logo : logo?.src} alt={config.title} />
+
+	)} -->
+	<div class="flex items-center gap-2">
+		<span class="text-lg font-semibold" style="color: var(--sl-color-white)">IoC Arise</span>
+		<span class="text-xs font-normal opacity-80" style="color: var(--sl-color-gray-3)">by</span>
+		<a 
+			href="https://notjustcoders.com" 
+			target="_blank" 
+			rel="noopener noreferrer" 
+			class="text-xs no-underline font-normal opacity-80 transition-all duration-200 hover:opacity-100 hover:underline"
+			style="color: var(--sl-color-accent-high);"
+		>
+			NotJustCoders
+		</a>
+	</div>
+</a>

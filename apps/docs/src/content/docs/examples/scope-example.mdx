@@ -149,32 +149,7 @@ The demo will show:
 - Transient dependencies are recreated each time the singleton is accessed
 - Singleton dependencies are reused across all operations
 
-## 💡 Best Practices
 
-1. **Leverage Default Behavior:**
-   - Remember that singleton is the default - no annotation needed
-   - Only add `@scope transient` when you specifically need fresh instances
-   - This keeps your code clean and follows the framework's conventions
-
-2. **Choose the Right Scope:**
-   - Use default (singleton) for stateful, shared services
-   - Use `@scope transient` for stateless, operation-specific services
-   - Consider the lifecycle needs of your service
-
-3. **State Management:**
-   - Keep singleton state thread-safe if needed
-   - Avoid storing request-specific data in singletons
-   - Use transients for request-scoped or operation-specific state
-
-4. **Performance Considerations:**
-   - Singletons (default) are more memory efficient for shared resources
-   - Transients provide better isolation but use more memory
-   - Consider the creation cost vs. memory usage trade-off
-
-5. **Testing:**
-   - Singletons may require state cleanup between tests
-   - Transients provide natural isolation for testing
-   - Consider using transient scope for test-specific services
 
 ## 🔗 Related Examples
 

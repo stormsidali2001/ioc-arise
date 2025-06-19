@@ -1,0 +1,55 @@
+---
+import type { Props } from '@astrojs/starlight/props';
+import Default from '@astrojs/starlight/components/Footer.astro';
+---
+
+<Default {...Astro.props} />
+
+<div class="custom-footer">
+	<p class="powered-by">
+		Powered by 
+		<a href="https://notjustcoders.com" target="_blank" rel="noopener noreferrer" class="njc-link">
+			<strong>NotJustCoders</strong>
+		</a>
+		• Built with 
+		<a href="https://starlight.astro.build" target="_blank" rel="noopener noreferrer">
+			Starlight
+		</a>
+	</p>
+</div>
+
+<style>
+	.custom-footer {
+		margin-top: 1rem;
+		padding-top: 1rem;
+		border-top: 1px solid var(--sl-color-gray-5);
+		text-align: center;
+	}
+
+	.powered-by {
+		font-size: 0.875rem;
+		color: var(--sl-color-gray-3);
+		margin: 0;
+	}
+
+	.njc-link {
+		color: var(--sl-color-accent);
+		text-decoration: none;
+		transition: color 0.2s ease;
+	}
+
+	.njc-link:hover {
+		color: var(--sl-color-accent-high);
+		text-decoration: underline;
+	}
+
+	.powered-by a {
+		color: var(--sl-color-gray-2);
+		text-decoration: none;
+	}
+
+	.powered-by a:hover {
+		color: var(--sl-color-white);
+		text-decoration: underline;
+	}
+</style>

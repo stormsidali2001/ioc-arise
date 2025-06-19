@@ -1,0 +1,48 @@
+@layer base, starlight, theme, components, utilities;
+
+
+@import '@astrojs/starlight-tailwind';
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
+
+/**
+ * Global Design Tokens
+ * Modern OKLCH color system based on purple accent
+ */
+
+/* Dark mode colors (default) - AAA Contrast Compliant */
+:root {
+	--accent: oklch(0.55 0.22 275); /* Brighter purple for AAA contrast */
+	--accent-foreground: oklch(0.05 0.005 275); /* Very dark text on accent for AAA */
+	
+	--sl-color-accent-low: oklch(0.15 0.05 275);
+	--sl-color-accent: var(--accent);
+	--sl-color-accent-high: oklch(0.75 0.18 275);
+	--sl-color-white: oklch(1 0 0); /* Pure white for maximum contrast */
+	--sl-color-gray-1: oklch(0.95 0.005 240);
+	--sl-color-gray-2: oklch(0.85 0.01 240);
+	--sl-color-gray-3: oklch(0.7 0.015 240); /* Lighter for better contrast */
+	--sl-color-gray-4: oklch(0.5 0.02 240);
+	--sl-color-gray-5: oklch(0.3 0.02 240);
+	--sl-color-gray-6: oklch(0.2 0.025 240);
+	--sl-color-black: oklch(0.08 0.015 240); /* Darker for maximum contrast */
+}
+
+/* Light mode colors - AAA Contrast Compliant */
+:root[data-theme='light'] {
+	--accent: oklch(0.4 0.22 275); /* Darker purple for AAA contrast on light bg */
+	--accent-foreground: oklch(1 0 0); /* Pure white text on accent for AAA */
+	
+	--sl-color-accent-low: oklch(0.95 0.02 275);
+	--sl-color-accent: var(--accent);
+	--sl-color-accent-high: oklch(0.25 0.18 275); /* Darker for better contrast */
+	--sl-color-white: oklch(0.08 0.015 240); /* Very dark for maximum contrast */
+	--sl-color-gray-1: oklch(0.15 0.025 240);
+	--sl-color-gray-2: oklch(0.25 0.02 240);
+	--sl-color-gray-3: oklch(0.4 0.02 240); /* Darker for better contrast */
+	--sl-color-gray-4: oklch(0.6 0.015 240);
+	--sl-color-gray-5: oklch(0.8 0.01 240);
+	--sl-color-gray-6: oklch(0.92 0.005 240);
+	--sl-color-gray-7: oklch(0.96 0.005 240);
+	--sl-color-black: oklch(1 0 0); /* Pure white background for maximum contrast */
+}
