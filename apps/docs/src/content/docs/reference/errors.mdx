@@ -94,13 +94,14 @@ sidebar:
 
 ### IOC_1201 - NO_CLASSES_FOUND
 
-**Cause:** No classes implementing interfaces found in the source directory.
+**Cause:** No classes implementing interfaces or extending abstract classes found in the source directory.
 
 **How to fix:**
-- Add classes that implement interfaces matching the pattern
+- Add classes that implement interfaces matching the pattern or extend abstract classes
 - Verify interface pattern regex is correct
 - Check that classes are properly exported
 - Ensure interface implementations are explicit
+- Ensure abstract classes are properly declared with "abstract" keyword
 
 ### IOC_1202 - CIRCULAR_DEPENDENCY
 

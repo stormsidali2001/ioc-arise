@@ -26,12 +26,38 @@ export class ASTParser {
     });
   }
 
-  findAllClasses(root: any): any[] {
+  findClassesExtendingClasses(root: any): any[] {
     return root.findAll({
+      rule: {
+        pattern: 'class $CLASS extends $PARENT { $$$ }'
+      }
+    });
+  }
+
+  findAllClasses(root: any): any[] {
+    // Find regular class declarations
+    const regularClasses = root.findAll({
       rule: {
         kind: 'class_declaration'
       }
     });
+    
+    // Find abstract class declarations using pattern matching
+    const abstractClasses = root.findAll({
+      rule: {
+        pattern: 'abstract class $NAME { $$$ }'
+      }
+    });
+    
+    // Also try to find exported abstract classes
+    const exportedAbstractClasses = root.findAll({
+      rule: {
+        pattern: 'export abstract class $NAME { $$$ }'
+      }
+    });
+    
+    // Combine all found classes
+    return [...regularClasses, ...abstractClasses, ...exportedAbstractClasses];
   }
 
   extractClassName(classNode: any): string | undefined {
@@ -59,6 +85,18 @@ export class ASTParser {
 
   extractInterfaceName(classNode: any): string | undefined {
     return classNode.getMatch('INTERFACE')?.text();
+  }
+
+  extractParentClassName(classNode: any): string | undefined {
+    return classNode.getMatch('PARENT')?.text();
+  }
+
+  isAbstractClass(classNode: any): boolean {
+    const classText = classNode.text();
+    console.log(`DEBUG: isAbstractClass - classText: ${classText}`);
+    const isAbstract = classText.includes('abstract class');
+    console.log(`DEBUG: isAbstractClass - result: ${isAbstract}`);
+    return isAbstract;
   }
 
   extractConstructorParameters(classNode: any): ConstructorParameter[] {

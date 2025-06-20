@@ -20,9 +20,10 @@ export class ClassAnalyzer {
     const allClasses: ClassInfo[] = [];
     const allInterfaces = new Set<string>();
     const allClassNames = new Set<string>();
+    const allAbstractClasses = new Set<string>();
     const fileASTMap = new Map<string, any>();
 
-    // First pass: Parse all files and collect interface and class names
+    // First pass: Parse all files and collect interface, class names, and abstract classes
     for (const filePath of filePaths) {
       try {
         const root = this.astParser.parseFile(filePath);
@@ -32,12 +33,20 @@ export class ClassAnalyzer {
         const interfaces = this.astParser.extractInterfaces(root);
         interfaces.forEach(interfaceName => allInterfaces.add(interfaceName));
         
-        // Collect class names
+        // Collect class names and abstract classes
         const classNodes = this.astParser.findAllClasses(root);
+        console.log(`DEBUG: Found ${classNodes.length} class nodes in ${filePath}`);
         for (const classNode of classNodes) {
+
           const className = this.astParser.extractClassName(classNode);
           if (className) {
             allClassNames.add(className);
+            const isAbstract = this.astParser.isAbstractClass(classNode);
+            console.log(`DEBUG: Class ${className} - isAbstract: ${isAbstract}`);
+            console.log(`DEBUG: Class node text:`, classNode.text().substring(0, 100));
+            if (isAbstract) {
+              allAbstractClasses.add(className);
+            }
           }
         }
       } catch (error) {
@@ -49,7 +58,7 @@ export class ClassAnalyzer {
     for (const filePath of filePaths) {
       const root = fileASTMap.get(filePath);
       if (root) {
-        const classes = await this.analyzeFileFromAST(filePath, root, allInterfaces, allClassNames);
+        const classes = await this.analyzeFileFromAST(filePath, root, allInterfaces, allClassNames, allAbstractClasses);
         allClasses.push(...classes);
       }
     }
@@ -60,10 +69,10 @@ export class ClassAnalyzer {
     return filteredClasses;
   }
 
-  async analyzeFile(filePath: string, allInterfaces: Set<string>, allClassNames: Set<string>): Promise<ClassInfo[]> {
+  async analyzeFile(filePath: string, allInterfaces: Set<string>, allClassNames: Set<string>, allAbstractClasses: Set<string>): Promise<ClassInfo[]> {
     try {
       const root = this.astParser.parseFile(filePath);
-      return await this.analyzeFileFromAST(filePath, root, allInterfaces, allClassNames);
+      return await this.analyzeFileFromAST(filePath, root, allInterfaces, allClassNames, allAbstractClasses);
     } catch (error) {
       logger.warn(`Warning: Could not parse ${filePath}:`, {error});
 
@@ -71,7 +80,7 @@ export class ClassAnalyzer {
     }
   }
 
-  private async analyzeFileFromAST(filePath: string, root: any, allInterfaces: Set<string>, allClassNames: Set<string>): Promise<ClassInfo[]> {
+  private async analyzeFileFromAST(filePath: string, root: any, allInterfaces: Set<string>, allClassNames: Set<string>, allAbstractClasses: Set<string>): Promise<ClassInfo[]> {
     const classes: ClassInfo[] = [];
 
     try {
@@ -88,6 +97,7 @@ export class ClassAnalyzer {
       // Find all classes once and process them efficiently
       const allClassNodes = this.astParser.findAllClasses(root);
       const classNodesWithInterfaces = this.astParser.findClassesImplementingInterfaces(root);
+      const classNodesExtendingClasses = this.astParser.findClassesExtendingClasses(root);
       const processedClassNames = new Set<string>();
 
       // Process classes with interfaces first
@@ -128,15 +138,57 @@ export class ClassAnalyzer {
         });
       }
 
-      // Process remaining classes without interfaces
+      // Process classes extending other classes
+      for (const classNode of classNodesExtendingClasses) {
+        const className = this.astParser.extractClassName(classNode);
+        const parentClassName = this.astParser.extractParentClassName(classNode);
+        
+        if (!className || !parentClassName || processedClassNames.has(className)) continue;
+        
+        // Check if the parent class is abstract using the global abstract classes set
+        const isParentAbstract = allAbstractClasses.has(parentClassName);
+        
+        console.log(`DEBUG: Class ${className} extends ${parentClassName}. Is parent abstract? ${isParentAbstract}`);
+        console.log(`DEBUG: All abstract classes:`, Array.from(allAbstractClasses));
+        
+        // Only process if parent is abstract
+        if (isParentAbstract) {
+          const constructorParams = this.astParser.extractConstructorParameters(classNode);
+          const dependencies = this.resolveDependencies(constructorParams, typeAliases, importMappings, allInterfaces, allClassNames);
+          const importPath = this.generateImportPath(filePath, className);
+          const scope = this.astParser.extractScopeFromJSDoc(className, jsDocScopes);
+          const isAbstract = this.astParser.isAbstractClass(classNode);
+          
+          processedClassNames.add(className);
+
+          logger.log(`Processing class extending ${isParentAbstract ? 'abstract ' : ''}class: ${className} extends ${parentClassName}`);
+          logger.log(`Constructor params for ${className}:`, {constructorParams});
+          logger.log(`Dependencies for ${className}:`, {dependencies});
+          logger.log(`Scope for ${className}:`, {scope});
+          logger.log(`Is abstract: ${isAbstract}`);
+          
+          classes.push({
+            name: className,
+            filePath,
+            dependencies,
+            constructorParams,
+            parentClassName,
+            isAbstract,
+            importPath,
+            scope
+          });
+        }
+      }
+
+      // Process remaining classes without interfaces or inheritance
       for (const classNode of allClassNodes) {
         const className = this.astParser.extractClassName(classNode);
         
         if (!className || processedClassNames.has(className)) continue;
         
-        // Skip if this class implements an interface (already processed above)
+        // Skip if this class implements an interface or extends another class (already processed above)
         const classText = classNode.text();
-        if (classText.includes('implements')) continue;
+        if (classText.includes('implements') || classText.includes('extends')) continue;
         
         const constructorParams = this.astParser.extractConstructorParameters(classNode);
         const dependencies = this.resolveDependencies(constructorParams, typeAliases, importMappings, allInterfaces, allClassNames);
@@ -154,6 +206,8 @@ export class ClassAnalyzer {
           dependencies,
           constructorParams,
           interfaceName: undefined, // No interface for these classes
+          parentClassName: undefined, // No parent class for these classes
+          isAbstract: this.astParser.isAbstractClass(classNode),
           importPath,
           scope
         });
@@ -212,6 +266,13 @@ export class ClassAnalyzer {
   }
 
   private filterUnusedClasses(classes: ClassInfo[]): ClassInfo[] {
+    console.log('DEBUG: filterUnusedClasses called with classes:', classes.map(c => ({
+      name: c.name,
+      dependencies: c.dependencies,
+      parentClassName: c.parentClassName,
+      isAbstract: c.isAbstract,
+      interfaceName: c.interfaceName
+    })));
     
     // Create a set of all dependencies (class names and interface names referenced by others)
     const referencedTypes = new Set<string>();
@@ -221,6 +282,8 @@ export class ClassAnalyzer {
         referencedTypes.add(dep.name);
       });
     });
+    
+    console.log('DEBUG: referencedTypes:', Array.from(referencedTypes));
     
     // Filter out classes that:
     // 1. Have zero dependencies AND
@@ -232,8 +295,12 @@ export class ClassAnalyzer {
       
       // Keep the class if:
       // - It has dependencies (including controllers that inject services), OR
-      // - It is referenced by others (either by class name or interface name)
-      const shouldKeep = classInfo.dependencies.length > 0 || isClassReferenced || isInterfaceReferenced;
+      // - It is referenced by others (either by class name or interface name), OR
+      // - It extends an abstract class (concrete implementations of abstract classes)
+      const extendsAbstractClass = classInfo.parentClassName && !classInfo.isAbstract;
+      const shouldKeep = classInfo.dependencies.length > 0 || isClassReferenced || isInterfaceReferenced || extendsAbstractClass;
+      
+      console.log(`DEBUG: Class ${classInfo.name} - shouldKeep: ${shouldKeep}, deps: ${classInfo.dependencies.length}, referenced: ${isClassReferenced}, interfaceReferenced: ${isInterfaceReferenced}, extendsAbstract: ${extendsAbstractClass}`);
       
       if (!shouldKeep) {
         logger.log(`Filtering out unused class: ${classInfo.name} (no dependencies and not referenced by others)`);

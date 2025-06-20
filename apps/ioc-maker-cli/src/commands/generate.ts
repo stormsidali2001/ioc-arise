@@ -12,7 +12,7 @@ import { DependencyInfo, ClassInfo } from '../types';
 
 export const generateCommand = new Command('generate')
   .description('Generate IoC container from TypeScript classes')
-  .option('-s, --source <dir>', 'Source directory to scan', 'src')
+  .option('-s, --source <dir>', 'Source directory to scan', '.')
   .option('-o, --output <file>', 'Output file path', 'container.gen.ts')
   .option('-i, --interface <pattern>', 'Interface name pattern to match (regex)')
   .option('-e, --exclude <patterns...>', 'Exclude patterns for files')
@@ -83,6 +83,7 @@ await initializeOneLogger({
         interfacePattern: mergedOptions.interface,
         excludePatterns: mergedOptions.exclude
       });
+      console.log("analysis results",classes)
 
       if (classes.length === 0) {
         const error = ErrorFactory.noClassesFound(

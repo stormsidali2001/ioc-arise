@@ -47,6 +47,8 @@ export const analyzeCommand = new Command('analyze')
         interfacePattern: mergedOptions.interface,
         excludePatterns: mergedOptions.exclude
       });
+      console.log("---------------------------------------")
+      console.dir(classes,{depth:100})
 
       if (classes.length === 0) {
         const error = ErrorFactory.noClassesFound(

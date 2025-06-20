@@ -1,5 +1,17 @@
 # @notjustcoders/ioc-arise
 
+## 1.1.3
+
+### Patch Changes
+
+- feat(abstract-classes): add support for abstract classes and inheritance
+
+## 1.1.2
+
+### Patch Changes
+
+- feat(abstract-classes): add support for abstract classes and inheritance
+
 ## 1.1.1
 
 ### Patch Changes

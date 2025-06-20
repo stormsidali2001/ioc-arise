@@ -1,4 +1,3 @@
-import { TodoRepository } from './repositories/TodoRepository';
 import { UpdateTodoUseCase } from './use-cases/UpdateTodoUseCase';
 import { GetTodoUseCase } from './use-cases/GetTodoUseCase';
 import { DeleteTodoUseCase } from './use-cases/DeleteTodoUseCase';
@@ -7,6 +6,7 @@ import { UpdateTodoPresenter } from './presenters/UpdateTodoPresenter';
 import { GetTodoPresenter } from './presenters/GetTodoPresenter';
 import { DeleteTodoPresenter } from './presenters/DeleteTodoPresenter';
 import { CreateTodoPresenter } from './presenters/CreateTodoPresenter';
+import { TodoRepository } from './repositories/TodoRepository';
 import { createUserModuleContainer } from './UserModule.gen';
 function createTodoModuleContainer(userModuleContainer: ReturnType<typeof createUserModuleContainer>) {
   const updateTodoPresenterFactory = (): UpdateTodoPresenter => new UpdateTodoPresenter();
@@ -52,12 +52,6 @@ function createTodoModuleContainer(userModuleContainer: ReturnType<typeof create
   };
 
   return {
-        get TodoRepository(): TodoRepository {
-          return getTodoRepository();
-        },
-        get ITodoRepository(): TodoRepository {
-          return getTodoRepository();
-        },
         get UpdateTodoUseCase(): UpdateTodoUseCase {
           return getUpdateTodoUseCase();
         },
@@ -105,6 +99,12 @@ function createTodoModuleContainer(userModuleContainer: ReturnType<typeof create
         },
         get ICreateTodoOutputPort(): CreateTodoPresenter {
           return createTodoPresenterFactory();
+        },
+        get TodoRepository(): TodoRepository {
+          return getTodoRepository();
+        },
+        get ITodoRepository(): TodoRepository {
+          return getTodoRepository();
         }
   };
 }

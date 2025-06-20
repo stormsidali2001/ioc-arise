@@ -88,9 +88,10 @@ export class ErrorFactory {
       `No classes found for dependency injection in: ${sourcePath}`,
       { filePath: sourcePath },
       [
-        'Add classes that implement interfaces',
+        'Add classes that implement interfaces or extend abstract classes',
         'Check if classes are properly exported',
-        'Verify interface patterns match your interfaces'
+        'Verify interface patterns match your interfaces',
+        'Ensure abstract classes are properly declared with "abstract" keyword'
       ]
     );
   }

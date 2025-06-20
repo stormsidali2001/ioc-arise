@@ -1,0 +1,9 @@
+{
+  "source": ".",
+  "output": "container.gen.ts",
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ],
+  "verbose": true
+}
