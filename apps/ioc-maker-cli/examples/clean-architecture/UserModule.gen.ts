@@ -1,12 +1,12 @@
-import { GetUserUseCase } from './use-cases/GetUserUseCase';
-import { GetTodosByUserUseCase } from './use-cases/GetTodosByUserUseCase';
-import { DeleteUserUseCase } from './use-cases/DeleteUserUseCase';
-import { CreateUserUseCase } from './use-cases/CreateUserUseCase';
+import { UserRepository } from './repositories/UserRepository';
 import { GetUserPresenter } from './presenters/GetUserPresenter';
 import { GetTodosByUserPresenter } from './presenters/GetTodosByUserPresenter';
 import { DeleteUserPresenter } from './presenters/DeleteUserPresenter';
 import { CreateUserPresenter } from './presenters/CreateUserPresenter';
-import { UserRepository } from './repositories/UserRepository';
+import { GetUserUseCase } from './use-cases/GetUserUseCase';
+import { GetTodosByUserUseCase } from './use-cases/GetTodosByUserUseCase';
+import { DeleteUserUseCase } from './use-cases/DeleteUserUseCase';
+import { CreateUserUseCase } from './use-cases/CreateUserUseCase';
 function createUserModuleContainer() {
   const getUserPresenterFactory = (): GetUserPresenter => new GetUserPresenter();
   const getTodosByUserPresenterFactory = (): GetTodosByUserPresenter => new GetTodosByUserPresenter();
@@ -51,29 +51,11 @@ function createUserModuleContainer() {
   };
 
   return {
-        get GetUserUseCase(): GetUserUseCase {
-          return getGetUserUseCase();
+        get UserRepository(): UserRepository {
+          return getUserRepository();
         },
-        get IGetUserInputPort(): GetUserUseCase {
-          return getGetUserUseCase();
-        },
-        get GetTodosByUserUseCase(): GetTodosByUserUseCase {
-          return getGetTodosByUserUseCase();
-        },
-        get IGetTodosByUserInputPort(): GetTodosByUserUseCase {
-          return getGetTodosByUserUseCase();
-        },
-        get DeleteUserUseCase(): DeleteUserUseCase {
-          return getDeleteUserUseCase();
-        },
-        get IDeleteUserInputPort(): DeleteUserUseCase {
-          return getDeleteUserUseCase();
-        },
-        get CreateUserUseCase(): CreateUserUseCase {
-          return getCreateUserUseCase();
-        },
-        get ICreateUserInputPort(): CreateUserUseCase {
-          return getCreateUserUseCase();
+        get IUserRepository(): UserRepository {
+          return getUserRepository();
         },
         get GetUserPresenter(): GetUserPresenter {
           return getUserPresenterFactory();
@@ -99,11 +81,29 @@ function createUserModuleContainer() {
         get ICreateUserOutputPort(): CreateUserPresenter {
           return createUserPresenterFactory();
         },
-        get UserRepository(): UserRepository {
-          return getUserRepository();
+        get GetUserUseCase(): GetUserUseCase {
+          return getGetUserUseCase();
         },
-        get IUserRepository(): UserRepository {
-          return getUserRepository();
+        get IGetUserInputPort(): GetUserUseCase {
+          return getGetUserUseCase();
+        },
+        get GetTodosByUserUseCase(): GetTodosByUserUseCase {
+          return getGetTodosByUserUseCase();
+        },
+        get IGetTodosByUserInputPort(): GetTodosByUserUseCase {
+          return getGetTodosByUserUseCase();
+        },
+        get DeleteUserUseCase(): DeleteUserUseCase {
+          return getDeleteUserUseCase();
+        },
+        get IDeleteUserInputPort(): DeleteUserUseCase {
+          return getDeleteUserUseCase();
+        },
+        get CreateUserUseCase(): CreateUserUseCase {
+          return getCreateUserUseCase();
+        },
+        get ICreateUserInputPort(): CreateUserUseCase {
+          return getCreateUserUseCase();
         }
   };
 }
