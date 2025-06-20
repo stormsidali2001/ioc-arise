@@ -3,6 +3,9 @@ import { resolve } from 'path';
 import { existsSync } from 'fs';
 import { analyzeProject } from '../analyser';
 import { detectCircularDependencies } from '../generator';
+import { ConfigManager } from '../utils/configManager';
+import { ConfigValidator } from '../utils/configValidator';
+import { ErrorFactory, ErrorUtils } from '../errors/index.js';
 
 export const analyzeCommand = new Command('analyze')
   .description('Analyze project and show detected classes without generating')
@@ -11,26 +14,46 @@ export const analyzeCommand = new Command('analyze')
   .option('-e, --exclude <patterns...>', 'Exclude patterns for files')
   .action(async (options) => {
     try {
-      const sourceDir = resolve(options.source);
+      // Initialize config manager with the source directory
+      const initialSourceDir = resolve(options.source);
+      const configManager = new ConfigManager(initialSourceDir);
+      
+      // Validate config if present
+      if (configManager.hasConfigFile()) {
+        const config = configManager.getConfig();
+        if (!ConfigValidator.validateAndLog(config, configManager.getConfigPath())) {
+          process.exit(1);
+        }
+      }
+      
+      // Merge CLI options with config file
+      const mergedOptions = configManager.mergeWithCliOptions(options);
+      
+      const sourceDir = resolve(mergedOptions.source!);
 
       if (!existsSync(sourceDir)) {
-        console.error(`❌ Source directory does not exist: ${sourceDir}`);
+        const error = ErrorFactory.sourceDirectoryNotFound(sourceDir);
+        console.error(`❌ ${ErrorUtils.formatForConsole(error)}`);
         process.exit(1);
       }
 
+      if (configManager.hasConfigFile()) {
+        console.log(`📋 Using config file: ${configManager.getConfigPath()}`);
+      }
       console.log(`🔍 Analyzing directory: ${sourceDir}`);
 
       const classes = await analyzeProject(sourceDir, {
         sourceDir,
-        interfacePattern: options.interface,
-        excludePatterns: options.exclude
+        interfacePattern: mergedOptions.interface,
+        excludePatterns: mergedOptions.exclude
       });
-      console.log("Analysis results------------\n")
-      console.log(classes)
-      console.log("Analysis results------------\n")
+
       if (classes.length === 0) {
-        console.log('⚠️  No classes implementing interfaces found.');
-        process.exit(-1)
+        const error = ErrorFactory.noClassesFound(
+          mergedOptions.interface || 'interfaces with "implements" keyword'
+        );
+        console.error(`❌ ${ErrorUtils.formatForConsole(error)}`);
+        process.exit(1);
         return;
       }
 
@@ -62,7 +85,12 @@ export const analyzeCommand = new Command('analyze')
       }
 
     } catch (error) {
-      console.error('❌ Error analyzing project:', error instanceof Error ? error.message : error);
+      if (ErrorUtils.isIoCError(error)) {
+        console.error(`❌ ${ErrorUtils.formatForConsole(error)}`);
+      } else {
+        const wrappedError = ErrorFactory.unexpectedError(error as Error);
+        console.error(`❌ ${ErrorUtils.formatForConsole(wrappedError)}`);
+      }
       process.exit(1);
     }
   });

@@ -4,6 +4,8 @@ import { existsSync } from 'fs';
 import { analyzeProject } from '../analyser';
 import { generateContainerFile, detectCircularDependencies } from '../generator';
 import { ConfigManager } from '../utils/configManager';
+import { ConfigValidator } from '../utils/configValidator';
+import { ErrorFactory, ErrorUtils } from '../errors/index.js';
 import { ModuleResolver } from '../utils/moduleResolver';
 import { initializeOneLogger ,logger} from '@notjustcoders/one-logger-client-sdk';
 import { DependencyInfo, ClassInfo } from '../types';
@@ -33,6 +35,14 @@ await initializeOneLogger({
       const initialSourceDir = resolve(options.source);
       const configManager = new ConfigManager(initialSourceDir);
       
+      // Validate config if present
+      if (configManager.hasConfigFile()) {
+        const config = configManager.getConfig();
+        if (!ConfigValidator.validateAndLog(config, configManager.getConfigPath())) {
+          process.exit(1);
+        }
+      }
+      
       // Merge CLI options with config file
       const mergedOptions = configManager.mergeWithCliOptions(options);
       
@@ -43,15 +53,9 @@ await initializeOneLogger({
         console.log(`📋 Using config file: ${configManager.getConfigPath()}`);
       }
 
-      // Validate module configuration if present
+      // Initialize module resolver if modules are configured
       let moduleResolver: ModuleResolver | null = null;
       if (mergedOptions.modules && Object.keys(mergedOptions.modules).length > 0) {
-        const validationErrors = ModuleResolver.validateModuleConfig(mergedOptions.modules);
-        if (validationErrors.length > 0) {
-          console.error('❌ Module configuration errors:');
-          validationErrors.forEach(error => console.error(`   ${error}`));
-          process.exit(1);
-        }
         moduleResolver = new ModuleResolver(mergedOptions.modules, sourceDir);
         if (mergedOptions.verbose) {
           console.log(`🏗️  Module support enabled with ${Object.keys(mergedOptions.modules).length} modules`);
@@ -59,7 +63,8 @@ await initializeOneLogger({
       }
 
       if (!existsSync(sourceDir)) {
-        console.error(`❌ Source directory does not exist: ${sourceDir}`);
+        const error = ErrorFactory.sourceDirectoryNotFound(sourceDir);
+        console.error(`❌ ${ErrorUtils.formatForConsole(error)}`);
         process.exit(1);
       }
 
@@ -79,16 +84,12 @@ await initializeOneLogger({
         excludePatterns: mergedOptions.exclude
       });
 
-      console.dir({classes},{depth:100})
-
       if (classes.length === 0) {
-        console.log('⚠️  No classes implementing interfaces found.');
-        if (mergedOptions.interface) {
-          console.log(`   Make sure classes implement interfaces matching pattern: ${mergedOptions.interface}`);
-        } else {
-          console.log('   Make sure classes implement interfaces using the "implements" keyword.');
-        }
-        process.exit(-1)
+        const error = ErrorFactory.noClassesFound(
+          mergedOptions.interface || 'interfaces with "implements" keyword'
+        );
+        console.error(`❌ ${ErrorUtils.formatForConsole(error)}`);
+        process.exit(1);
         return;
       }
 
@@ -127,10 +128,21 @@ await initializeOneLogger({
       // Check for circular dependencies
       const cycles = detectCircularDependencies(classes);
       if (cycles.length > 0) {
-        console.error('❌ Circular dependencies detected:');
-        cycles.forEach((cycle, index) => {
-          console.error(`   ${index + 1}. ${cycle.join(' → ')}`);
-        });
+        const firstCycle = cycles[0];
+        if (firstCycle && firstCycle.length > 0) {
+          const className = firstCycle[0] || 'unknown';
+          const error = ErrorFactory.circularDependency(className, firstCycle);
+          console.error(`❌ ${ErrorUtils.formatForConsole(error)}`);
+          
+          if (cycles.length > 1) {
+            console.error('\n   Additional cycles:');
+            cycles.slice(1).forEach((cycle, index) => {
+              console.error(`   ${index + 2}. ${cycle.join(' → ')}`);
+            });
+          }
+        } else {
+          console.error('❌ Circular dependencies detected but cycle information is incomplete');
+        }
         process.exit(1);
       }
 
@@ -139,7 +151,7 @@ await initializeOneLogger({
         return;
       }
 
-      console.log("Generating container: generateContainerFile------------------>")
+
       // Generate container file
         generateContainerFile(moduleGroupedClasses, outputPath);
 
@@ -157,7 +169,12 @@ await initializeOneLogger({
       process.exit(0);
 
     } catch (error) {
-      console.error('❌ Error generating container:', error instanceof Error ? error.message : error);
+      if (ErrorUtils.isIoCError(error)) {
+        console.error(`❌ ${ErrorUtils.formatForConsole(error)}`);
+      } else {
+        const wrappedError = ErrorFactory.unexpectedError(error as Error);
+        console.error(`❌ ${ErrorUtils.formatForConsole(wrappedError)}`);
+      }
       process.exit(1);
     }
   });

@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from 'fs';
 import { resolve, dirname } from 'path';
+import { ErrorFactory, ErrorUtils } from '../errors/index.js';
 
 export interface IoCConfig {
   source?: string;
@@ -28,8 +29,20 @@ export class ConfigManager {
         const configContent = readFileSync(this.configPath, 'utf-8');
         this.config = JSON.parse(configContent);
       } catch (error) {
-        console.warn(`⚠️  Warning: Failed to parse config file at ${this.configPath}`);
-        console.warn(`   Using default configuration. Error: ${error instanceof Error ? error.message : error}`);
+        if (error instanceof SyntaxError) {
+          const parseError = ErrorFactory.configParseError(
+            this.configPath,
+            error.message
+          );
+          console.warn(`⚠️  Warning: ${ErrorUtils.formatForConsole(parseError)}`);
+        } else {
+          const readError = ErrorFactory.fileReadError(
+            this.configPath,
+            error instanceof Error ? error.message : String(error)
+          );
+          console.warn(`⚠️  Warning: ${ErrorUtils.formatForConsole(readError)}`);
+        }
+        console.warn('   Using default configuration.');
         this.config = {};
       }
     }

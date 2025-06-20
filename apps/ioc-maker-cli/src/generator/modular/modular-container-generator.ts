@@ -8,6 +8,7 @@ import { ModuleContainerFunctionGenerator } from './module-container-function-ge
 import { ModuleInstantiationGenerator } from './module-instantiation-generator';
 import { ContainerAggregator } from './container-aggregator';
 import { SplitFileWriter } from './split-file-writer';
+import { ErrorFactory } from '../../errors/index.js';
 
 /**
  * Generator for modular container structure.
@@ -42,7 +43,11 @@ export class ModularContainerGenerator extends BaseContainerGenerator {
     const moduleResult = this.moduleDependencyResolver.resolve();
 
     if (moduleResult.cycles.length > 0) {
-      throw new Error(`Circular dependencies detected between modules: ${JSON.stringify(moduleResult.cycles)}`);
+      const cycleDescription = moduleResult.cycles.map(cycle => cycle.join(' -> ')).join('; ');
+      throw ErrorFactory.circularDependency(
+        'modules',
+        moduleResult.cycles.flat()
+      );
     }
 
     // Then resolve class-level dependencies within each module
@@ -51,7 +56,18 @@ export class ModularContainerGenerator extends BaseContainerGenerator {
     const sortResult = dependencyResolver.resolve();
 
     if (sortResult.cycles.length > 0) {
-      throw new Error(`Circular dependencies detected within classes: ${JSON.stringify(sortResult.cycles)}`);
+      const firstCycle = sortResult.cycles[0];
+      if (firstCycle && firstCycle.length > 0) {
+        const className = firstCycle[0] || 'unknown';
+        throw ErrorFactory.circularDependency(
+          className,
+          firstCycle
+        );
+      } else {
+        throw ErrorFactory.generationFailed(
+          'Circular dependencies detected but cycle information is incomplete'
+        );
+      }
     }
 
     // Check if we need to split files (more than 2 modules)

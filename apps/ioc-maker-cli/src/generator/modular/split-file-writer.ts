@@ -1,9 +1,10 @@
 import { writeFileSync, mkdirSync } from 'fs';
 import { dirname, join } from 'path';
-import { ClassInfo } from '../../types';
-import { ImportGenerator } from '../import-generator';
-import { ModuleContainerFunctionGenerator } from './module-container-function-generator';
-import { ModuleInstantiationGenerator } from './module-instantiation-generator';
+import { ClassInfo } from '../../types.js';
+import { ErrorFactory } from '../../errors/index.js';
+import { ImportGenerator } from '../import-generator.js';
+import { ModuleContainerFunctionGenerator } from './module-container-function-generator.js';
+import { ModuleInstantiationGenerator } from './module-instantiation-generator.js';
 
 /**
  * Handles writing split module files when there are more than 3 modules.
@@ -47,12 +48,26 @@ export class SplitFileWriter {
         globalImportGenerator
       );
       
-      writeFileSync(moduleFilePath, moduleContent, 'utf-8');
+      try {
+        writeFileSync(moduleFilePath, moduleContent, 'utf-8');
+      } catch (error) {
+        throw ErrorFactory.fileWriteError(
+          moduleFilePath,
+          error instanceof Error ? error.message : String(error)
+        );
+      }
     }
 
     // Write main aggregator file
     const aggregatorContent = this.generateAggregatorFileContent(sortedModules, moduleDependencies);
-    writeFileSync(this.outputPath, aggregatorContent, 'utf-8');
+    try {
+      writeFileSync(this.outputPath, aggregatorContent, 'utf-8');
+    } catch (error) {
+      throw ErrorFactory.fileWriteError(
+        this.outputPath,
+        error instanceof Error ? error.message : String(error)
+      );
+    }
   }
 
   /**

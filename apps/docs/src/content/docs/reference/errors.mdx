@@ -1,0 +1,332 @@
+---
+title: Error Reference
+description: Complete reference for IoC Arise CLI error codes and their meanings
+sidebar:
+  order: 3
+---
+
+# Error Reference
+
+## Configuration Errors (1000-1099)
+
+### IOC_1000 - CONFIG_INVALID
+
+**Cause:** Configuration file contains invalid settings or missing required fields.
+
+**How to fix:**
+- Verify all required configuration properties are present
+- Check property names match the expected schema
+- Ensure values are of correct types (string, boolean, array)
+- Compare with working configuration examples
+
+### IOC_1001 - CONFIG_FILE_NOT_FOUND
+
+**Cause:** Configuration file does not exist at the specified or default path.
+
+**How to fix:**
+- Create an `ioc.config.json` file in your project root
+- Use `--config` flag to specify a different config file path
+- Verify the file path is correct and accessible
+
+### IOC_1002 - CONFIG_PARSE_ERROR
+
+**Cause:** Configuration file contains invalid JSON syntax.
+
+**How to fix:**
+- Check for missing commas, brackets, or quotes
+- Validate JSON syntax using a JSON validator
+- Remove trailing commas and ensure proper escaping
+- Use a JSON formatter to identify syntax issues
+
+### IOC_1003 - CONFIG_VALIDATION_ERROR
+
+**Cause:** Configuration values fail validation rules (invalid paths, patterns, etc.).
+
+**How to fix:**
+- Ensure source directory paths exist
+- Verify interface patterns are valid regex
+- Check exclude patterns use proper glob syntax
+- Validate module configurations are properly structured
+
+## Source Directory Errors (1100-1199)
+
+### IOC_1100 - SOURCE_DIR_NOT_FOUND
+
+**Cause:** Specified source directory does not exist on the filesystem.
+
+**How to fix:**
+- Create the missing source directory
+- Fix the `--source` flag path or config `source` property
+- Verify the path is relative to the current working directory
+- Check for typos in the directory name
+
+### IOC_1101 - SOURCE_DIR_NOT_ACCESSIBLE
+
+**Cause:** Source directory exists but cannot be read due to permission restrictions.
+
+**How to fix:**
+- Fix directory permissions using `chmod`
+- Ensure the user has read access to the directory
+- Check parent directory permissions
+- Run with appropriate user privileges
+
+### IOC_1102 - SOURCE_DIR_EMPTY
+
+**Cause:** Source directory contains no TypeScript files to analyze.
+
+**How to fix:**
+- Add TypeScript files with classes implementing interfaces
+- Check exclude patterns aren't filtering out all files
+- Verify file extensions are `.ts` or `.tsx`
+- Ensure files contain exportable classes
+
+## Analysis Errors (1200-1299)
+
+### IOC_1200 - ANALYSIS_FAILED
+
+**Cause:** Code analysis process encountered an error during parsing or processing.
+
+**How to fix:**
+- Check TypeScript syntax errors in source files
+- Verify all imports are resolvable
+- Fix compilation errors in the codebase
+- Ensure TypeScript version compatibility
+
+### IOC_1201 - NO_CLASSES_FOUND
+
+**Cause:** No classes implementing interfaces found in the source directory.
+
+**How to fix:**
+- Add classes that implement interfaces matching the pattern
+- Verify interface pattern regex is correct
+- Check that classes are properly exported
+- Ensure interface implementations are explicit
+
+### IOC_1202 - CIRCULAR_DEPENDENCY
+
+**Cause:** Circular dependency detected between classes in the dependency graph.
+
+**How to fix:**
+- Identify the circular dependency chain in the error message
+- Refactor code to break the circular dependency
+- Use dependency injection patterns to decouple classes
+- Consider using interfaces to break tight coupling
+
+### IOC_1203 - DUPLICATE_INTERFACE_IMPLEMENTATION
+
+**Cause:** Multiple classes implement the same interface, causing ambiguity.
+
+**How to fix:**
+- Use unique interfaces for each class
+- Implement different interfaces or extend base interfaces
+- Use naming conventions to differentiate implementations
+- Consider using factory patterns for multiple implementations
+
+### IOC_1204 - INVALID_INTERFACE_PATTERN
+
+**Cause:** Interface pattern regex is malformed or invalid.
+
+**How to fix:**
+- Fix the regex syntax in `--interface` flag or config
+- Test the regex pattern with online regex validators
+- Use simpler patterns like `I[A-Z].*` for interfaces starting with 'I'
+- Escape special regex characters properly
+
+## Generation Errors (1300-1399)
+
+### IOC_1300 - GENERATION_FAILED
+
+**Cause:** Container generation process failed due to analysis or template issues.
+
+**How to fix:**
+- Review and fix analysis errors first
+- Check that all dependencies are resolvable
+- Verify template compatibility
+- Ensure output directory is writable
+
+### IOC_1301 - OUTPUT_FILE_ERROR
+
+**Cause:** Cannot write to the specified output file location.
+
+**How to fix:**
+- Check output directory exists and is writable
+- Verify file permissions allow writing
+- Ensure sufficient disk space
+- Check if file is locked by another process
+
+### IOC_1302 - TEMPLATE_ERROR
+
+**Cause:** Code template processing failed during generation.
+
+**How to fix:**
+- Report this as a bug with reproduction steps
+- Check for unusual class or interface names
+- Verify TypeScript syntax in source files
+- Try with a minimal example to isolate the issue
+
+## Module Errors (1400-1499)
+
+### IOC_1400 - MODULE_CONFIG_INVALID
+
+**Cause:** Module configuration structure is malformed or invalid.
+
+**How to fix:**
+- Check modules config follows `{"ModuleName": ["pattern/**"]}` format
+- Ensure module names are valid identifiers
+- Verify patterns array contains valid glob patterns
+- Remove duplicate or conflicting module definitions
+
+### IOC_1401 - MODULE_PATTERN_INVALID
+
+**Cause:** Module file pattern uses invalid glob syntax.
+
+**How to fix:**
+- Use valid glob patterns like `user/**`, `*.service.ts`
+- Test patterns with glob testing tools
+- Avoid invalid characters in patterns
+- Use forward slashes for path separators
+
+### IOC_1402 - MODULE_DUPLICATE_PATTERN
+
+**Cause:** Multiple modules use the same or overlapping file patterns.
+
+**How to fix:**
+- Use unique, non-overlapping patterns for each module
+- Make patterns more specific to avoid conflicts
+- Review module boundaries and reorganize if needed
+- Use exclusion patterns to refine module scope
+
+## File System Errors (1500-1599)
+
+### IOC_1500 - FILE_NOT_FOUND
+
+**Cause:** Required file does not exist at the expected location.
+
+**How to fix:**
+- Verify the file path exists
+- Check for typos in file names
+- Ensure file hasn't been moved or deleted
+- Use absolute paths if relative paths fail
+
+### IOC_1501 - FILE_READ_ERROR
+
+**Cause:** Cannot read file due to system error or permissions.
+
+**How to fix:**
+- Check file permissions allow reading
+- Verify file is not corrupted
+- Ensure file is not locked by another process
+- Check disk health and available space
+
+### IOC_1502 - FILE_WRITE_ERROR
+
+**Cause:** Cannot write file due to system error or permissions.
+
+**How to fix:**
+- Check write permissions on target directory
+- Ensure sufficient disk space available
+- Verify file is not read-only or locked
+- Check parent directory permissions
+
+### IOC_1503 - PERMISSION_DENIED
+
+**Cause:** Insufficient permissions for file or directory operation.
+
+**How to fix:**
+- Fix file/directory permissions using `chmod`
+- Run with appropriate user privileges
+- Check ownership of files and directories
+- Ensure parent directories are accessible
+
+## Validation Errors (1600-1699)
+
+### IOC_1600 - VALIDATION_ERROR
+
+**Cause:** General validation failure for input data or configuration.
+
+**How to fix:**
+- Check input data format matches expected structure
+- Verify all required fields are provided
+- Ensure data types match validation rules
+- Review validation error details for specifics
+
+### IOC_1601 - SCHEMA_VALIDATION_ERROR
+
+**Cause:** Data structure does not match the expected schema.
+
+**How to fix:**
+- Compare data structure with schema requirements
+- Add missing required properties
+- Remove invalid or extra properties
+- Ensure nested objects follow schema rules
+
+### IOC_1602 - TYPE_VALIDATION_ERROR
+
+**Cause:** Value type does not match the expected type.
+
+**How to fix:**
+- Convert values to correct types (string, number, boolean)
+- Check for null or undefined values where not allowed
+- Ensure arrays contain elements of correct type
+- Validate object properties have correct types
+
+## Runtime Errors (1700-1799)
+
+### IOC_1700 - RUNTIME_ERROR
+
+**Cause:** Unexpected runtime error occurred during execution.
+
+**How to fix:**
+- Check system requirements and dependencies
+- Verify Node.js version compatibility
+- Review error stack trace for specific issues
+- Ensure all required packages are installed
+
+### IOC_1701 - UNEXPECTED_ERROR
+
+**Cause:** Unhandled error in the application.
+
+**How to fix:**
+- Report this as a bug with full stack trace
+- Include steps to reproduce the error
+- Provide system information and CLI version
+- Try with minimal example to isolate issue
+
+### IOC_1702 - INITIALIZATION_ERROR
+
+**Cause:** Application failed to initialize properly.
+
+**How to fix:**
+- Check dependencies are properly installed
+- Verify environment variables if required
+- Ensure working directory is correct
+- Check for conflicting global packages
+
+## Renderer Errors (1800-1899)
+
+### IOC_1800 - RENDERER_NOT_FOUND
+
+**Cause:** Specified renderer type is not available or supported.
+
+**How to fix:**
+- Use valid renderer types (currently only 'console')
+- Check spelling of renderer name
+- Verify renderer is supported in current version
+- Remove custom renderer flags if unsupported
+
+### IOC_1801 - RENDERER_ERROR
+
+**Cause:** Renderer failed to process or display output.
+
+**How to fix:**
+- Check output format requirements
+- Verify terminal supports required features
+- Try different output options
+- Report issue if error persists
+
+## Error Severity Levels
+
+- **LOW**: Minor issues that don't prevent operation
+- **MEDIUM**: Moderate issues that may affect functionality  
+- **HIGH**: Serious issues that prevent normal operation
+- **CRITICAL**: Fatal errors requiring immediate attention

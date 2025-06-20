@@ -2,14 +2,21 @@ import { readFileSync } from 'fs';
 import { ts } from '@ast-grep/napi';
 import { ConstructorParameter, InjectionScope } from '../types';
 import { logger} from "@notjustcoders/one-logger-client-sdk"
+import { ErrorFactory } from '../errors/index.js';
 
 
 export class ASTParser {
   parseFile(filePath: string): any {
-    const content = readFileSync(filePath, 'utf-8');
-    const ast = ts.parse(content);
-    return ast.root();
-
+    try {
+      const content = readFileSync(filePath, 'utf-8');
+      const ast = ts.parse(content);
+      return ast.root();
+    } catch (error) {
+      throw ErrorFactory.fileReadError(
+        filePath,
+        error instanceof Error ? error.message : String(error)
+      );
+    }
   }
   findClassesImplementingInterfaces(root: any): any[] {
     return root.findAll({

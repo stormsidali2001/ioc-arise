@@ -1,6 +1,7 @@
 import { minimatch } from 'minimatch';
 import { relative, normalize } from 'path';
 import { ClassInfo } from '../types';
+import { ErrorFactory, IoCError } from '../errors/index.js';
 
 export class ModuleResolver {
   private moduleConfig: Record<string, string[]>;
@@ -88,32 +89,32 @@ export class ModuleResolver {
    * @param moduleConfig - Module configuration to validate
    * @returns Array of validation errors
    */
-  public static validateModuleConfig(moduleConfig: Record<string, string[]>): string[] {
-    const errors: string[] = [];
+  public static validateModuleConfig(moduleConfig: Record<string, string[]>): IoCError[] {
+    const errors: IoCError[] = [];
     const allPatterns = new Set<string>();
     
     for (const [moduleName, patterns] of Object.entries(moduleConfig)) {
       // Validate module name
       if (!moduleName || typeof moduleName !== 'string') {
-        errors.push(`Invalid module name: ${moduleName}`);
+        errors.push(ErrorFactory.moduleConfigInvalid(moduleName, 'Invalid module name'));
         continue;
       }
       
       // Validate patterns
       if (!Array.isArray(patterns)) {
-        errors.push(`Module "${moduleName}" patterns must be an array`);
+        errors.push(ErrorFactory.moduleConfigInvalid(moduleName, 'patterns must be an array'));
         continue;
       }
       
       for (const pattern of patterns) {
         if (typeof pattern !== 'string') {
-          errors.push(`Module "${moduleName}" contains invalid pattern: ${pattern}`);
+          errors.push(ErrorFactory.moduleConfigInvalid(moduleName, `contains invalid pattern: ${pattern}`));
           continue;
         }
         
         // Check for duplicate patterns
         if (allPatterns.has(pattern)) {
-          errors.push(`Duplicate pattern "${pattern}" found in module "${moduleName}"`);
+          errors.push(ErrorFactory.modulePatternInvalid(pattern, moduleName));
         } else {
           allPatterns.add(pattern);
         }

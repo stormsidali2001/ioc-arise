@@ -3,6 +3,7 @@ import { ClassInfo, ConstructorParameter, InjectionScope, DependencyInfo } from 
 import { ASTParser } from './ast-parser';
 import { container } from '../container';
 import {logger} from "@notjustcoders/one-logger-client-sdk"
+import { ErrorFactory, IoCErrorCode } from '../errors/index.js';
 
 export class ClassAnalyzer {
   private astParser: ASTParser;
@@ -158,7 +159,11 @@ export class ClassAnalyzer {
         });
       }
     } catch (error) {
-      throw new Error(`Error analyzing file ${filePath}: ${error}`);
+      throw ErrorFactory.wrapError(
+        error as Error,
+        IoCErrorCode.ANALYSIS_FAILED,
+        { filePath }
+      );
     }
 
     return classes;

@@ -1,6 +1,7 @@
 import { AnalyzerOptions, ClassInfo } from '../types';
 import { ClassAnalyzer } from './class-analyzer';
 import { FileDiscovery } from './file-discovery';
+import { ErrorFactory, ErrorUtils } from '../errors/index.js';
 
 
 export class ProjectAnalyzer {
@@ -44,17 +45,29 @@ export class ProjectAnalyzer {
     for (const [interfaceName, implementingClasses] of interfaceToClassMap) {
       if (implementingClasses.length > 1) {
         duplicateInterfaces.push(interfaceName);
-        console.error(`Error: Interface '${interfaceName}' is implemented by multiple classes:`);
+        const error = ErrorFactory.duplicateInterfaceImplementation(
+          interfaceName,
+          implementingClasses.map(c => c.name)
+        );
+        console.error(`❌ ${ErrorUtils.formatForConsole(error)}`);
         for (const classInfo of implementingClasses) {
-          console.error(`  - ${classInfo.name} (${classInfo.filePath})`);
+          console.error(`   • ${classInfo.name} (${classInfo.filePath})`);
         }
       }
     }
 
     if (duplicateInterfaces.length > 0) {
-      throw new Error(
-        `Multiple classes implement the same interface(s): ${duplicateInterfaces.join(', ')}. ` +
-        'Each interface should only be implemented by one class for proper dependency injection.'
+      const allClassNames: string[] = [];
+      
+      for (const [interfaceName, implementingClasses] of interfaceToClassMap) {
+        if (implementingClasses.length > 1) {
+          allClassNames.push(...implementingClasses.map(c => c.name));
+        }
+      }
+      
+      throw ErrorFactory.duplicateInterfaceImplementation(
+        duplicateInterfaces.join(', '),
+        allClassNames
       );
     }
   }

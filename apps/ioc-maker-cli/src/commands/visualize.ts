@@ -5,6 +5,9 @@ import { analyzeProject } from '../analyser';
 import { detectCircularDependencies } from '../generator';
 import { ConsoleAnalysisRenderer } from '../renderer/console-analysis-renderer';
 import type { RenderAnalysis, AnalysisResults } from '../renderer/render-analysis.interface';
+import { ConfigManager } from '../utils/configManager';
+import { ConfigValidator } from '../utils/configValidator';
+import { ErrorFactory, ErrorUtils } from '../errors/index.js';
 
 export const visualizeCommand = new Command('visualize')
   .description('Visualize project dependencies and analysis results')
@@ -14,20 +17,39 @@ export const visualizeCommand = new Command('visualize')
   .option('-r, --renderer <type>', 'Renderer type (console)', 'console')
   .action(async (options) => {
     try {
-      const sourceDir = resolve(options.source);
+      // Initialize config manager with the source directory
+      const initialSourceDir = resolve(options.source);
+      const configManager = new ConfigManager(initialSourceDir);
+      
+      // Validate config if present
+      if (configManager.hasConfigFile()) {
+        const config = configManager.getConfig();
+        if (!ConfigValidator.validateAndLog(config, configManager.getConfigPath())) {
+          process.exit(1);
+        }
+      }
+      
+      // Merge CLI options with config file
+      const mergedOptions = configManager.mergeWithCliOptions(options);
+      
+      const sourceDir = resolve(mergedOptions.source!);
 
       if (!existsSync(sourceDir)) {
-        console.error(`❌ Source directory does not exist: ${sourceDir}`);
+        const error = ErrorFactory.sourceDirectoryNotFound(sourceDir);
+        console.error(`❌ ${ErrorUtils.formatForConsole(error)}`);
         process.exit(1);
       }
 
+      if (configManager.hasConfigFile()) {
+        console.log(`📋 Using config file: ${configManager.getConfigPath()}`);
+      }
       console.log(`🔍 Analyzing directory: ${sourceDir}`);
 
       // Perform analysis
       const classes = await analyzeProject(sourceDir, {
         sourceDir,
-        interfacePattern: options.interface,
-        excludePatterns: options.exclude
+        interfacePattern: mergedOptions.interface,
+        excludePatterns: mergedOptions.exclude
       });
 
       if (classes.length === 0) {
@@ -51,7 +73,12 @@ export const visualizeCommand = new Command('visualize')
       renderer.render(analysisResults);
 
     } catch (error) {
-      console.error('❌ Error visualizing project:', error instanceof Error ? error.message : error);
+      if (ErrorUtils.isIoCError(error)) {
+        console.error(`❌ ${ErrorUtils.formatForConsole(error)}`);
+      } else {
+        const wrappedError = ErrorFactory.unexpectedError(error as Error);
+        console.error(`❌ ${ErrorUtils.formatForConsole(wrappedError)}`);
+      }
       process.exit(1);
     }
   });

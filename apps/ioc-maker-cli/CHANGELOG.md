@@ -1,5 +1,11 @@
 # @notjustcoders/ioc-arise
 
+## 1.1.1
+
+### Patch Changes
+
+- feat(error-handling): implement comprehensive error handling system
+
 ## 1.1.0
 
 ### Minor Changes
