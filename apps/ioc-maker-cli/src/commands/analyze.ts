@@ -67,6 +67,9 @@ export const analyzeCommand = new Command('analyze')
         if (cls.interfaceName) {
           console.log(`   Implements: ${cls.interfaceName}`);
         }
+        if (cls.abstractClassName) {
+          console.log(`   Extends: ${cls.abstractClassName} (abstract)`);
+        }
         if (cls.dependencies.length > 0) {
           console.log(`   Dependencies: ${cls.dependencies.map(dep => dep.name).join(', ')}`);
         } else {

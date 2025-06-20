@@ -18,8 +18,7 @@ export interface ClassInfo {
   dependencies: DependencyInfo[];
   constructorParams: ConstructorParameter[];
   interfaceName?: string;
-  parentClassName?: string;
-  isAbstract?: boolean;
+  abstractClassName?: string;
   importPath: string;
   scope: InjectionScope;
 }

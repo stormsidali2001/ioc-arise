@@ -24,6 +24,9 @@ function createUserModuleContainer() {
         },
         get UserRepository(): UserRepository {
           return getUserRepository();
+        },
+        get AbstractRepository(): UserRepository {
+          return getUserRepository();
         }
   };
 }

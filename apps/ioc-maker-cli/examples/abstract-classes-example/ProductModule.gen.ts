@@ -25,6 +25,9 @@ function createProductModuleContainer(userModuleContainer: ReturnType<typeof cre
         },
         get ProductRepository(): ProductRepository {
           return getProductRepository();
+        },
+        get AbstractRepository(): ProductRepository {
+          return getProductRepository();
         }
   };
 }

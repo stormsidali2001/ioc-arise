@@ -1,5 +1,11 @@
 # @notjustcoders/ioc-arise
 
+## 1.1.5
+
+### Patch Changes
+
+- refactor(ioc-maker): improve abstract class handling and type system
+
 ## 1.1.4
 
 ### Patch Changes

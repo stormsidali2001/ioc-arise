@@ -117,6 +117,7 @@ export class ClassAnalyzer {
         const dependencies = this.resolveDependencies(constructorParams, typeAliases, importMappings, allInterfaces, allClassNames);
         const importPath = this.generateImportPath(filePath, className);
         const scope = this.astParser.extractScopeFromJSDoc(className, jsDocScopes);
+        const isAbstract = this.astParser.isAbstractClass(classNode);
         
         processedClassNames.add(className);
 
@@ -126,6 +127,13 @@ export class ClassAnalyzer {
         logger.log(`Type aliases found:`, {count:Array.from(typeAliases.entries())});
         logger.log(`Dependencies for ${className}:`, {dependencies});
         logger.log(`Scope for ${className}:`, {scope});
+        logger.log(`Is abstract: ${isAbstract}`);
+        
+        // Skip abstract classes - they cannot be instantiated
+        if (isAbstract) {
+          logger.log(`Skipping abstract class: ${className} (abstract classes cannot be instantiated)`);
+          continue;
+        }
         
         classes.push({
           name: className,
@@ -133,6 +141,7 @@ export class ClassAnalyzer {
           dependencies,
           constructorParams,
           interfaceName,
+          abstractClassName: undefined, // No abstract class for interface implementations
           importPath,
           scope
         });
@@ -167,16 +176,24 @@ export class ClassAnalyzer {
           logger.log(`Scope for ${className}:`, {scope});
           logger.log(`Is abstract: ${isAbstract}`);
           
+          // Skip abstract classes - they cannot be instantiated
+          if (isAbstract) {
+            logger.log(`Skipping abstract class: ${className} (abstract classes cannot be instantiated)`);
+            continue;
+          }
+          
           classes.push({
             name: className,
             filePath,
             dependencies,
             constructorParams,
-            parentClassName,
-            isAbstract,
+            interfaceName: undefined, // No interface for classes extending abstract classes
+            abstractClassName: parentClassName, // Track which abstract class this extends
             importPath,
             scope
           });
+          
+          logger.log(`Added class ${className} extending abstract class: ${parentClassName}`);
         }
       }
 
@@ -194,11 +211,19 @@ export class ClassAnalyzer {
         const dependencies = this.resolveDependencies(constructorParams, typeAliases, importMappings, allInterfaces, allClassNames);
         const importPath = this.generateImportPath(filePath, className);
         const scope = this.astParser.extractScopeFromJSDoc(className, jsDocScopes);
+        const isAbstract = this.astParser.isAbstractClass(classNode);
         
         logger.log(`Processing class without interface: ${className}`);
         logger.log(`Constructor params for ${className}:`, {constructorParams});
         logger.log(`Dependencies for ${className}:`, {dependencies});
         logger.log(`Scope for ${className}:`, {scope});
+        logger.log(`Is abstract: ${isAbstract}`);
+        
+        // Skip abstract classes - they cannot be instantiated
+        if (isAbstract) {
+          logger.log(`Skipping abstract class: ${className} (abstract classes cannot be instantiated)`);
+          continue;
+        }
         
         classes.push({
           name: className,
@@ -206,8 +231,7 @@ export class ClassAnalyzer {
           dependencies,
           constructorParams,
           interfaceName: undefined, // No interface for these classes
-          parentClassName: undefined, // No parent class for these classes
-          isAbstract: this.astParser.isAbstractClass(classNode),
+          abstractClassName: undefined, // No abstract class for standalone classes
           importPath,
           scope
         });
@@ -269,8 +293,6 @@ export class ClassAnalyzer {
     console.log('DEBUG: filterUnusedClasses called with classes:', classes.map(c => ({
       name: c.name,
       dependencies: c.dependencies,
-      parentClassName: c.parentClassName,
-      isAbstract: c.isAbstract,
       interfaceName: c.interfaceName
     })));
     
@@ -286,21 +308,19 @@ export class ClassAnalyzer {
     console.log('DEBUG: referencedTypes:', Array.from(referencedTypes));
     
     // Filter out classes that:
-    // 1. Have zero dependencies AND
-    // 2. Are not referenced by any other class (neither their class name nor interface name)
+    // 1. Have zero dependencies AND are not referenced by any other class
     // Note: Controllers and other entry points should be kept even if not referenced
+    // Note: Abstract classes are already excluded during collection phase
     const filteredClasses = classes.filter(classInfo => {
       const isClassReferenced = referencedTypes.has(classInfo.name);
       const isInterfaceReferenced = classInfo.interfaceName ? referencedTypes.has(classInfo.interfaceName) : false;
       
       // Keep the class if:
       // - It has dependencies (including controllers that inject services), OR
-      // - It is referenced by others (either by class name or interface name), OR
-      // - It extends an abstract class (concrete implementations of abstract classes)
-      const extendsAbstractClass = classInfo.parentClassName && !classInfo.isAbstract;
-      const shouldKeep = classInfo.dependencies.length > 0 || isClassReferenced || isInterfaceReferenced || extendsAbstractClass;
+      // - It is referenced by others (either by class name or interface name)
+      const shouldKeep = classInfo.dependencies.length > 0 || isClassReferenced || isInterfaceReferenced;
       
-      console.log(`DEBUG: Class ${classInfo.name} - shouldKeep: ${shouldKeep}, deps: ${classInfo.dependencies.length}, referenced: ${isClassReferenced}, interfaceReferenced: ${isInterfaceReferenced}, extendsAbstract: ${extendsAbstractClass}`);
+      console.log(`DEBUG: Class ${classInfo.name} - shouldKeep: ${shouldKeep}, deps: ${classInfo.dependencies.length}, referenced: ${isClassReferenced}, interfaceReferenced: ${isInterfaceReferenced}`);
       
       if (!shouldKeep) {
         logger.log(`Filtering out unused class: ${classInfo.name} (no dependencies and not referenced by others)`);

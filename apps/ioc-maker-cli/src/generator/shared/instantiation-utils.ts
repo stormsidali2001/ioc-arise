@@ -38,10 +38,10 @@ export class InstantiationUtils {
   }
 
   /**
-   * Gets the interface name or falls back to class name.
+   * Gets the interface name, abstract class name, or falls back to class name.
    */
   static getInterfaceOrClassName(classInfo: ClassInfo): string {
-    return classInfo.interfaceName || classInfo.name;
+    return classInfo.interfaceName || classInfo.abstractClassName || classInfo.name;
   }
 
   // ========== Dependency Resolution Utilities ==========
@@ -353,6 +353,17 @@ export class InstantiationUtils {
       } else {
         const getterCall = this.generateFunctionCall(this.generateGetterName(className));
         getters.push(this.generateGetterProperty(classInfo.interfaceName, className, getterCall, '    '));
+      }
+    }
+
+    // If there's an abstract class name and it's different from the class name, create an additional getter
+    if (classInfo.abstractClassName && classInfo.abstractClassName !== classInfo.name) {
+      if (this.isTransient(classInfo)) {
+        const factoryCall = this.generateFunctionCall(this.generateFactoryName(className));
+        getters.push(this.generateGetterProperty(classInfo.abstractClassName, className, factoryCall, '    '));
+      } else {
+        const getterCall = this.generateFunctionCall(this.generateGetterName(className));
+        getters.push(this.generateGetterProperty(classInfo.abstractClassName, className, getterCall, '    '));
       }
     }
     
