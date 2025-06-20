@@ -1,5 +1,11 @@
 # @notjustcoders/ioc-arise
 
+## 1.1.4
+
+### Patch Changes
+
+- Fix: Bug in abstract classes generation when having cross module dependencies
+
 ## 1.1.3
 
 ### Patch Changes

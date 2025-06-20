@@ -1,27 +1,12 @@
-import { UserRepository } from './implementations/UserRepository';
+import { createUserModuleContainer } from './UserModule.gen';
+import { createProductModuleContainer } from './ProductModule.gen';
 
-function createCoreModuleContainer() {
-
-  let userRepository: UserRepository | undefined;
-
-  const getUserRepository = (): UserRepository => {
-    if (!userRepository) {
-      userRepository = new UserRepository();
-    }
-    return userRepository;
-  };
-
-  return {
-        get UserRepository(): UserRepository {
-          return getUserRepository();
-        }
-  };
-}
-
-const coreModuleContainer = createCoreModuleContainer();
+const userModuleContainer = createUserModuleContainer();
+const productModuleContainer = createProductModuleContainer(userModuleContainer);
 
 export const container = {
-  coreModule: coreModuleContainer
+  userModule: userModuleContainer,
+  productModule: productModuleContainer
 };
 
 export type Container = typeof container;

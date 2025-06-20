@@ -1,12 +1,12 @@
+import { UpdateTodoUseCase } from './use-cases/UpdateTodoUseCase';
+import { GetTodoUseCase } from './use-cases/GetTodoUseCase';
+import { DeleteTodoUseCase } from './use-cases/DeleteTodoUseCase';
+import { CreateTodoUseCase } from './use-cases/CreateTodoUseCase';
 import { TodoRepository } from './repositories/TodoRepository';
 import { UpdateTodoPresenter } from './presenters/UpdateTodoPresenter';
 import { GetTodoPresenter } from './presenters/GetTodoPresenter';
 import { DeleteTodoPresenter } from './presenters/DeleteTodoPresenter';
 import { CreateTodoPresenter } from './presenters/CreateTodoPresenter';
-import { UpdateTodoUseCase } from './use-cases/UpdateTodoUseCase';
-import { GetTodoUseCase } from './use-cases/GetTodoUseCase';
-import { DeleteTodoUseCase } from './use-cases/DeleteTodoUseCase';
-import { CreateTodoUseCase } from './use-cases/CreateTodoUseCase';
 import { createUserModuleContainer } from './UserModule.gen';
 function createTodoModuleContainer(userModuleContainer: ReturnType<typeof createUserModuleContainer>) {
   const updateTodoPresenterFactory = (): UpdateTodoPresenter => new UpdateTodoPresenter();
@@ -52,6 +52,30 @@ function createTodoModuleContainer(userModuleContainer: ReturnType<typeof create
   };
 
   return {
+        get UpdateTodoUseCase(): UpdateTodoUseCase {
+          return getUpdateTodoUseCase();
+        },
+        get IUpdateTodoInputPort(): UpdateTodoUseCase {
+          return getUpdateTodoUseCase();
+        },
+        get GetTodoUseCase(): GetTodoUseCase {
+          return getGetTodoUseCase();
+        },
+        get IGetTodoInputPort(): GetTodoUseCase {
+          return getGetTodoUseCase();
+        },
+        get DeleteTodoUseCase(): DeleteTodoUseCase {
+          return getDeleteTodoUseCase();
+        },
+        get IDeleteTodoInputPort(): DeleteTodoUseCase {
+          return getDeleteTodoUseCase();
+        },
+        get CreateTodoUseCase(): CreateTodoUseCase {
+          return getCreateTodoUseCase();
+        },
+        get ICreateTodoInputPort(): CreateTodoUseCase {
+          return getCreateTodoUseCase();
+        },
         get TodoRepository(): TodoRepository {
           return getTodoRepository();
         },
@@ -81,30 +105,6 @@ function createTodoModuleContainer(userModuleContainer: ReturnType<typeof create
         },
         get ICreateTodoOutputPort(): CreateTodoPresenter {
           return createTodoPresenterFactory();
-        },
-        get UpdateTodoUseCase(): UpdateTodoUseCase {
-          return getUpdateTodoUseCase();
-        },
-        get IUpdateTodoInputPort(): UpdateTodoUseCase {
-          return getUpdateTodoUseCase();
-        },
-        get GetTodoUseCase(): GetTodoUseCase {
-          return getGetTodoUseCase();
-        },
-        get IGetTodoInputPort(): GetTodoUseCase {
-          return getGetTodoUseCase();
-        },
-        get DeleteTodoUseCase(): DeleteTodoUseCase {
-          return getDeleteTodoUseCase();
-        },
-        get IDeleteTodoInputPort(): DeleteTodoUseCase {
-          return getDeleteTodoUseCase();
-        },
-        get CreateTodoUseCase(): CreateTodoUseCase {
-          return getCreateTodoUseCase();
-        },
-        get ICreateTodoInputPort(): CreateTodoUseCase {
-          return getCreateTodoUseCase();
         }
   };
 }

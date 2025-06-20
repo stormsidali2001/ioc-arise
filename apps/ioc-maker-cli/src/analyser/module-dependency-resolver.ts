@@ -32,9 +32,12 @@ export class ModuleDependencyResolver {
     
     for (const [moduleName, classes] of this.moduleGroupedClasses) {
       for (const classInfo of classes) {
+        // Map both interface names and class names to their modules
         if (classInfo.interfaceName) {
           interfaceToModuleMap.set(classInfo.interfaceName, moduleName);
         }
+        // Also map class names to their modules for cross-module class dependencies
+        interfaceToModuleMap.set(classInfo.name, moduleName);
       }
     }
     
@@ -55,7 +58,7 @@ export class ModuleDependencyResolver {
       
       for (const classInfo of classes) {
         for (const dependency of classInfo.dependencies) {
-          // Check if this dependency is an interface from another module
+          // Check if this dependency is an interface or class from another module
           const dependencyModule = this.interfaceToModuleMap.get(dependency.name);
           
           if (dependencyModule && dependencyModule !== moduleName) {

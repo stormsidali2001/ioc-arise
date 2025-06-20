@@ -52,10 +52,13 @@ export class ModuleDependencyResolver {
     for (const depModule of moduleDeps) {
       const depModuleClasses = this.moduleGroupedClasses.get(depModule);
       if (depModuleClasses) {
-        const depClass = depModuleClasses.find(c => c.interfaceName === dependency);
+        // Check both interface name and class name
+        const depClass = depModuleClasses.find(c => c.interfaceName === dependency || c.name === dependency);
         if (depClass) {
           const depModuleVarName = InstantiationUtils.toCamelCase(depModule) + 'Container';
-          return `${depModuleVarName}.${dependency}`;
+          // Use the interface name if available, otherwise use the class name
+          const propertyName = depClass.interfaceName || depClass.name;
+          return `${depModuleVarName}.${propertyName}`;
         }
       }
     }
