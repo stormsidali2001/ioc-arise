@@ -1,5 +1,11 @@
 # @notjustcoders/ioc-arise
 
+## 1.1.6
+
+### Patch Changes
+
+- fix(ioc): abstract class dependency injection bugs
+
 ## 1.1.5
 
 ### Patch Changes

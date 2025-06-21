@@ -52,8 +52,12 @@ export class ModuleDependencyResolver {
     for (const depModule of moduleDeps) {
       const depModuleClasses = this.moduleGroupedClasses.get(depModule);
       if (depModuleClasses) {
-        // Check both interface name and class name
-        const depClass = depModuleClasses.find(c => c.interfaceName === dependency || c.name === dependency);
+        // Check interface name, class name, and abstract class name
+        const depClass = depModuleClasses.find(c => 
+          c.interfaceName === dependency || 
+          c.name === dependency || 
+          c.abstractClassName === dependency
+        );
         if (depClass) {
           const depModuleVarName = InstantiationUtils.toCamelCase(depModule) + 'Container';
           // Use the interface name if available, otherwise use the class name

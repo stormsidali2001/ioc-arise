@@ -7,19 +7,21 @@ This example demonstrates a two-module architecture using abstract classes and d
 ### Modules
 
 1. **User Module** (`userModule`)
-   - `UserRepository` - extends `AbstractRepository`
-   - `UserUseCase` - business logic for user operations
+   - `UserRepository` - extends `AbstractUserRepository`
+   - `UserUseCase` - business logic for user operations (depends on `AbstractUserRepository`)
 
 2. **Product Module** (`productModule`)
-   - `ProductRepository` - extends `AbstractRepository`
-   - `ProductUseCase` - business logic for product operations
-   - **Cross-module dependency**: `ProductUseCase` depends on `UserRepository` from the user module
+   - `ProductRepository` - extends `AbstractProductRepository`
+   - `ProductUseCase` - business logic for product operations (depends on `AbstractProductRepository`)
+   - **Cross-module dependency**: `ProductUseCase` depends on `AbstractUserRepository` from the user module
 
 ### Directory Structure
 
 ```
 ├── abstracts/
-│   └── AbstractRepository.ts     # Base abstract class for repositories
+│   ├── AbstractRepository.ts     # Generic base abstract class (legacy)
+│   ├── AbstractUserRepository.ts # Abstract class for user repositories
+│   └── AbstractProductRepository.ts # Abstract class for product repositories
 ├── entities/
 │   ├── User.ts                   # User entity interface
 │   └── Product.ts                # Product entity interface
@@ -48,9 +50,10 @@ All repositories extend `AbstractRepository` which provides:
 - Modules can depend on each other through the container
 
 ### 3. Cross-Module Dependencies
-- `ProductUseCase` depends on `UserRepository` to validate user existence
-- Demonstrates how modules can interact while maintaining separation
+- `ProductUseCase` depends on `AbstractUserRepository` to validate user existence
+- Demonstrates how modules can interact while maintaining separation through abstractions
 - Dependencies are resolved through the dependency injection container
+- Use cases depend on abstract classes, not concrete implementations, ensuring loose coupling
 
 ### 4. Dependency Injection
 - Container manages all dependencies

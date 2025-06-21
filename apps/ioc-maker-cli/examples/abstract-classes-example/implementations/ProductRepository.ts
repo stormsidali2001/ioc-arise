@@ -1,7 +1,7 @@
-import { AbstractRepository } from '../abstracts/AbstractRepository';
+import { AbstractProductRepository } from '../abstracts/AbstractProductRepository';
 import { Product } from '../entities/Product';
 
-export class ProductRepository extends AbstractRepository {
+export class ProductRepository extends AbstractProductRepository {
   protected tableName = 'products';
   private products: Product[] = [];
   

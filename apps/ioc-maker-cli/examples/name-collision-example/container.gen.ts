@@ -5,13 +5,6 @@ import { ListItemsUseCase } from './user/ListItemsUseCase';
 import { GetItemUseCase } from './user/GetItemUseCase';
 import { DeleteItemUseCase } from './user/DeleteItemUseCase';
 import { CreateItemUseCase } from './user/CreateItemUseCase';
-import { UpdateItemUseCase as OrderUpdateItemUseCase } from './order/UpdateItemUseCase';
-import { OrderRepository } from './order/OrderRepository';
-import { OrderController } from './order/OrderController';
-import { ListItemsUseCase as OrderListItemsUseCase } from './order/ListItemsUseCase';
-import { GetItemUseCase as OrderGetItemUseCase } from './order/GetItemUseCase';
-import { DeleteItemUseCase as OrderDeleteItemUseCase } from './order/DeleteItemUseCase';
-import { CreateItemUseCase as OrderCreateItemUseCase } from './order/CreateItemUseCase';
 import { UpdateItemUseCase as ProductUpdateItemUseCase } from './product/UpdateItemUseCase';
 import { ProductRepository } from './product/ProductRepository';
 import { ProductController } from './product/ProductController';
@@ -19,16 +12,16 @@ import { ListItemsUseCase as ProductListItemsUseCase } from './product/ListItems
 import { GetItemUseCase as ProductGetItemUseCase } from './product/GetItemUseCase';
 import { DeleteItemUseCase as ProductDeleteItemUseCase } from './product/DeleteItemUseCase';
 import { CreateItemUseCase as ProductCreateItemUseCase } from './product/CreateItemUseCase';
+import { UpdateItemUseCase as OrderUpdateItemUseCase } from './order/UpdateItemUseCase';
+import { OrderRepository } from './order/OrderRepository';
+import { OrderController } from './order/OrderController';
+import { ListItemsUseCase as OrderListItemsUseCase } from './order/ListItemsUseCase';
+import { GetItemUseCase as OrderGetItemUseCase } from './order/GetItemUseCase';
+import { DeleteItemUseCase as OrderDeleteItemUseCase } from './order/DeleteItemUseCase';
+import { CreateItemUseCase as OrderCreateItemUseCase } from './order/CreateItemUseCase';
 
 function createCoreModuleContainer() {
 
-  let productCreateItemUseCase: ProductCreateItemUseCase | undefined;
-  let productDeleteItemUseCase: ProductDeleteItemUseCase | undefined;
-  let productGetItemUseCase: ProductGetItemUseCase | undefined;
-  let productListItemsUseCase: ProductListItemsUseCase | undefined;
-  let productController: ProductController | undefined;
-  let productUpdateItemUseCase: ProductUpdateItemUseCase | undefined;
-  let productRepository: ProductRepository | undefined;
   let orderCreateItemUseCase: OrderCreateItemUseCase | undefined;
   let orderDeleteItemUseCase: OrderDeleteItemUseCase | undefined;
   let orderGetItemUseCase: OrderGetItemUseCase | undefined;
@@ -36,6 +29,13 @@ function createCoreModuleContainer() {
   let orderController: OrderController | undefined;
   let orderUpdateItemUseCase: OrderUpdateItemUseCase | undefined;
   let orderRepository: OrderRepository | undefined;
+  let productCreateItemUseCase: ProductCreateItemUseCase | undefined;
+  let productDeleteItemUseCase: ProductDeleteItemUseCase | undefined;
+  let productGetItemUseCase: ProductGetItemUseCase | undefined;
+  let productListItemsUseCase: ProductListItemsUseCase | undefined;
+  let productController: ProductController | undefined;
+  let productUpdateItemUseCase: ProductUpdateItemUseCase | undefined;
+  let productRepository: ProductRepository | undefined;
   let createItemUseCase: CreateItemUseCase | undefined;
   let deleteItemUseCase: DeleteItemUseCase | undefined;
   let getItemUseCase: GetItemUseCase | undefined;
@@ -44,48 +44,6 @@ function createCoreModuleContainer() {
   let userController: UserController | undefined;
   let userRepository: UserRepository | undefined;
 
-  const getProductCreateItemUseCase = (): ProductCreateItemUseCase => {
-    if (!productCreateItemUseCase) {
-      productCreateItemUseCase = new ProductCreateItemUseCase(getProductRepository());
-    }
-    return productCreateItemUseCase;
-  };
-  const getProductDeleteItemUseCase = (): ProductDeleteItemUseCase => {
-    if (!productDeleteItemUseCase) {
-      productDeleteItemUseCase = new ProductDeleteItemUseCase(getProductRepository());
-    }
-    return productDeleteItemUseCase;
-  };
-  const getProductGetItemUseCase = (): ProductGetItemUseCase => {
-    if (!productGetItemUseCase) {
-      productGetItemUseCase = new ProductGetItemUseCase(getProductRepository());
-    }
-    return productGetItemUseCase;
-  };
-  const getProductListItemsUseCase = (): ProductListItemsUseCase => {
-    if (!productListItemsUseCase) {
-      productListItemsUseCase = new ProductListItemsUseCase(getProductRepository());
-    }
-    return productListItemsUseCase;
-  };
-  const getProductController = (): ProductController => {
-    if (!productController) {
-      productController = new ProductController(getProductCreateItemUseCase(), getProductUpdateItemUseCase(), getProductDeleteItemUseCase(), getProductGetItemUseCase(), getProductListItemsUseCase());
-    }
-    return productController;
-  };
-  const getProductUpdateItemUseCase = (): ProductUpdateItemUseCase => {
-    if (!productUpdateItemUseCase) {
-      productUpdateItemUseCase = new ProductUpdateItemUseCase(getProductRepository());
-    }
-    return productUpdateItemUseCase;
-  };
-  const getProductRepository = (): ProductRepository => {
-    if (!productRepository) {
-      productRepository = new ProductRepository();
-    }
-    return productRepository;
-  };
   const getOrderCreateItemUseCase = (): OrderCreateItemUseCase => {
     if (!orderCreateItemUseCase) {
       orderCreateItemUseCase = new OrderCreateItemUseCase(getOrderRepository());
@@ -127,6 +85,48 @@ function createCoreModuleContainer() {
       orderRepository = new OrderRepository();
     }
     return orderRepository;
+  };
+  const getProductCreateItemUseCase = (): ProductCreateItemUseCase => {
+    if (!productCreateItemUseCase) {
+      productCreateItemUseCase = new ProductCreateItemUseCase(getProductRepository());
+    }
+    return productCreateItemUseCase;
+  };
+  const getProductDeleteItemUseCase = (): ProductDeleteItemUseCase => {
+    if (!productDeleteItemUseCase) {
+      productDeleteItemUseCase = new ProductDeleteItemUseCase(getProductRepository());
+    }
+    return productDeleteItemUseCase;
+  };
+  const getProductGetItemUseCase = (): ProductGetItemUseCase => {
+    if (!productGetItemUseCase) {
+      productGetItemUseCase = new ProductGetItemUseCase(getProductRepository());
+    }
+    return productGetItemUseCase;
+  };
+  const getProductListItemsUseCase = (): ProductListItemsUseCase => {
+    if (!productListItemsUseCase) {
+      productListItemsUseCase = new ProductListItemsUseCase(getProductRepository());
+    }
+    return productListItemsUseCase;
+  };
+  const getProductController = (): ProductController => {
+    if (!productController) {
+      productController = new ProductController(getProductCreateItemUseCase(), getProductUpdateItemUseCase(), getProductDeleteItemUseCase(), getProductGetItemUseCase(), getProductListItemsUseCase());
+    }
+    return productController;
+  };
+  const getProductUpdateItemUseCase = (): ProductUpdateItemUseCase => {
+    if (!productUpdateItemUseCase) {
+      productUpdateItemUseCase = new ProductUpdateItemUseCase(getProductRepository());
+    }
+    return productUpdateItemUseCase;
+  };
+  const getProductRepository = (): ProductRepository => {
+    if (!productRepository) {
+      productRepository = new ProductRepository();
+    }
+    return productRepository;
   };
   const getCreateItemUseCase = (): CreateItemUseCase => {
     if (!createItemUseCase) {
@@ -196,30 +196,6 @@ function createCoreModuleContainer() {
         get CreateItemUseCase(): CreateItemUseCase {
           return getCreateItemUseCase();
         },
-        get OrderUpdateItemUseCase(): OrderUpdateItemUseCase {
-          return getOrderUpdateItemUseCase();
-        },
-        get OrderRepository(): OrderRepository {
-          return getOrderRepository();
-        },
-        get IOrderRepository(): OrderRepository {
-          return getOrderRepository();
-        },
-        get OrderController(): OrderController {
-          return getOrderController();
-        },
-        get OrderListItemsUseCase(): OrderListItemsUseCase {
-          return getOrderListItemsUseCase();
-        },
-        get OrderGetItemUseCase(): OrderGetItemUseCase {
-          return getOrderGetItemUseCase();
-        },
-        get OrderDeleteItemUseCase(): OrderDeleteItemUseCase {
-          return getOrderDeleteItemUseCase();
-        },
-        get OrderCreateItemUseCase(): OrderCreateItemUseCase {
-          return getOrderCreateItemUseCase();
-        },
         get ProductUpdateItemUseCase(): ProductUpdateItemUseCase {
           return getProductUpdateItemUseCase();
         },
@@ -243,6 +219,30 @@ function createCoreModuleContainer() {
         },
         get ProductCreateItemUseCase(): ProductCreateItemUseCase {
           return getProductCreateItemUseCase();
+        },
+        get OrderUpdateItemUseCase(): OrderUpdateItemUseCase {
+          return getOrderUpdateItemUseCase();
+        },
+        get OrderRepository(): OrderRepository {
+          return getOrderRepository();
+        },
+        get IOrderRepository(): OrderRepository {
+          return getOrderRepository();
+        },
+        get OrderController(): OrderController {
+          return getOrderController();
+        },
+        get OrderListItemsUseCase(): OrderListItemsUseCase {
+          return getOrderListItemsUseCase();
+        },
+        get OrderGetItemUseCase(): OrderGetItemUseCase {
+          return getOrderGetItemUseCase();
+        },
+        get OrderDeleteItemUseCase(): OrderDeleteItemUseCase {
+          return getOrderDeleteItemUseCase();
+        },
+        get OrderCreateItemUseCase(): OrderCreateItemUseCase {
+          return getOrderCreateItemUseCase();
         }
   };
 }

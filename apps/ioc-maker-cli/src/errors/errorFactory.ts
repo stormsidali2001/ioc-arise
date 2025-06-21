@@ -122,6 +122,19 @@ export class ErrorFactory {
     );
   }
 
+  static duplicateAbstractClassExtension(abstractClassName: string, classes: string[]): AnalysisError {
+    return new AnalysisError(
+      IoCErrorCode.DUPLICATE_ABSTRACT_CLASS_EXTENSION,
+      `Multiple classes extending abstract class '${abstractClassName}': ${classes.join(', ')}`,
+      { className: abstractClassName },
+      [
+        'Use composition instead of inheritance where possible',
+        'Create separate abstract classes for different implementations',
+        'Consider using interfaces with default implementations'
+      ]
+    );
+  }
+
   // Generation errors
   static generationFailed(reason: string, outputPath?: string): GenerationError {
     return new GenerationError(

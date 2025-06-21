@@ -23,6 +23,9 @@ export class ProjectAnalyzer {
     // Validate that no interface is implemented by multiple classes
     this.validateUniqueInterfaceImplementations(allClasses);
 
+    // Validate that no abstract class is extended by multiple classes
+    this.validateUniqueAbstractClassExtensions(allClasses);
+
     return allClasses;
   }
 
@@ -67,6 +70,51 @@ export class ProjectAnalyzer {
       
       throw ErrorFactory.duplicateInterfaceImplementation(
         duplicateInterfaces.join(', '),
+        allClassNames
+      );
+    }
+  }
+
+  private validateUniqueAbstractClassExtensions(classes: ClassInfo[]): void {
+    const abstractClassToClassMap = new Map<string, ClassInfo[]>();
+    
+    // Group classes by their abstract class names
+    for (const classInfo of classes) {
+      if (classInfo.abstractClassName) {
+        if (!abstractClassToClassMap.has(classInfo.abstractClassName)) {
+          abstractClassToClassMap.set(classInfo.abstractClassName, []);
+        }
+        abstractClassToClassMap.get(classInfo.abstractClassName)!.push(classInfo);
+      }
+    }
+
+    // Check for duplicate extensions
+    const duplicateAbstractClasses: string[] = [];
+    for (const [abstractClassName, extendingClasses] of abstractClassToClassMap) {
+      if (extendingClasses.length > 1) {
+        duplicateAbstractClasses.push(abstractClassName);
+        const error = ErrorFactory.duplicateAbstractClassExtension(
+          abstractClassName,
+          extendingClasses.map(c => c.name)
+        );
+        console.error(`❌ Multiple classes extending abstract class: ${abstractClassName}`);
+        for (const classInfo of extendingClasses) {
+          console.error(`   • ${classInfo.name} (${classInfo.filePath})`);
+        }
+      }
+    }
+
+    if (duplicateAbstractClasses.length > 0) {
+      const allClassNames: string[] = [];
+      
+      for (const [abstractClassName, extendingClasses] of abstractClassToClassMap) {
+        if (extendingClasses.length > 1) {
+          allClassNames.push(...extendingClasses.map(c => c.name));
+        }
+      }
+      
+      throw ErrorFactory.duplicateAbstractClassExtension(
+        duplicateAbstractClasses.join(', '),
         allClassNames
       );
     }

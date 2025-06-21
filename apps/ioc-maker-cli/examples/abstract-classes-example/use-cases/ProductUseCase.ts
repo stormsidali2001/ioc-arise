@@ -1,12 +1,14 @@
-import { ProductRepository } from '../implementations/ProductRepository';
-import { UserRepository } from '../implementations/UserRepository';
+import { AbstractProductRepository } from '../abstracts/AbstractProductRepository';
+import { AbstractUserRepository } from '../abstracts/AbstractUserRepository';
 import { Product } from '../entities/Product';
 import { User } from '../entities/User';
+import { InternalProductNestedUseCase } from './InternalProductNestedUseCase';
 
 export class ProductUseCase {
   constructor(
-    private productRepository: ProductRepository,
-    private userRepository: UserRepository // Cross-module dependency
+    private productRepository: AbstractProductRepository,
+    private userRepository: AbstractUserRepository, // Cross-module dependency,
+    private internalNestedUseCase: InternalProductNestedUseCase
   ) {}
 
   async createProduct(productData: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>): Promise<Product> {

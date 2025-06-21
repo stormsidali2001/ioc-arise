@@ -79,6 +79,11 @@ export class InstantiationUtils {
           interfaceToClassMap.set(baseClassName, className);
         }
       }
+      
+      // Map abstract class name to concrete implementation
+      if (classInfo.abstractClassName) {
+        interfaceToClassMap.set(classInfo.abstractClassName, className);
+      }
     }
     return interfaceToClassMap;
   }
@@ -441,6 +446,12 @@ export class InstantiationUtils {
     const depClass = availableClasses.find(c => c.interfaceName === dependency);
     if (depClass) {
       return this.createManagedDependencyCall(depClass, depClass.name, importGenerator);
+    }
+
+    // Try to find by abstract class name - look for classes that extend the abstract class
+    const abstractImplementation = availableClasses.find(c => c.abstractClassName === dependency);
+    if (abstractImplementation) {
+      return this.createManagedDependencyCall(abstractImplementation, abstractImplementation.name, importGenerator);
     }
 
     // Try to find by class name using interface map (lowest priority)

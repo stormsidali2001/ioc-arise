@@ -38,6 +38,11 @@ export class ModuleDependencyResolver {
         }
         // Also map class names to their modules for cross-module class dependencies
         interfaceToModuleMap.set(classInfo.name, moduleName);
+        
+        // For concrete classes that extend abstract classes, map the abstract class to this module
+        if (classInfo.abstractClassName) {
+          interfaceToModuleMap.set(classInfo.abstractClassName, moduleName);
+        }
       }
     }
     

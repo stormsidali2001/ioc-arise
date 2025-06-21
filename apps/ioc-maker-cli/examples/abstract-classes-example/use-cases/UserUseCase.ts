@@ -1,8 +1,8 @@
-import { UserRepository } from '../implementations/UserRepository';
+import { AbstractUserRepository } from '../abstracts/AbstractUserRepository';
 import { User } from '../entities/User';
 
 export class UserUseCase {
-  constructor(private userRepository: UserRepository) {}
+  constructor(private userRepository: AbstractUserRepository) {}
 
   async createUser(userData: Omit<User, 'id' | 'createdAt' | 'updatedAt'>): Promise<User> {
     const user: User = {
