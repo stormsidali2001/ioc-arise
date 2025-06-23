@@ -6,7 +6,7 @@ import sitemap from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
 
 import partytown from '@astrojs/partytown';
-
+import logoUrl from './src/assets/logo.svg';
 // https://astro.build/config
 export default defineConfig({
   site: 'https://ioc-arise.notjustcoders.com',
@@ -17,6 +17,10 @@ export default defineConfig({
   integrations: [starlight({
 		
       title: 'IoC Arise',
+      logo: {
+        src: logoUrl, 
+        alt: 'IoC Arise Logo'
+      },
       head:[
         {
             tag:"script",
