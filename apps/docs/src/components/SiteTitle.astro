@@ -5,12 +5,12 @@ import config from 'virtual:starlight/user-config';
 const { logo } = config;
 ---
 
-<a href="/" class="flex items-center gap-4 no-underline text-inherit">
+<a href="/" class="flex flex-row items-center gap-4 no-underline text-inherit">
 
-		<img class="w-10 h-10 rounded-full" src={typeof logo === 'string' ? logo : logo?.src} alt={config.title} />
+		<img class="w-10 h-10 rounded-full mr_4" src={typeof logo === 'string' ? logo : logo?.src} alt={config.title} />
 
 
-	<div class="flex items-center gap-2">
+	<div class="flex items-center gap-2 ml-4">
 		<span class="text-lg font-semibold" style="color: var(--sl-color-white)">IoC Arise</span>
 		<span class="text-xs font-normal opacity-80" style="color: var(--sl-color-gray-3)">by</span>
 		<a 
