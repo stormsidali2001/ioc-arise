@@ -6,7 +6,8 @@ import sitemap from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
 
 import partytown from '@astrojs/partytown';
-import logoUrl from '../docs/public/favicon.svg';
+import logoUrl from '../docs/public/logoDark.png';
+import logoUrlLight from '../docs/public/logoLight.png';
 // https://astro.build/config
 export default defineConfig({
   site: 'https://ioc-arise.notjustcoders.com',
@@ -18,8 +19,8 @@ export default defineConfig({
 		
       title: 'IoC Arise',
       logo: {
-        src: logoUrl, 
-        alt: 'IoC Arise Logo'
+        light: logoUrlLight,
+        dark: logoUrl
       },
       head:[
         {

@@ -3,13 +3,21 @@ import type { Props } from '@astrojs/starlight/props';
 import config from 'virtual:starlight/user-config';
 
 const { logo } = config;
+const lightLogo = typeof config.logo === 'object' && 'light' in config.logo ? config.logo.light : config.logo;
+const darkLogo = typeof config.logo === 'object' && 'dark' in config.logo ? config.logo.dark : config.logo;
 ---
 
 <a href="/" class="flex flex-row items-center no-underline text-inherit">
 
-		<img class="w-14 h-14 rounded-full" src={typeof logo === 'string' ? logo : logo?.src} alt={config.title} />
-
-
+	<picture>
+		<source srcset={darkLogo} media="(prefers-color-scheme: dark)" />
+		<source srcset={lightLogo} media="(prefers-color-scheme: light)" />
+		<img
+		  src={lightLogo}
+		  alt='logo'
+		  class="w-14 h-14 rounded-full"
+		/>
+	  </picture>
 	<div class="flex items-center gap-2 ml-2">
 		<span class="text-lg font-semibold" style="color: var(--sl-color-white)">IoC Arise</span>
 		<span class="text-xs font-normal opacity-80" style="color: var(--sl-color-gray-3)">by</span>
