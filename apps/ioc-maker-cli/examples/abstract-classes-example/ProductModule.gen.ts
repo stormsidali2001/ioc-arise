@@ -28,10 +28,10 @@ function createProductModuleContainer(userModuleContainer: ReturnType<typeof cre
   };
 
   return {
-        get ProductRepository(): ProductRepository {
+        get AbstractProductRepository(): ProductRepository {
           return getProductRepository();
         },
-        get AbstractProductRepository(): ProductRepository {
+        get ProductRepository(): ProductRepository {
           return getProductRepository();
         },
         get ProductUseCase(): ProductUseCase {

@@ -2,11 +2,11 @@ import { UpdateTodoUseCase } from './use-cases/UpdateTodoUseCase';
 import { GetTodoUseCase } from './use-cases/GetTodoUseCase';
 import { DeleteTodoUseCase } from './use-cases/DeleteTodoUseCase';
 import { CreateTodoUseCase } from './use-cases/CreateTodoUseCase';
+import { TodoRepository } from './repositories/TodoRepository';
 import { UpdateTodoPresenter } from './presenters/UpdateTodoPresenter';
 import { GetTodoPresenter } from './presenters/GetTodoPresenter';
 import { DeleteTodoPresenter } from './presenters/DeleteTodoPresenter';
 import { CreateTodoPresenter } from './presenters/CreateTodoPresenter';
-import { TodoRepository } from './repositories/TodoRepository';
 import { createUserModuleContainer } from './UserModule.gen';
 function createTodoModuleContainer(userModuleContainer: ReturnType<typeof createUserModuleContainer>) {
   const updateTodoPresenterFactory = (): UpdateTodoPresenter => new UpdateTodoPresenter();
@@ -52,59 +52,59 @@ function createTodoModuleContainer(userModuleContainer: ReturnType<typeof create
   };
 
   return {
-        get UpdateTodoUseCase(): UpdateTodoUseCase {
-          return getUpdateTodoUseCase();
-        },
         get IUpdateTodoInputPort(): UpdateTodoUseCase {
           return getUpdateTodoUseCase();
         },
-        get GetTodoUseCase(): GetTodoUseCase {
-          return getGetTodoUseCase();
+        get UpdateTodoUseCase(): UpdateTodoUseCase {
+          return getUpdateTodoUseCase();
         },
         get IGetTodoInputPort(): GetTodoUseCase {
           return getGetTodoUseCase();
         },
-        get DeleteTodoUseCase(): DeleteTodoUseCase {
-          return getDeleteTodoUseCase();
+        get GetTodoUseCase(): GetTodoUseCase {
+          return getGetTodoUseCase();
         },
         get IDeleteTodoInputPort(): DeleteTodoUseCase {
           return getDeleteTodoUseCase();
         },
-        get CreateTodoUseCase(): CreateTodoUseCase {
-          return getCreateTodoUseCase();
+        get DeleteTodoUseCase(): DeleteTodoUseCase {
+          return getDeleteTodoUseCase();
         },
         get ICreateTodoInputPort(): CreateTodoUseCase {
           return getCreateTodoUseCase();
         },
-        get UpdateTodoPresenter(): UpdateTodoPresenter {
-          return updateTodoPresenterFactory();
+        get CreateTodoUseCase(): CreateTodoUseCase {
+          return getCreateTodoUseCase();
         },
-        get IUpdateTodoOutputPort(): UpdateTodoPresenter {
-          return updateTodoPresenterFactory();
-        },
-        get GetTodoPresenter(): GetTodoPresenter {
-          return getTodoPresenterFactory();
-        },
-        get IGetTodoOutputPort(): GetTodoPresenter {
-          return getTodoPresenterFactory();
-        },
-        get DeleteTodoPresenter(): DeleteTodoPresenter {
-          return deleteTodoPresenterFactory();
-        },
-        get IDeleteTodoOutputPort(): DeleteTodoPresenter {
-          return deleteTodoPresenterFactory();
-        },
-        get CreateTodoPresenter(): CreateTodoPresenter {
-          return createTodoPresenterFactory();
-        },
-        get ICreateTodoOutputPort(): CreateTodoPresenter {
-          return createTodoPresenterFactory();
+        get ITodoRepository(): TodoRepository {
+          return getTodoRepository();
         },
         get TodoRepository(): TodoRepository {
           return getTodoRepository();
         },
-        get ITodoRepository(): TodoRepository {
-          return getTodoRepository();
+        get IUpdateTodoOutputPort(): UpdateTodoPresenter {
+          return updateTodoPresenterFactory();
+        },
+        get UpdateTodoPresenter(): UpdateTodoPresenter {
+          return updateTodoPresenterFactory();
+        },
+        get IGetTodoOutputPort(): GetTodoPresenter {
+          return getTodoPresenterFactory();
+        },
+        get GetTodoPresenter(): GetTodoPresenter {
+          return getTodoPresenterFactory();
+        },
+        get IDeleteTodoOutputPort(): DeleteTodoPresenter {
+          return deleteTodoPresenterFactory();
+        },
+        get DeleteTodoPresenter(): DeleteTodoPresenter {
+          return deleteTodoPresenterFactory();
+        },
+        get ICreateTodoOutputPort(): CreateTodoPresenter {
+          return createTodoPresenterFactory();
+        },
+        get CreateTodoPresenter(): CreateTodoPresenter {
+          return createTodoPresenterFactory();
         }
   };
 }

@@ -334,8 +334,6 @@ export class InstantiationUtils {
    * Creates a module export getter.
    */
   static createModuleExportGetter(classInfo: ClassInfo, importGenerator?: any): string {
-    const interfaceName = this.getInterfaceOrClassName(classInfo);
-
     // Use alias if available, otherwise use class name
     const className = importGenerator && importGenerator.getClassAlias
       ? importGenerator.getClassAlias(classInfo)
@@ -343,17 +341,10 @@ export class InstantiationUtils {
 
     const getters: string[] = [];
 
-    // Always create a getter for the class name
-    if (this.isTransient(classInfo)) {
-      const factoryCall = this.generateFunctionCall(this.generateFactoryName(className));
-      getters.push(this.generateGetterProperty(className, className, factoryCall, '    '));
-    } else {
-      const getterCall = this.generateFunctionCall(this.generateGetterName(className));
-      getters.push(this.generateGetterProperty(className, className, getterCall, '    '));
-    }
+    // PRIORITIZE interface/abstract class names for dependency inversion
 
-    // If there's an interface name and it's different from the class name, create an additional getter
-    if (classInfo.interfaceName && classInfo.interfaceName !== classInfo.name) {
+    // If there's an interface name, create the primary getter for it
+    if (classInfo.interfaceName) {
       if (this.isTransient(classInfo)) {
         const factoryCall = this.generateFunctionCall(this.generateFactoryName(className));
         getters.push(this.generateGetterProperty(classInfo.interfaceName, className, factoryCall, '    '));
@@ -363,14 +354,28 @@ export class InstantiationUtils {
       }
     }
 
-    // If there's an abstract class name and it's different from the class name, create an additional getter
-    if (classInfo.abstractClassName && classInfo.abstractClassName !== classInfo.name) {
+    // If there's an abstract class name and it's different from interface name, create a getter for it
+    if (classInfo.abstractClassName && classInfo.abstractClassName !== classInfo.interfaceName) {
       if (this.isTransient(classInfo)) {
         const factoryCall = this.generateFunctionCall(this.generateFactoryName(className));
         getters.push(this.generateGetterProperty(classInfo.abstractClassName, className, factoryCall, '    '));
       } else {
         const getterCall = this.generateFunctionCall(this.generateGetterName(className));
         getters.push(this.generateGetterProperty(classInfo.abstractClassName, className, getterCall, '    '));
+      }
+    }
+
+    // Create a getter for the implementation class name as a secondary option
+    // (only if it's different from interface/abstract class names)
+    const hasInterfaceOrAbstractGetter = classInfo.interfaceName || classInfo.abstractClassName;
+    if (!hasInterfaceOrAbstractGetter ||
+      (classInfo.name !== classInfo.interfaceName && classInfo.name !== classInfo.abstractClassName)) {
+      if (this.isTransient(classInfo)) {
+        const factoryCall = this.generateFunctionCall(this.generateFactoryName(className));
+        getters.push(this.generateGetterProperty(className, className, factoryCall, '    '));
+      } else {
+        const getterCall = this.generateFunctionCall(this.generateGetterName(className));
+        getters.push(this.generateGetterProperty(className, className, getterCall, '    '));
       }
     }
 
@@ -563,10 +568,12 @@ export class InstantiationUtils {
    * Used by flat container generators.
    */
   static generateSingletonContainerProperty(classInfo: ClassInfo): string {
-    const interfaceName = this.getInterfaceOrClassName(classInfo);
+    // Prioritize interface name over class name for property access
+    const propertyName = classInfo.interfaceName || classInfo.abstractClassName || classInfo.name;
+    const returnType = classInfo.interfaceName || classInfo.abstractClassName || classInfo.name;
     const getterCall = this.generateFunctionCall(this.generateGetterName(classInfo.name));
 
-    return this.generateContainerProperty(interfaceName, classInfo.name, getterCall);
+    return this.generateContainerProperty(propertyName, returnType, getterCall);
   }
 
   /**
@@ -574,10 +581,12 @@ export class InstantiationUtils {
    * Used by flat container generators.
    */
   static generateTransientContainerProperty(classInfo: ClassInfo): string {
-    const interfaceName = this.getInterfaceOrClassName(classInfo);
+    // Prioritize interface name over class name for property access
+    const propertyName = classInfo.interfaceName || classInfo.abstractClassName || classInfo.name;
+    const returnType = classInfo.interfaceName || classInfo.abstractClassName || classInfo.name;
     const factoryCall = this.generateFunctionCall(this.generateFactoryName(classInfo.name));
 
-    return this.generateContainerProperty(interfaceName, classInfo.name, factoryCall);
+    return this.generateContainerProperty(propertyName, returnType, factoryCall);
   }
 
   /**

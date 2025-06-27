@@ -19,10 +19,10 @@ function createUserModuleContainer() {
   };
 
   return {
-        get UserRepository(): UserRepository {
+        get AbstractUserRepository(): UserRepository {
           return getUserRepository();
         },
-        get AbstractUserRepository(): UserRepository {
+        get UserRepository(): UserRepository {
           return getUserRepository();
         },
         get UserUseCase(): UserUseCase {

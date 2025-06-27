@@ -2,11 +2,11 @@ import { GetUserUseCase } from './use-cases/GetUserUseCase';
 import { GetTodosByUserUseCase } from './use-cases/GetTodosByUserUseCase';
 import { DeleteUserUseCase } from './use-cases/DeleteUserUseCase';
 import { CreateUserUseCase } from './use-cases/CreateUserUseCase';
+import { UserRepository } from './repositories/UserRepository';
 import { GetUserPresenter } from './presenters/GetUserPresenter';
 import { GetTodosByUserPresenter } from './presenters/GetTodosByUserPresenter';
 import { DeleteUserPresenter } from './presenters/DeleteUserPresenter';
 import { CreateUserPresenter } from './presenters/CreateUserPresenter';
-import { UserRepository } from './repositories/UserRepository';
 function createUserModuleContainer() {
   const getUserPresenterFactory = (): GetUserPresenter => new GetUserPresenter();
   const getTodosByUserPresenterFactory = (): GetTodosByUserPresenter => new GetTodosByUserPresenter();
@@ -51,59 +51,59 @@ function createUserModuleContainer() {
   };
 
   return {
-        get GetUserUseCase(): GetUserUseCase {
-          return getGetUserUseCase();
-        },
         get IGetUserInputPort(): GetUserUseCase {
           return getGetUserUseCase();
         },
-        get GetTodosByUserUseCase(): GetTodosByUserUseCase {
-          return getGetTodosByUserUseCase();
+        get GetUserUseCase(): GetUserUseCase {
+          return getGetUserUseCase();
         },
         get IGetTodosByUserInputPort(): GetTodosByUserUseCase {
           return getGetTodosByUserUseCase();
         },
-        get DeleteUserUseCase(): DeleteUserUseCase {
-          return getDeleteUserUseCase();
+        get GetTodosByUserUseCase(): GetTodosByUserUseCase {
+          return getGetTodosByUserUseCase();
         },
         get IDeleteUserInputPort(): DeleteUserUseCase {
           return getDeleteUserUseCase();
         },
-        get CreateUserUseCase(): CreateUserUseCase {
-          return getCreateUserUseCase();
+        get DeleteUserUseCase(): DeleteUserUseCase {
+          return getDeleteUserUseCase();
         },
         get ICreateUserInputPort(): CreateUserUseCase {
           return getCreateUserUseCase();
         },
-        get GetUserPresenter(): GetUserPresenter {
-          return getUserPresenterFactory();
+        get CreateUserUseCase(): CreateUserUseCase {
+          return getCreateUserUseCase();
         },
-        get IGetUserOutputPort(): GetUserPresenter {
-          return getUserPresenterFactory();
-        },
-        get GetTodosByUserPresenter(): GetTodosByUserPresenter {
-          return getTodosByUserPresenterFactory();
-        },
-        get IGetTodosByUserOutputPort(): GetTodosByUserPresenter {
-          return getTodosByUserPresenterFactory();
-        },
-        get DeleteUserPresenter(): DeleteUserPresenter {
-          return deleteUserPresenterFactory();
-        },
-        get IDeleteUserOutputPort(): DeleteUserPresenter {
-          return deleteUserPresenterFactory();
-        },
-        get CreateUserPresenter(): CreateUserPresenter {
-          return createUserPresenterFactory();
-        },
-        get ICreateUserOutputPort(): CreateUserPresenter {
-          return createUserPresenterFactory();
+        get IUserRepository(): UserRepository {
+          return getUserRepository();
         },
         get UserRepository(): UserRepository {
           return getUserRepository();
         },
-        get IUserRepository(): UserRepository {
-          return getUserRepository();
+        get IGetUserOutputPort(): GetUserPresenter {
+          return getUserPresenterFactory();
+        },
+        get GetUserPresenter(): GetUserPresenter {
+          return getUserPresenterFactory();
+        },
+        get IGetTodosByUserOutputPort(): GetTodosByUserPresenter {
+          return getTodosByUserPresenterFactory();
+        },
+        get GetTodosByUserPresenter(): GetTodosByUserPresenter {
+          return getTodosByUserPresenterFactory();
+        },
+        get IDeleteUserOutputPort(): DeleteUserPresenter {
+          return deleteUserPresenterFactory();
+        },
+        get DeleteUserPresenter(): DeleteUserPresenter {
+          return deleteUserPresenterFactory();
+        },
+        get ICreateUserOutputPort(): CreateUserPresenter {
+          return createUserPresenterFactory();
+        },
+        get CreateUserPresenter(): CreateUserPresenter {
+          return createUserPresenterFactory();
         }
   };
 }
