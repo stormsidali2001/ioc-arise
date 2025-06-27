@@ -1,5 +1,11 @@
 # @notjustcoders/ioc-arise
 
+## 1.1.7
+
+### Patch Changes
+
+- feat(generator): enhance container generation with path injection utilities, onInit hook with content preservation
+
 ## 1.1.6
 
 ### Patch Changes
