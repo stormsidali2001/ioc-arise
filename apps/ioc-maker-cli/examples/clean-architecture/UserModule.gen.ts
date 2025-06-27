@@ -54,55 +54,28 @@ function createUserModuleContainer() {
         get IGetUserInputPort(): GetUserUseCase {
           return getGetUserUseCase();
         },
-        get GetUserUseCase(): GetUserUseCase {
-          return getGetUserUseCase();
-        },
         get IGetTodosByUserInputPort(): GetTodosByUserUseCase {
-          return getGetTodosByUserUseCase();
-        },
-        get GetTodosByUserUseCase(): GetTodosByUserUseCase {
           return getGetTodosByUserUseCase();
         },
         get IDeleteUserInputPort(): DeleteUserUseCase {
           return getDeleteUserUseCase();
         },
-        get DeleteUserUseCase(): DeleteUserUseCase {
-          return getDeleteUserUseCase();
-        },
         get ICreateUserInputPort(): CreateUserUseCase {
-          return getCreateUserUseCase();
-        },
-        get CreateUserUseCase(): CreateUserUseCase {
           return getCreateUserUseCase();
         },
         get IUserRepository(): UserRepository {
           return getUserRepository();
         },
-        get UserRepository(): UserRepository {
-          return getUserRepository();
-        },
         get IGetUserOutputPort(): GetUserPresenter {
-          return getUserPresenterFactory();
-        },
-        get GetUserPresenter(): GetUserPresenter {
           return getUserPresenterFactory();
         },
         get IGetTodosByUserOutputPort(): GetTodosByUserPresenter {
           return getTodosByUserPresenterFactory();
         },
-        get GetTodosByUserPresenter(): GetTodosByUserPresenter {
-          return getTodosByUserPresenterFactory();
-        },
         get IDeleteUserOutputPort(): DeleteUserPresenter {
           return deleteUserPresenterFactory();
         },
-        get DeleteUserPresenter(): DeleteUserPresenter {
-          return deleteUserPresenterFactory();
-        },
         get ICreateUserOutputPort(): CreateUserPresenter {
-          return createUserPresenterFactory();
-        },
-        get CreateUserPresenter(): CreateUserPresenter {
           return createUserPresenterFactory();
         }
   };

@@ -20,14 +20,8 @@ function createTodoModuleContainer(userModuleContainer: ReturnType<typeof create
   };
 
   return {
-        get TodoService(): TodoService {
-          return getTodoService();
-        },
         get ITodoService(): TodoService {
           return getTodoService();
-        },
-        get TodoRepository(): TodoRepository {
-          return getTodoRepository();
         },
         get ITodoRepository(): TodoRepository {
           return getTodoRepository();

@@ -19,14 +19,8 @@ function createUserModuleContainer() {
   };
 
   return {
-        get UserService(): UserService {
-          return getUserService();
-        },
         get IUserService(): UserService {
           return getUserService();
-        },
-        get UserRepository(): UserRepository {
-          return getUserRepository();
         },
         get IUserRepository(): UserRepository {
           return getUserRepository();

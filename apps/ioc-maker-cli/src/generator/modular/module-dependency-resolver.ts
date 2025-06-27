@@ -17,14 +17,14 @@ export class ModuleDependencyResolver {
    */
   buildConstructorArguments(classInfo: ClassInfo, moduleClasses: ClassInfo[], moduleDeps: Set<string>, importGenerator?: any): string[] {
     const constructorArgs: string[] = [];
-    
+
     for (const dep of classInfo.dependencies) {
       const arg = this.resolveDependencyArgument(dep.name, moduleClasses, moduleDeps, importGenerator, classInfo);
       if (arg) {
         constructorArgs.push(arg);
       }
     }
-    
+
     return constructorArgs;
   }
 
@@ -37,10 +37,10 @@ export class ModuleDependencyResolver {
     if (externalModuleArg) {
       return externalModuleArg;
     }
-    
+
     // Create interface mapping for the current module with aliases
     const interfaceToClassMap = InstantiationUtils.createInterfaceToClassMap(moduleClasses, importGenerator);
-    
+
     // Check if dependency is from the same module
     return InstantiationUtils.resolveBasicDependency(dependency, moduleClasses, interfaceToClassMap, importGenerator, requestingClass);
   }
@@ -53,15 +53,15 @@ export class ModuleDependencyResolver {
       const depModuleClasses = this.moduleGroupedClasses.get(depModule);
       if (depModuleClasses) {
         // Check interface name, class name, and abstract class name
-        const depClass = depModuleClasses.find(c => 
-          c.interfaceName === dependency || 
-          c.name === dependency || 
+        const depClass = depModuleClasses.find(c =>
+          c.interfaceName === dependency ||
+          c.name === dependency ||
           c.abstractClassName === dependency
         );
         if (depClass) {
           const depModuleVarName = InstantiationUtils.toCamelCase(depModule) + 'Container';
-          // Use the interface name if available, otherwise use the class name
-          const propertyName = depClass.interfaceName || depClass.name;
+          // PRIORITIZE interface name, then abstract class name, then class name (for dependency inversion)
+          const propertyName = depClass.interfaceName || depClass.abstractClassName || depClass.name;
           return `${depModuleVarName}.${propertyName}`;
         }
       }

@@ -43,16 +43,16 @@ const CONTAINER_INIT_KEY = Symbol.for('ioc-container-initialized');
 
 export function onInit(): void {
   // Custom initer ialization logic added by user
-            console.log('🚀 IoC Container initialized!');
+    console.log('🚀 IoC Container initialized!');
 
-            const eventBus = container.userModule.UserRepository;
-            const emitter = new EventEmitter();
+    const eventBus = container.userModule.IUserRepository;
+    const emitter = new EventEmitter();
 
-            console.log('Setting up event listeners...', { eventBus });
-            emitter.emit('container-ready');
+    console.log('Setting up event listeners...', { eventBus });
+    emitter.emit('container-ready');
 
-            // Initialize global state
-            console.log('✅ Container initialization complete!');
+    // Initialize global state
+    console.log('✅ Container initialization complete!');
 }
 
 export function inject<T extends ContainerKey>(key: T): GetByPath<Container, T> {

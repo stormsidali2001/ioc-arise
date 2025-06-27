@@ -55,55 +55,28 @@ function createTodoModuleContainer(userModuleContainer: ReturnType<typeof create
         get IUpdateTodoInputPort(): UpdateTodoUseCase {
           return getUpdateTodoUseCase();
         },
-        get UpdateTodoUseCase(): UpdateTodoUseCase {
-          return getUpdateTodoUseCase();
-        },
         get IGetTodoInputPort(): GetTodoUseCase {
-          return getGetTodoUseCase();
-        },
-        get GetTodoUseCase(): GetTodoUseCase {
           return getGetTodoUseCase();
         },
         get IDeleteTodoInputPort(): DeleteTodoUseCase {
           return getDeleteTodoUseCase();
         },
-        get DeleteTodoUseCase(): DeleteTodoUseCase {
-          return getDeleteTodoUseCase();
-        },
         get ICreateTodoInputPort(): CreateTodoUseCase {
-          return getCreateTodoUseCase();
-        },
-        get CreateTodoUseCase(): CreateTodoUseCase {
           return getCreateTodoUseCase();
         },
         get ITodoRepository(): TodoRepository {
           return getTodoRepository();
         },
-        get TodoRepository(): TodoRepository {
-          return getTodoRepository();
-        },
         get IUpdateTodoOutputPort(): UpdateTodoPresenter {
-          return updateTodoPresenterFactory();
-        },
-        get UpdateTodoPresenter(): UpdateTodoPresenter {
           return updateTodoPresenterFactory();
         },
         get IGetTodoOutputPort(): GetTodoPresenter {
           return getTodoPresenterFactory();
         },
-        get GetTodoPresenter(): GetTodoPresenter {
-          return getTodoPresenterFactory();
-        },
         get IDeleteTodoOutputPort(): DeleteTodoPresenter {
           return deleteTodoPresenterFactory();
         },
-        get DeleteTodoPresenter(): DeleteTodoPresenter {
-          return deleteTodoPresenterFactory();
-        },
         get ICreateTodoOutputPort(): CreateTodoPresenter {
-          return createTodoPresenterFactory();
-        },
-        get CreateTodoPresenter(): CreateTodoPresenter {
           return createTodoPresenterFactory();
         }
   };

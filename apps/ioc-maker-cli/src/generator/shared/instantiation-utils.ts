@@ -365,11 +365,10 @@ export class InstantiationUtils {
       }
     }
 
-    // Create a getter for the implementation class name as a secondary option
-    // (only if it's different from interface/abstract class names)
+    // ONLY create a getter for the implementation class name if there's NO interface or abstract class
+    // This ensures we don't expose redundant getters
     const hasInterfaceOrAbstractGetter = classInfo.interfaceName || classInfo.abstractClassName;
-    if (!hasInterfaceOrAbstractGetter ||
-      (classInfo.name !== classInfo.interfaceName && classInfo.name !== classInfo.abstractClassName)) {
+    if (!hasInterfaceOrAbstractGetter) {
       if (this.isTransient(classInfo)) {
         const factoryCall = this.generateFunctionCall(this.generateFactoryName(className));
         getters.push(this.generateGetterProperty(className, className, factoryCall, '    '));

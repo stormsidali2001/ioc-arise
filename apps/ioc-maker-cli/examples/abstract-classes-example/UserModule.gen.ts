@@ -1,32 +1,29 @@
-import { UserRepository } from './implementations/UserRepository';
 import { UserUseCase } from './use-cases/UserUseCase';
+import { UserRepository } from './implementations/UserRepository';
 function createUserModuleContainer() {
 
-  let userUseCase: UserUseCase | undefined;
   let userRepository: UserRepository | undefined;
+  let userUseCase: UserUseCase | undefined;
 
-  const getUserUseCase = (): UserUseCase => {
-    if (!userUseCase) {
-      userUseCase = new UserUseCase(getUserRepository());
-    }
-    return userUseCase;
-  };
   const getUserRepository = (): UserRepository => {
     if (!userRepository) {
       userRepository = new UserRepository();
     }
     return userRepository;
   };
+  const getUserUseCase = (): UserUseCase => {
+    if (!userUseCase) {
+      userUseCase = new UserUseCase(getUserRepository());
+    }
+    return userUseCase;
+  };
 
   return {
-        get AbstractUserRepository(): UserRepository {
-          return getUserRepository();
-        },
-        get UserRepository(): UserRepository {
-          return getUserRepository();
-        },
         get UserUseCase(): UserUseCase {
           return getUserUseCase();
+        },
+        get AbstractUserRepository(): UserRepository {
+          return getUserRepository();
         }
   };
 }
