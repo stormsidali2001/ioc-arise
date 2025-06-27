@@ -17,4 +17,12 @@ export class ContainerAggregator {
   generateModularTypeExport(): string {
     return InstantiationUtils.generateModularContainerTypeExport();
   }
+
+  /**
+   * Generates the type export for the container with path injection utilities.
+   * @param outputPath Path to the container file to check for existing onInit content
+   */
+  generateModularTypeExportWithPathUtils(outputPath?: string): string {
+    return InstantiationUtils.generateModularContainerTypeExportWithPathUtils(outputPath);
+  }
 }

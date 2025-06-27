@@ -5,6 +5,7 @@ import { ErrorFactory } from '../../errors/index.js';
 import { ImportGenerator } from '../import-generator.js';
 import { ModuleContainerFunctionGenerator } from './module-container-function-generator.js';
 import { ModuleInstantiationGenerator } from './module-instantiation-generator.js';
+import { InstantiationUtils } from '../shared/index.js';
 
 /**
  * Handles writing split module files when there are more than 3 modules.
@@ -47,7 +48,7 @@ export class SplitFileWriter {
         moduleInstantiationGenerator,
         globalImportGenerator
       );
-      
+
       try {
         writeFileSync(moduleFilePath, moduleContent, 'utf-8');
       } catch (error) {
@@ -114,7 +115,7 @@ export class SplitFileWriter {
   private generateDependencyImports(moduleDeps: Set<string>): string {
     if (moduleDeps.size === 0) return '';
 
-    const imports = Array.from(moduleDeps).map(depModule => 
+    const imports = Array.from(moduleDeps).map(depModule =>
       `import { create${depModule}Container } from './${depModule}.gen';`
     );
 
@@ -138,7 +139,7 @@ export type ${moduleName}Container = ReturnType<typeof ${functionName}>;`;
     moduleDependencies: Map<string, Set<string>>
   ): string {
     // Generate imports for all module files
-    const moduleImports = sortedModules.map(moduleName => 
+    const moduleImports = sortedModules.map(moduleName =>
       `import { create${moduleName}Container } from './${moduleName}.gen';`
     ).join('\n');
 
@@ -151,8 +152,8 @@ export type ${moduleName}Container = ReturnType<typeof ${functionName}>;`;
     // Generate aggregated container
     const aggregatedContainer = this.generateAggregatedContainerForSplit(sortedModules);
 
-    // Generate type export
-    const typeExport = 'export type Container = typeof container;';
+    // Generate type export with path utilities and preserve onInit
+    const typeExport = InstantiationUtils.generateModularContainerTypeExportWithPathUtils(this.outputPath);
 
     return [
       moduleImports,
@@ -173,23 +174,23 @@ export type ${moduleName}Container = ReturnType<typeof ${functionName}>;`;
     moduleDependencies: Map<string, Set<string>>
   ): string[] {
     const instantiations: string[] = [];
-    
+
     for (const moduleName of sortedModules) {
       const moduleDeps = moduleDependencies.get(moduleName) || new Set();
       const moduleVarName = this.toCamelCase(moduleName) + 'Container';
       const moduleFunctionName = `create${moduleName}Container`;
-      
-      const functionArgs = Array.from(moduleDeps).map(depModule => 
+
+      const functionArgs = Array.from(moduleDeps).map(depModule =>
         this.toCamelCase(depModule) + 'Container'
       );
-      
-      const functionCall = functionArgs.length > 0 
+
+      const functionCall = functionArgs.length > 0
         ? `${moduleFunctionName}(${functionArgs.join(', ')})`
         : `${moduleFunctionName}()`;
-      
+
       instantiations.push(`const ${moduleVarName} = ${functionCall};`);
     }
-    
+
     return instantiations;
   }
 
@@ -202,7 +203,7 @@ export type ${moduleName}Container = ReturnType<typeof ${functionName}>;`;
       const moduleKey = this.toCamelCase(moduleName);
       return `  ${moduleKey}: ${moduleVarName}`;
     });
-    
+
     return `export const container = {\n${moduleExports.join(',\n')}\n};`;
   }
 

@@ -28,3 +28,4 @@ export function detectCircularDependencies(classes: ClassInfo[]): string[][] {
 export { ContainerGeneratorFactory } from './container-generator-factory';
 export { BaseContainerGenerator } from './base-container-generator';
 export { ModularContainerGenerator } from './modular/modular-container-generator';
+export { PathInjectionUtils } from './shared/path-injection-utils';

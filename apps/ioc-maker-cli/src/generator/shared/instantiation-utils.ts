@@ -1,6 +1,8 @@
 import { ClassInfo, ConstructorParameter } from '../../types';
 import { TopologicalSorter } from '../../utils/topological-sorter';
 import { ImportGenerator } from '../import-generator';
+import { PathInjectionUtils } from './path-injection-utils';
+import { ContainerPreservationUtils } from './container-preservation-utils';
 
 /**
  * Shared utility class for instantiation-related functionality used by both
@@ -8,7 +10,7 @@ import { ImportGenerator } from '../import-generator';
  */
 export class InstantiationUtils {
   // ========== Core String Utilities ==========
-  
+
   /**
    * Converts a string to camelCase (first letter lowercase).
    */
@@ -52,18 +54,18 @@ export class InstantiationUtils {
   static createInterfaceToClassMap(classes: ClassInfo[], importGenerator?: any): Map<string, string> {
     const interfaceToClassMap = new Map<string, string>();
     const classNameCounts = new Map<string, number>();
-    
+
     // First pass: count occurrences of each class name
     for (const classInfo of classes) {
       const count = classNameCounts.get(classInfo.name) || 0;
       classNameCounts.set(classInfo.name, count + 1);
     }
-    
+
     const classNameIndices = new Map<string, number>();
-    
+
     for (const classInfo of classes) {
       const className = importGenerator ? importGenerator.getClassAlias(classInfo) : classInfo.name;
-      
+
       if (classInfo.interfaceName) {
         // Map interface name to class name
         interfaceToClassMap.set(classInfo.interfaceName, className);
@@ -79,7 +81,7 @@ export class InstantiationUtils {
           interfaceToClassMap.set(baseClassName, className);
         }
       }
-      
+
       // Map abstract class name to concrete implementation
       if (classInfo.abstractClassName) {
         interfaceToClassMap.set(classInfo.abstractClassName, className);
@@ -95,7 +97,7 @@ export class InstantiationUtils {
     if (isOptional) {
       return 'undefined';
     }
-    
+
     // Handle primitive types
     switch (type.toLowerCase()) {
       case 'string':
@@ -126,7 +128,7 @@ export class InstantiationUtils {
     if (!classInfo || !classInfo.constructorParams.length) {
       return `new ${className}()`;
     }
-    
+
     const args = this.generateConstructorArgs(classInfo.constructorParams);
     return `new ${className}(${args})`;
   }
@@ -154,8 +156,8 @@ export class InstantiationUtils {
    * Applies indentation to a string, handling multi-line content.
    */
   static applyIndentation(content: string, indentation: string): string {
-    return indentation ? 
-      `${indentation}${content.replace(/\n/g, `\n${indentation}`)}` : 
+    return indentation ?
+      `${indentation}${content.replace(/\n/g, `\n${indentation}`)}` :
       content;
   }
 
@@ -212,21 +214,21 @@ export class InstantiationUtils {
    * Generic helper for generating code sections with consistent indentation handling.
    */
   private static generateCodeSection<T>(
-    items: T[], 
-    generator: (item: T) => string, 
+    items: T[],
+    generator: (item: T) => string,
     indentation: string = '',
     isMultiline: boolean = false
   ): string[] {
     const results: string[] = [];
-    
+
     for (const item of items) {
       const code = generator(item);
-      const indentedCode = isMultiline ? 
-        this.applyIndentation(code, indentation) : 
+      const indentedCode = isMultiline ?
+        this.applyIndentation(code, indentation) :
         `${indentation}${code}`;
       results.push(indentedCode);
     }
-    
+
     return results;
   }
 
@@ -269,7 +271,7 @@ export class InstantiationUtils {
     const className = importGenerator ? importGenerator.getClassAlias(classInfo) : classInfo.name;
     const factoryName = this.generateFactoryName(className);
     const constructorCall = this.generateConstructorCallWithAlias(classInfo, constructorArgs, importGenerator);
-    
+
     return `const ${factoryName} = (): ${className} => ${constructorCall};`;
   }
 
@@ -290,7 +292,7 @@ export class InstantiationUtils {
     const instanceName = this.generateInstanceName(className);
     const getterName = this.generateGetterName(className);
     const instantiation = this.generateConstructorCallWithAlias(classInfo, constructorArgs, importGenerator);
-    
+
     return `const ${getterName} = (): ${className} => {\n  if (!${instanceName}) {\n    ${instanceName} = ${instantiation};\n  }\n  return ${instanceName};\n};`;
   }
 
@@ -310,7 +312,7 @@ export class InstantiationUtils {
   static createManagedDependencyCall(classInfo: ClassInfo, implementingClass: string, importGenerator?: any): string {
     // Use aliased class name if available
     const aliasedClassName = importGenerator ? importGenerator.getClassAlias(classInfo) : implementingClass;
-    
+
     if (this.isTransient(classInfo)) {
       const factoryName = this.generateFactoryName(aliasedClassName);
       return this.generateFunctionCall(factoryName);
@@ -323,7 +325,7 @@ export class InstantiationUtils {
    * Creates a function signature with parameters.
    */
   static createFunctionSignature(functionName: string, params: string[]): string {
-    return params.length > 0 ? 
+    return params.length > 0 ?
       `function ${functionName}(${params.join(', ')})` :
       `function ${functionName}()`;
   }
@@ -333,14 +335,14 @@ export class InstantiationUtils {
    */
   static createModuleExportGetter(classInfo: ClassInfo, importGenerator?: any): string {
     const interfaceName = this.getInterfaceOrClassName(classInfo);
-    
+
     // Use alias if available, otherwise use class name
-    const className = importGenerator && importGenerator.getClassAlias 
-      ? importGenerator.getClassAlias(classInfo) 
+    const className = importGenerator && importGenerator.getClassAlias
+      ? importGenerator.getClassAlias(classInfo)
       : classInfo.name;
-    
+
     const getters: string[] = [];
-    
+
     // Always create a getter for the class name
     if (this.isTransient(classInfo)) {
       const factoryCall = this.generateFunctionCall(this.generateFactoryName(className));
@@ -349,7 +351,7 @@ export class InstantiationUtils {
       const getterCall = this.generateFunctionCall(this.generateGetterName(className));
       getters.push(this.generateGetterProperty(className, className, getterCall, '    '));
     }
-    
+
     // If there's an interface name and it's different from the class name, create an additional getter
     if (classInfo.interfaceName && classInfo.interfaceName !== classInfo.name) {
       if (this.isTransient(classInfo)) {
@@ -371,7 +373,7 @@ export class InstantiationUtils {
         getters.push(this.generateGetterProperty(classInfo.abstractClassName, className, getterCall, '    '));
       }
     }
-    
+
     return getters.join(',\n');
   }
 
@@ -381,13 +383,13 @@ export class InstantiationUtils {
   static sortClassesByDependencies(classes: ClassInfo[], allModuleClasses: ClassInfo[]): ClassInfo[] {
     // Build dependency graph for classes within the module
     const dependencyGraph = new Map<string, string[]>();
-    
+
     // Create unique identifiers for classes to handle name collisions
     const getUniqueId = (classInfo: ClassInfo) => `${classInfo.name}:${classInfo.filePath}`;
-    
+
     for (const classInfo of classes) {
       const dependencies: string[] = [];
-      
+
       // Only include dependencies that are within the same module and are singletons
       for (const dep of classInfo.dependencies) {
         const depClass = allModuleClasses.find(c => c.interfaceName === dep.name && c.scope !== 'transient');
@@ -395,13 +397,13 @@ export class InstantiationUtils {
           dependencies.push(getUniqueId(depClass));
         }
       }
-      
+
       dependencyGraph.set(getUniqueId(classInfo), dependencies);
     }
-    
+
     // Use TopologicalSorter to sort the classes
     const sortResult = TopologicalSorter.sort(dependencyGraph);
-    
+
     // Map sorted unique IDs back to ClassInfo objects
     const classMap = new Map(classes.map(c => [getUniqueId(c), c]));
     return sortResult.sorted.map(uniqueId => classMap.get(uniqueId)!).filter(Boolean);
@@ -412,8 +414,8 @@ export class InstantiationUtils {
    * This is the common pattern used by both flat and modular generators.
    */
   static resolveBasicDependency(
-    dependency: string, 
-    availableClasses: ClassInfo[], 
+    dependency: string,
+    availableClasses: ClassInfo[],
     interfaceToClassMap?: Map<string, string>,
     importGenerator?: ImportGenerator,
     requestingClass?: ClassInfo
@@ -422,7 +424,7 @@ export class InstantiationUtils {
     const directClassMatches = availableClasses.filter(c => c.name === dependency);
     if (directClassMatches.length > 0) {
       let selectedMatch = directClassMatches[0];
-      
+
       // If there are multiple matches and we have context about the requesting class,
       // prefer the one from the same directory/domain
       if (directClassMatches.length > 1 && requestingClass) {
@@ -435,7 +437,7 @@ export class InstantiationUtils {
           selectedMatch = sameDirectoryMatch;
         }
       }
-      
+
       if (selectedMatch) {
         const aliasedName = importGenerator ? importGenerator.getClassAlias(selectedMatch) : selectedMatch.name;
         return this.createManagedDependencyCall(selectedMatch, aliasedName, importGenerator);
@@ -481,18 +483,18 @@ export class InstantiationUtils {
    * Used by both flat and modular generators.
    */
   static generateTransientFactoriesSection(
-    classes: ClassInfo[], 
+    classes: ClassInfo[],
     constructorArgsResolver: (classInfo: ClassInfo) => string,
     indentation: string = '',
     importGenerator?: any
   ): string[] {
     const transientClasses = this.getTransientClasses(classes);
-    
-    return this.generateCodeSection(transientClasses, 
+
+    return this.generateCodeSection(transientClasses,
       (classInfo) => {
         const constructorArgs = constructorArgsResolver(classInfo);
         return this.generateTransientFactory(classInfo, constructorArgs, importGenerator);
-      }, 
+      },
       indentation
     );
   }
@@ -502,15 +504,15 @@ export class InstantiationUtils {
    * Used by both flat and modular generators.
    */
   static generateSingletonVariablesSection(
-    classes: ClassInfo[], 
+    classes: ClassInfo[],
     indentation: string = '',
     importGenerator?: any
   ): string[] {
     const singletonClasses = this.getSingletonClasses(classes);
     const sortedSingletons = this.sortClassesByDependencies(singletonClasses, classes);
-    
-    return this.generateCodeSection(sortedSingletons, 
-      (classInfo) => this.generateSingletonVariable(classInfo, importGenerator), 
+
+    return this.generateCodeSection(sortedSingletons,
+      (classInfo) => this.generateSingletonVariable(classInfo, importGenerator),
       indentation
     );
   }
@@ -520,19 +522,19 @@ export class InstantiationUtils {
    * Used by both flat and modular generators.
    */
   static generateSingletonGettersSection(
-    classes: ClassInfo[], 
+    classes: ClassInfo[],
     constructorArgsResolver: (classInfo: ClassInfo) => string,
     indentation: string = '',
     importGenerator?: any
   ): string[] {
     const singletonClasses = this.getSingletonClasses(classes);
     const sortedSingletons = this.sortClassesByDependencies(singletonClasses, classes);
-    
-    return this.generateCodeSection(sortedSingletons, 
+
+    return this.generateCodeSection(sortedSingletons,
       (classInfo) => {
         const constructorArgs = constructorArgsResolver(classInfo);
         return this.generateSingletonGetter(classInfo, constructorArgs, importGenerator);
-      }, 
+      },
       indentation,
       true // multiline content
     );
@@ -543,14 +545,14 @@ export class InstantiationUtils {
    * Used by modular generators.
    */
   static generateModuleExportsSection(
-    classes: ClassInfo[], 
+    classes: ClassInfo[],
     indentation: string = '',
     importGenerator?: any
   ): string[] {
     // Export all classes, not just those with interfaces
     // Controllers and other concrete classes should also be accessible
-    return this.generateCodeSection(classes, 
-      (classInfo) => this.createModuleExportGetter(classInfo, importGenerator), 
+    return this.generateCodeSection(classes,
+      (classInfo) => this.createModuleExportGetter(classInfo, importGenerator),
       indentation,
       true // multiline content
     );
@@ -563,7 +565,7 @@ export class InstantiationUtils {
   static generateSingletonContainerProperty(classInfo: ClassInfo): string {
     const interfaceName = this.getInterfaceOrClassName(classInfo);
     const getterCall = this.generateFunctionCall(this.generateGetterName(classInfo.name));
-    
+
     return this.generateContainerProperty(interfaceName, classInfo.name, getterCall);
   }
 
@@ -574,7 +576,7 @@ export class InstantiationUtils {
   static generateTransientContainerProperty(classInfo: ClassInfo): string {
     const interfaceName = this.getInterfaceOrClassName(classInfo);
     const factoryCall = this.generateFunctionCall(this.generateFactoryName(classInfo.name));
-    
+
     return this.generateContainerProperty(interfaceName, classInfo.name, factoryCall);
   }
 
@@ -584,7 +586,7 @@ export class InstantiationUtils {
    */
   static generateContainerObject(classes: ClassInfo[]): string {
     const properties: string[] = [];
-    
+
     for (const classInfo of classes) {
       if (this.isSingleton(classInfo)) {
         properties.push(this.generateSingletonContainerProperty(classInfo));
@@ -592,7 +594,7 @@ export class InstantiationUtils {
         properties.push(this.generateTransientContainerProperty(classInfo));
       }
     }
-    
+
     return this.generateObjectExport('container', properties);
   }
 
@@ -602,6 +604,23 @@ export class InstantiationUtils {
    */
   static generateContainerTypeExport(): string {
     return 'export type Container = typeof container;';
+  }
+
+  /**
+   * Generates the container type export with path injection utilities.
+   * Used by flat container generators.
+   * @param outputPath Path to the container file to check for existing onInit content
+   */
+  static generateContainerTypeExportWithPathUtils(outputPath?: string): string {
+    const typeExport = this.generateContainerTypeExport();
+
+    // Extract preserved onInit body if container exists
+    const preservedContent = outputPath
+      ? ContainerPreservationUtils.extractPreservedContent(outputPath)
+      : { onInitBody: undefined };
+
+    const pathUtils = PathInjectionUtils.generatePathInjectionUtilities(preservedContent.onInitBody);
+    return `${typeExport}\n\n${pathUtils}`;
   }
 
   /**
@@ -618,7 +637,7 @@ export class InstantiationUtils {
    * Used by modular generators.
    */
   static generateModuleFunctionParameters(moduleDeps: Set<string>): string[] {
-    return Array.from(moduleDeps).map(depModule => 
+    return Array.from(moduleDeps).map(depModule =>
       this.generateModuleFunctionParameter(depModule)
     );
   }
@@ -644,7 +663,7 @@ export class InstantiationUtils {
    * Used by modular generators.
    */
   static generateModuleFunctionArguments(moduleDeps: Set<string>): string[] {
-    return Array.from(moduleDeps).map(depModule => 
+    return Array.from(moduleDeps).map(depModule =>
       this.generateModuleContainerVariableName(depModule)
     );
   }
@@ -657,10 +676,10 @@ export class InstantiationUtils {
     const moduleVarName = this.generateModuleContainerVariableName(moduleName);
     const moduleFunctionName = this.generateModuleContainerFunctionName(moduleName);
     const moduleDeps = moduleDependencies.get(moduleName) || new Set();
-    
+
     const functionArgs = this.generateModuleFunctionArguments(moduleDeps);
     const functionCall = this.generateFunctionCall(moduleFunctionName, functionArgs);
-    
+
     return `const ${moduleVarName} = ${functionCall};`;
   }
 
@@ -679,10 +698,10 @@ export class InstantiationUtils {
    * Used by container aggregators.
    */
   static generateAggregatedContainer(sortedModules: string[]): string {
-    const moduleExports = sortedModules.map(moduleName => 
+    const moduleExports = sortedModules.map(moduleName =>
       this.generateModuleExportEntry(moduleName)
     );
-    
+
     return this.generateObjectExport('container', moduleExports, ',');
   }
 
@@ -695,11 +714,28 @@ export class InstantiationUtils {
   }
 
   /**
+   * Generates the modular container type export with path injection utilities.
+   * Used by container aggregators.
+   * @param outputPath Path to the container file to check for existing onInit content
+   */
+  static generateModularContainerTypeExportWithPathUtils(outputPath?: string): string {
+    const typeExport = this.generateModularContainerTypeExport();
+
+    // Extract preserved onInit body if container exists
+    const preservedContent = outputPath
+      ? ContainerPreservationUtils.extractPreservedContent(outputPath)
+      : { onInitBody: undefined };
+
+    const pathUtils = PathInjectionUtils.generatePathInjectionUtilities(preservedContent.onInitBody);
+    return `${typeExport}\n\n${pathUtils}`;
+  }
+
+  /**
    * Generates a module function return object.
    * Used by module function body generators.
    */
   static generateModuleFunctionReturnObject(moduleExports: string[]): string {
-    return moduleExports.length > 0 ? 
+    return moduleExports.length > 0 ?
       `  return {\n${moduleExports.join(',\n')}\n  };` :
       '  return {};';
   }
@@ -709,7 +745,7 @@ export class InstantiationUtils {
    * Used by module function body generators.
    */
   static generateModuleFunctionBody(
-    moduleClasses: ClassInfo[], 
+    moduleClasses: ClassInfo[],
     constructorArgsResolver: (classInfo: ClassInfo) => string,
     importGenerator?: any
   ): string {
@@ -717,9 +753,9 @@ export class InstantiationUtils {
     const lazyInitializations = this.generateSingletonVariablesSection(moduleClasses, '  ', importGenerator);
     const lazyGetters = this.generateSingletonGettersSection(moduleClasses, constructorArgsResolver, '  ', importGenerator);
     const moduleExports = this.generateModuleExportsSection(moduleClasses, '    ', importGenerator);
-    
+
     const returnObject = this.generateModuleFunctionReturnObject(moduleExports);
-    
+
     return [
       ...factoryFunctions,
       '',

@@ -89,7 +89,7 @@ export class ModularContainerGenerator extends BaseContainerGenerator {
     const imports = this.importGenerator.generateImports();
     const moduleContainers = this.generateModuleContainers(sortedModules, moduleDependencies);
     const aggregatedContainer = this.containerAggregator.generateAggregatedContainer(sortedModules);
-    const typeExport = this.containerAggregator.generateModularTypeExport();
+    const typeExport = this.containerAggregator.generateModularTypeExportWithPathUtils(this.fileWriter.getOutputPath());
 
     return `${imports}\n\n${moduleContainers}\n\n${aggregatedContainer}\n\n${typeExport}\n`;
   }
@@ -97,7 +97,7 @@ export class ModularContainerGenerator extends BaseContainerGenerator {
   private generateModuleContainers(sortedModules: string[], moduleDependencies: Map<string, Set<string>>): string {
     const moduleContainerFunctions = this.moduleContainerFunctionGenerator.generateModuleContainerFunctions(sortedModules, moduleDependencies);
     const moduleInstantiations = this.moduleInstantiationGenerator.generateModuleInstantiations(sortedModules, moduleDependencies);
-    
+
     return moduleContainerFunctions.join('\n\n') + '\n\n' + moduleInstantiations.join('\n');
   }
 
@@ -107,7 +107,7 @@ export class ModularContainerGenerator extends BaseContainerGenerator {
    */
   private generateSplitFiles(sortedModules: string[], moduleDependencies: Map<string, Set<string>>): void {
     const splitFileWriter = new SplitFileWriter(this.fileWriter.getOutputPath());
-    
+
     splitFileWriter.writeSplitModules(
       this.moduleGroupedClasses,
       sortedModules,
