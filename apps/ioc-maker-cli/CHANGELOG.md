@@ -1,5 +1,11 @@
 # @notjustcoders/ioc-arise
 
+## 1.1.9
+
+### Patch Changes
+
+- Fix: bug causing the container to use implementation names rather than interfaces names as keys
+
 ## 1.1.8
 
 ### Patch Changes
