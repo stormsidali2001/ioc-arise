@@ -83,15 +83,21 @@ ${onInitBody}
     /**
      * Generates all path-based injection utilities as a complete code block.
      * @param customOnInitBody Optional custom body for the onInit function to preserve user changes
+     * @param preservedImports Optional array of import statements to preserve for onInit dependencies
      */
-    static generatePathInjectionUtilities(customOnInitBody?: string): string {
+    static generatePathInjectionUtilities(customOnInitBody?: string, preservedImports?: string[]): string {
         const pathsType = this.generatePathsType();
         const containerKeyType = this.generateContainerKeyType();
         const getByPathType = this.generateGetByPathType();
         const initializationCode = this.generateInitializationCode(customOnInitBody);
         const injectFunction = this.generateInjectFunction();
 
-        return `${pathsType}
+        // Include preserved imports if any
+        const importsSection = preservedImports && preservedImports.length > 0
+            ? preservedImports.join('\n') + '\n\n'
+            : '';
+
+        return `${importsSection}${pathsType}
 
 ${containerKeyType}
 

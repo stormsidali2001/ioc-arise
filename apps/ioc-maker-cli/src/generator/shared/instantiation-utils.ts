@@ -614,12 +614,15 @@ export class InstantiationUtils {
   static generateContainerTypeExportWithPathUtils(outputPath?: string): string {
     const typeExport = this.generateContainerTypeExport();
 
-    // Extract preserved onInit body if container exists
+    // Extract preserved onInit body and imports if container exists
     const preservedContent = outputPath
       ? ContainerPreservationUtils.extractPreservedContent(outputPath)
-      : { onInitBody: undefined };
+      : { onInitBody: undefined, onInitImports: undefined };
 
-    const pathUtils = PathInjectionUtils.generatePathInjectionUtilities(preservedContent.onInitBody);
+    const pathUtils = PathInjectionUtils.generatePathInjectionUtilities(
+      preservedContent.onInitBody,
+      preservedContent.onInitImports
+    );
     return `${typeExport}\n\n${pathUtils}`;
   }
 
@@ -721,12 +724,15 @@ export class InstantiationUtils {
   static generateModularContainerTypeExportWithPathUtils(outputPath?: string): string {
     const typeExport = this.generateModularContainerTypeExport();
 
-    // Extract preserved onInit body if container exists
+    // Extract preserved onInit body and imports if container exists
     const preservedContent = outputPath
       ? ContainerPreservationUtils.extractPreservedContent(outputPath)
-      : { onInitBody: undefined };
+      : { onInitBody: undefined, onInitImports: undefined };
 
-    const pathUtils = PathInjectionUtils.generatePathInjectionUtilities(preservedContent.onInitBody);
+    const pathUtils = PathInjectionUtils.generatePathInjectionUtilities(
+      preservedContent.onInitBody,
+      preservedContent.onInitImports
+    );
     return `${typeExport}\n\n${pathUtils}`;
   }
 

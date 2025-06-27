@@ -11,6 +11,8 @@ export const container = {
 
 export type Container = typeof container;
 
+import { EventEmitter } from 'events';
+
 // 🎯 Auto-generate all possible paths using TypeScript
 type Paths<T, Prefix extends string = ""> = {
   [K in keyof T]: K extends string
@@ -40,8 +42,17 @@ type GetByPath<T, P extends string> =
 const CONTAINER_INIT_KEY = Symbol.for('ioc-container-initialized');
 
 export function onInit(): void {
-  // TODO: Implement your post-construction logic here
-    // sidali test
+  // Custom initer ialization logic added by user
+    console.log('🚀 IoC Container initialized!');
+
+    const eventBus = container.userModule.UserRepository;
+    const emitter = new EventEmitter();
+
+    console.log('Setting up event listeners...', { eventBus });
+    emitter.emit('container-ready');
+
+    // Initialize global state
+    console.log('✅ Container initialization complete!');
 }
 
 export function inject<T extends ContainerKey>(key: T): GetByPath<Container, T> {
