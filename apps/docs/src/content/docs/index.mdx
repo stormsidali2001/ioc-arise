@@ -52,6 +52,7 @@ import { Card, CardGrid, Badge, Tabs, TabItem,Steps,FileTree } from '@astrojs/st
    </FileTree>
 
    Each service class uses constructor injection for its dependencies:
+
    ```typescript
    export class UserService implements IUserService {
      constructor(private userRepository: IUserRepository) {}
@@ -125,21 +126,29 @@ import { Card, CardGrid, Badge, Tabs, TabItem,Steps,FileTree } from '@astrojs/st
 
 <CardGrid>
   <Card title="🚀 Zero Configuration" icon="rocket">
-    No decorators, annotations, or manual wiring required. Write pure TypeScript classes and interfaces - IoC Arise automatically discovers and wires your dependencies.
+    No decorators, annotations, or manual wiring required. Write pure TypeScript
+    classes and interfaces - IoC Arise automatically discovers and wires your
+    dependencies.
   </Card>
   <Card title="🔒 100% Type Safe" icon="approve-check">
-    Generated containers are fully typed with compile-time validation. Get IntelliSense autocompletion and catch dependency errors before runtime.
+    Generated containers are fully typed with compile-time validation. Get
+    IntelliSense autocompletion and catch dependency errors before runtime.
   </Card>
   <Card title="⚡ Blazing Fast" icon="forward">
-     Powered by AST-grep (built with Rust) for lightning-fast AST parsing and analysis. Generates optimized dependency containers in milliseconds with zero runtime overhead.
-   </Card>
+    Powered by AST-grep (built with Rust) for lightning-fast AST parsing and
+    analysis. Generates optimized dependency containers in milliseconds with
+    zero runtime overhead.
+  </Card>
   <Card title="🎯 Smart Dependency Analysis" icon="magnifier">
-    Automatically detects circular dependencies, missing implementations, and provides clear error messages with suggested fixes.
+    Automatically detects circular dependencies, missing implementations, and
+    provides clear error messages with suggested fixes.
   </Card>
   <Card title="🏗️ Modular Architecture" icon="puzzle">
-    Organize code into logical modules with cross-module dependency support. Perfect for microservices and large-scale applications.
+    Organize code into logical modules with cross-module dependency support.
+    Perfect for microservices and large-scale applications.
   </Card>
   <Card title="🔄 Zero Coupling" icon="seti:config">
-    Your business logic stays clean and framework-agnostic. No vendor lock-in - remove IoC Arise anytime without code changes.
+    Your business logic stays clean and framework-agnostic. No vendor lock-in -
+    remove IoC Arise anytime without code changes.
   </Card>
 </CardGrid>

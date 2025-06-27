@@ -26,15 +26,15 @@ sidebar:
 
 ## Configuration Options
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `source` | `string` | `"src"` | Source directory to scan |
-| `output` | `string` | `"container.gen.ts"` | Output file path |
-| `interface` | `string` | `"I[A-Z].*"` | Interface name pattern (regex) |
-| `exclude` | `string[]` | `[]` | File patterns to exclude |
-| `checkCycles` | `boolean` | `false` | Only check circular dependencies |
-| `verbose` | `boolean` | `false` | Enable detailed logging |
-| `modules` | `Record<string, string[]>` | `undefined` | Module definitions |
+| Option        | Type                       | Default              | Description                      |
+| ------------- | -------------------------- | -------------------- | -------------------------------- |
+| `source`      | `string`                   | `"src"`              | Source directory to scan         |
+| `output`      | `string`                   | `"container.gen.ts"` | Output file path                 |
+| `interface`   | `string`                   | `"I[A-Z].*"`         | Interface name pattern (regex)   |
+| `exclude`     | `string[]`                 | `[]`                 | File patterns to exclude         |
+| `checkCycles` | `boolean`                  | `false`              | Only check circular dependencies |
+| `verbose`     | `boolean`                  | `false`              | Enable detailed logging          |
+| `modules`     | `Record<string, string[]>` | `undefined`          | Module definitions               |
 
 ### Interface Patterns
 
@@ -71,8 +71,10 @@ sidebar:
 ## CLI Override
 
 ```bash
+npx @notjustcoders/ioc-arise generate --source lib --output custom.ts --verbose
+npx @notjustcoders/ioc-arise generate --config ioc.dev.json
+# or, if installed globally:
 ioc-arise generate --source lib --output custom.ts --verbose
-ioc-arise generate --config ioc.dev.json
 ```
 
 **Priority:** CLI arguments > Configuration file > Defaults
@@ -80,6 +82,7 @@ ioc-arise generate --config ioc.dev.json
 ## Project Examples
 
 **Monorepo:**
+
 ```json
 {
   "source": "packages",
@@ -91,6 +94,7 @@ ioc-arise generate --config ioc.dev.json
 ```
 
 **Clean Architecture:**
+
 ```json
 {
   "interface": "(I[A-Z].*|.*UseCase$|.*Repository$)",
