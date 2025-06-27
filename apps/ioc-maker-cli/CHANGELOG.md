@@ -1,5 +1,11 @@
 # @notjustcoders/ioc-arise
 
+## 1.1.10
+
+### Patch Changes
+
+- Bug: the containers modules keys should match the interface names, not their implementation
+
 ## 1.1.9
 
 ### Patch Changes
