@@ -18,6 +18,8 @@ pnpm add -g @notjustcoders/ioc-arise
 ## Global Usage
 
 ```bash
+npx @notjustcoders/ioc-arise [command] [options]
+# or, if installed globally:
 ioc-arise [command] [options]
 ```
 
@@ -26,29 +28,33 @@ ioc-arise [command] [options]
 ### `generate`
 
 ```bash
+npx @notjustcoders/ioc-arise generate [options]
+# or, if installed globally:
 ioc-arise generate [options]
 ```
 
 #### Options
 
-| Option | Short | Description | Default |
-|--------|-------|-------------|----------|
-| `--source <dir>` | `-s` | Source directory to scan | `src` |
-| `--output <file>` | `-o` | Output file path | `container.gen.ts` |
-| `--interface <pattern>` | `-i` | Interface name pattern to match (regex) | `I[A-Z].*` |
-| `--exclude <patterns...>` | `-e` | Exclude patterns for files | `[]` |
-| `--check-cycles` | | Only check for circular dependencies without generating | `false` |
-| `--verbose` | | Enable verbose logging | `false` |
+| Option                    | Short | Description                                             | Default            |
+| ------------------------- | ----- | ------------------------------------------------------- | ------------------ |
+| `--source <dir>`          | `-s`  | Source directory to scan                                | `src`              |
+| `--output <file>`         | `-o`  | Output file path                                        | `container.gen.ts` |
+| `--interface <pattern>`   | `-i`  | Interface name pattern to match (regex)                 | `I[A-Z].*`         |
+| `--exclude <patterns...>` | `-e`  | Exclude patterns for files                              | `[]`               |
+| `--check-cycles`          |       | Only check for circular dependencies without generating | `false`            |
+| `--verbose`               |       | Enable verbose logging                                  | `false`            |
 
 #### Examples
 
 ```bash
+npx @notjustcoders/ioc-arise generate
+npx @notjustcoders/ioc-arise generate --source ./src --output ./generated/container.ts
+npx @notjustcoders/ioc-arise generate --interface "I[A-Z].*"
+npx @notjustcoders/ioc-arise generate --exclude "**/*.test.ts" "**/*.spec.ts"
+npx @notjustcoders/ioc-arise generate --check-cycles
+npx @notjustcoders/ioc-arise generate --verbose
+# or, if installed globally:
 ioc-arise generate
-ioc-arise generate --source ./src --output ./generated/container.ts
-ioc-arise generate --interface "I[A-Z].*"
-ioc-arise generate --exclude "**/*.test.ts" "**/*.spec.ts"
-ioc-arise generate --check-cycles
-ioc-arise generate --verbose
 ```
 
 ### `analyze`
@@ -59,11 +65,11 @@ ioc-arise analyze [options]
 
 #### Options
 
-| Option | Short | Description | Default |
-|--------|-------|-------------|----------|
-| `--source <dir>` | `-s` | Source directory to scan | `src` |
-| `--interface <pattern>` | `-i` | Interface name pattern to match (regex) | `I[A-Z].*` |
-| `--exclude <patterns...>` | `-e` | Exclude patterns for files | `[]` |
+| Option                    | Short | Description                             | Default    |
+| ------------------------- | ----- | --------------------------------------- | ---------- |
+| `--source <dir>`          | `-s`  | Source directory to scan                | `src`      |
+| `--interface <pattern>`   | `-i`  | Interface name pattern to match (regex) | `I[A-Z].*` |
+| `--exclude <patterns...>` | `-e`  | Exclude patterns for files              | `[]`       |
 
 #### Examples
 
@@ -82,12 +88,12 @@ ioc-arise visualize [options]
 
 #### Options
 
-| Option | Short | Description | Default |
-|--------|-------|-------------|----------|
-| `--source <dir>` | `-s` | Source directory to scan | `src` |
-| `--interface <pattern>` | `-i` | Interface name pattern to match (regex) | `I[A-Z].*` |
-| `--exclude <patterns...>` | `-e` | Exclude patterns for files | `[]` |
-| `--renderer <type>` | `-r` | Renderer type (console) | `console` |
+| Option                    | Short | Description                             | Default    |
+| ------------------------- | ----- | --------------------------------------- | ---------- |
+| `--source <dir>`          | `-s`  | Source directory to scan                | `src`      |
+| `--interface <pattern>`   | `-i`  | Interface name pattern to match (regex) | `I[A-Z].*` |
+| `--exclude <patterns...>` | `-e`  | Exclude patterns for files              | `[]`       |
+| `--renderer <type>`       | `-r`  | Renderer type (console)                 | `console`  |
 
 #### Examples
 
@@ -119,10 +125,10 @@ ioc-arise visualize --source ./modules
 
 ## Interface Patterns
 
-| Pattern | Matches |
-|---------|----------|
-| `I[A-Z].*` | `IUserService`, `IRepository` |
-| `.*Service$` | `UserService`, `EmailService` |
+| Pattern         | Matches                            |
+| --------------- | ---------------------------------- |
+| `I[A-Z].*`      | `IUserService`, `IRepository`      |
+| `.*Service$`    | `UserService`, `EmailService`      |
 | `.*Repository$` | `UserRepository`, `TodoRepository` |
 
 ## Exclusion Patterns

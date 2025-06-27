@@ -14,6 +14,7 @@ sidebar:
 **Cause:** Configuration file contains invalid settings or missing required fields.
 
 **How to fix:**
+
 - Verify all required configuration properties are present
 - Check property names match the expected schema
 - Ensure values are of correct types (string, boolean, array)
@@ -24,6 +25,7 @@ sidebar:
 **Cause:** Configuration file does not exist at the specified or default path.
 
 **How to fix:**
+
 - Create an `ioc.config.json` file in your project root
 - Use `--config` flag to specify a different config file path
 - Verify the file path is correct and accessible
@@ -33,6 +35,7 @@ sidebar:
 **Cause:** Configuration file contains invalid JSON syntax.
 
 **How to fix:**
+
 - Check for missing commas, brackets, or quotes
 - Validate JSON syntax using a JSON validator
 - Remove trailing commas and ensure proper escaping
@@ -43,6 +46,7 @@ sidebar:
 **Cause:** Configuration values fail validation rules (invalid paths, patterns, etc.).
 
 **How to fix:**
+
 - Ensure source directory paths exist
 - Verify interface patterns are valid regex
 - Check exclude patterns use proper glob syntax
@@ -55,6 +59,7 @@ sidebar:
 **Cause:** Specified source directory does not exist on the filesystem.
 
 **How to fix:**
+
 - Create the missing source directory
 - Fix the `--source` flag path or config `source` property
 - Verify the path is relative to the current working directory
@@ -65,6 +70,7 @@ sidebar:
 **Cause:** Source directory exists but cannot be read due to permission restrictions.
 
 **How to fix:**
+
 - Fix directory permissions using `chmod`
 - Ensure the user has read access to the directory
 - Check parent directory permissions
@@ -75,6 +81,7 @@ sidebar:
 **Cause:** Source directory contains no TypeScript files to analyze.
 
 **How to fix:**
+
 - Add TypeScript files with classes implementing interfaces
 - Check exclude patterns aren't filtering out all files
 - Verify file extensions are `.ts` or `.tsx`
@@ -87,6 +94,7 @@ sidebar:
 **Cause:** Code analysis process encountered an error during parsing or processing.
 
 **How to fix:**
+
 - Check TypeScript syntax errors in source files
 - Verify all imports are resolvable
 - Fix compilation errors in the codebase
@@ -97,6 +105,7 @@ sidebar:
 **Cause:** No classes implementing interfaces or extending abstract classes found in the source directory.
 
 **How to fix:**
+
 - Add classes that implement interfaces matching the pattern or extend abstract classes
 - Verify interface pattern regex is correct
 - Check that classes are properly exported
@@ -108,6 +117,7 @@ sidebar:
 **Cause:** Circular dependency detected between classes in the dependency graph.
 
 **How to fix:**
+
 - Identify the circular dependency chain in the error message
 - Refactor code to break the circular dependency
 - Use dependency injection patterns to decouple classes
@@ -118,6 +128,7 @@ sidebar:
 **Cause:** Multiple classes implement the same interface, causing ambiguity.
 
 **How to fix:**
+
 - Use unique interfaces for each class
 - Implement different interfaces or extend base interfaces
 - Use naming conventions to differentiate implementations
@@ -128,6 +139,7 @@ sidebar:
 **Cause:** Interface pattern regex is malformed or invalid.
 
 **How to fix:**
+
 - Fix the regex syntax in `--interface` flag or config
 - Test the regex pattern with online regex validators
 - Use simpler patterns like `I[A-Z].*` for interfaces starting with 'I'
@@ -140,6 +152,7 @@ sidebar:
 **Cause:** Container generation process failed due to analysis or template issues.
 
 **How to fix:**
+
 - Review and fix analysis errors first
 - Check that all dependencies are resolvable
 - Verify template compatibility
@@ -150,6 +163,7 @@ sidebar:
 **Cause:** Cannot write to the specified output file location.
 
 **How to fix:**
+
 - Check output directory exists and is writable
 - Verify file permissions allow writing
 - Ensure sufficient disk space
@@ -160,6 +174,7 @@ sidebar:
 **Cause:** Code template processing failed during generation.
 
 **How to fix:**
+
 - Report this as a bug with reproduction steps
 - Check for unusual class or interface names
 - Verify TypeScript syntax in source files
@@ -172,6 +187,7 @@ sidebar:
 **Cause:** Module configuration structure is malformed or invalid.
 
 **How to fix:**
+
 - Check modules config follows `{"ModuleName": ["pattern/**"]}` format
 - Ensure module names are valid identifiers
 - Verify patterns array contains valid glob patterns
@@ -182,6 +198,7 @@ sidebar:
 **Cause:** Module file pattern uses invalid glob syntax.
 
 **How to fix:**
+
 - Use valid glob patterns like `user/**`, `*.service.ts`
 - Test patterns with glob testing tools
 - Avoid invalid characters in patterns
@@ -192,6 +209,7 @@ sidebar:
 **Cause:** Multiple modules use the same or overlapping file patterns.
 
 **How to fix:**
+
 - Use unique, non-overlapping patterns for each module
 - Make patterns more specific to avoid conflicts
 - Review module boundaries and reorganize if needed
@@ -204,6 +222,7 @@ sidebar:
 **Cause:** Required file does not exist at the expected location.
 
 **How to fix:**
+
 - Verify the file path exists
 - Check for typos in file names
 - Ensure file hasn't been moved or deleted
@@ -214,6 +233,7 @@ sidebar:
 **Cause:** Cannot read file due to system error or permissions.
 
 **How to fix:**
+
 - Check file permissions allow reading
 - Verify file is not corrupted
 - Ensure file is not locked by another process
@@ -224,6 +244,7 @@ sidebar:
 **Cause:** Cannot write file due to system error or permissions.
 
 **How to fix:**
+
 - Check write permissions on target directory
 - Ensure sufficient disk space available
 - Verify file is not read-only or locked
@@ -234,6 +255,7 @@ sidebar:
 **Cause:** Insufficient permissions for file or directory operation.
 
 **How to fix:**
+
 - Fix file/directory permissions using `chmod`
 - Run with appropriate user privileges
 - Check ownership of files and directories
@@ -246,6 +268,7 @@ sidebar:
 **Cause:** General validation failure for input data or configuration.
 
 **How to fix:**
+
 - Check input data format matches expected structure
 - Verify all required fields are provided
 - Ensure data types match validation rules
@@ -256,6 +279,7 @@ sidebar:
 **Cause:** Data structure does not match the expected schema.
 
 **How to fix:**
+
 - Compare data structure with schema requirements
 - Add missing required properties
 - Remove invalid or extra properties
@@ -266,6 +290,7 @@ sidebar:
 **Cause:** Value type does not match the expected type.
 
 **How to fix:**
+
 - Convert values to correct types (string, number, boolean)
 - Check for null or undefined values where not allowed
 - Ensure arrays contain elements of correct type
@@ -278,6 +303,7 @@ sidebar:
 **Cause:** Unexpected runtime error occurred during execution.
 
 **How to fix:**
+
 - Check system requirements and dependencies
 - Verify Node.js version compatibility
 - Review error stack trace for specific issues
@@ -288,6 +314,7 @@ sidebar:
 **Cause:** Unhandled error in the application.
 
 **How to fix:**
+
 - Report this as a bug with full stack trace
 - Include steps to reproduce the error
 - Provide system information and CLI version
@@ -298,6 +325,7 @@ sidebar:
 **Cause:** Application failed to initialize properly.
 
 **How to fix:**
+
 - Check dependencies are properly installed
 - Verify environment variables if required
 - Ensure working directory is correct
@@ -310,6 +338,7 @@ sidebar:
 **Cause:** Specified renderer type is not available or supported.
 
 **How to fix:**
+
 - Use valid renderer types (currently only 'console')
 - Check spelling of renderer name
 - Verify renderer is supported in current version
@@ -320,6 +349,7 @@ sidebar:
 **Cause:** Renderer failed to process or display output.
 
 **How to fix:**
+
 - Check output format requirements
 - Verify terminal supports required features
 - Try different output options
@@ -328,6 +358,6 @@ sidebar:
 ## Error Severity Levels
 
 - **LOW**: Minor issues that don't prevent operation
-- **MEDIUM**: Moderate issues that may affect functionality  
+- **MEDIUM**: Moderate issues that may affect functionality
 - **HIGH**: Serious issues that prevent normal operation
 - **CRITICAL**: Fatal errors requiring immediate attention
