@@ -1,5 +1,11 @@
 # @notjustcoders/ioc-arise
 
+## 1.1.8
+
+### Patch Changes
+
+- Fix: OnInit hook code preservation bug, imports were not preserved
+
 ## 1.1.7
 
 ### Patch Changes
