@@ -1,0 +1,346 @@
+---
+title: Abstract Classes Example
+description: Demonstrates how IoC Arise handles abstract classes across multiple modules with cross-module dependencies
+sidebar:
+  order: 10
+---
+
+{/* Hook Section */}
+This example demonstrates a two-module architecture using abstract classes and dependency injection with cross-module dependencies, showcasing how IoC Arise automatically resolves dependencies between User and Product domains.
+
+import { FileTree } from '@astrojs/starlight/components';
+
+## Project Structure
+
+<FileTree>
+- abstract-classes-example/
+  - abstracts/
+    - AbstractUserRepository.ts
+    - AbstractProductRepository.ts
+  - implementations/
+    - UserRepository.ts
+    - ProductRepository.ts
+  - entities/
+    - User.ts
+    - Product.ts
+  - use-cases/
+    - UserUseCase.ts
+    - ProductUseCase.ts
+    - InternalProductNestedUseCase.ts
+  - UserModule.gen.ts
+  - ProductModule.gen.ts
+  - container.gen.ts
+  - ioc.config.json
+</FileTree>
+
+{/* Body Section with Open Loops */}
+
+## Entity Definitions
+
+```typescript
+// entities/User.ts
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+```
+
+```typescript
+// entities/Product.ts
+export interface Product {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  userId: string; // Reference to the user who created the product
+  createdAt: Date;
+  updatedAt: Date;
+}
+```
+
+## Abstract Base Classes
+
+```typescript
+// abstracts/AbstractUserRepository.ts
+import { User } from '../entities/User';
+
+export abstract class AbstractUserRepository {
+  protected abstract tableName: string;
+  
+  abstract findById(id: string): Promise<User | null>;
+  abstract findByEmail(email: string): Promise<User | null>;
+  abstract save(user: User): Promise<User>;
+  abstract delete(id: string): Promise<boolean>;
+  
+  protected log(message: string): void {
+    console.log(`[${this.tableName}] ${message}`);
+  }
+}
+```
+
+```typescript
+// abstracts/AbstractProductRepository.ts
+import { Product } from '../entities/Product';
+
+export abstract class AbstractProductRepository {
+  protected abstract tableName: string;
+  
+  abstract findById(id: string): Promise<Product | null>;
+  abstract findByUserId(userId: string): Promise<Product[]>;
+  abstract save(product: Product): Promise<Product>;
+  abstract delete(id: string): Promise<boolean>;
+  
+  protected log(message: string): void {
+    console.log(`[${this.tableName}] ${message}`);
+  }
+}
+```
+
+## Concrete Implementations
+
+```typescript
+// implementations/UserRepository.ts
+import { AbstractUserRepository } from '../abstracts/AbstractUserRepository';
+import { User } from '../entities/User';
+
+export class UserRepository extends AbstractUserRepository {
+  protected tableName = 'users';
+  private users: User[] = [];
+  
+  async findById(id: string): Promise<User | null> {
+    this.log(`Finding user by ID: ${id}`);
+    return this.users.find(user => user.id === id) || null;
+  }
+  
+  async findByEmail(email: string): Promise<User | null> {
+    this.log(`Finding user by email: ${email}`);
+    return this.users.find(user => user.email === email) || null;
+  }
+  
+  async save(user: User): Promise<User> {
+    this.log(`Saving user: ${user.name}`);
+    const existingIndex = this.users.findIndex(u => u.id === user.id);
+    
+    if (existingIndex >= 0) {
+      this.users[existingIndex] = { ...user, updatedAt: new Date() };
+      return this.users[existingIndex];
+    } else {
+      const newUser = { ...user, createdAt: new Date(), updatedAt: new Date() };
+      this.users.push(newUser);
+      return newUser;
+    }
+  }
+  
+  async delete(id: string): Promise<boolean> {
+    this.log(`Deleting user: ${id}`);
+    const initialLength = this.users.length;
+    this.users = this.users.filter(user => user.id !== id);
+    return this.users.length < initialLength;
+  }
+}
+```
+
+```typescript
+// implementations/ProductRepository.ts
+import { AbstractProductRepository } from '../abstracts/AbstractProductRepository';
+import { Product } from '../entities/Product';
+
+export class ProductRepository extends AbstractProductRepository {
+  protected tableName = 'products';
+  private products: Product[] = [];
+  
+  async findById(id: string): Promise<Product | null> {
+    this.log(`Finding product by ID: ${id}`);
+    return this.products.find(product => product.id === id) || null;
+  }
+  
+  async findByUserId(userId: string): Promise<Product[]> {
+    this.log(`Finding products by user ID: ${userId}`);
+    return this.products.filter(product => product.userId === userId);
+  }
+  
+  async save(product: Product): Promise<Product> {
+    this.log(`Saving product: ${product.name}`);
+    const existingIndex = this.products.findIndex(p => p.id === product.id);
+    
+    if (existingIndex >= 0) {
+      this.products[existingIndex] = { ...product, updatedAt: new Date() };
+      return this.products[existingIndex];
+    } else {
+      const newProduct = { ...product, createdAt: new Date(), updatedAt: new Date() };
+      this.products.push(newProduct);
+      return newProduct;
+    }
+  }
+  
+  async delete(id: string): Promise<boolean> {
+    this.log(`Deleting product: ${id}`);
+    const initialLength = this.products.length;
+    this.products = this.products.filter(product => product.id !== id);
+    return this.products.length < initialLength;
+  }
+}
+```
+
+## Cross-Module Use Cases
+
+How does ProductUseCase validate users from another module? Here's where the magic happens:
+
+```typescript
+// use-cases/ProductUseCase.ts
+import { AbstractProductRepository } from '../abstracts/AbstractProductRepository';
+import { AbstractUserRepository } from '../abstracts/AbstractUserRepository';
+import { Product } from '../entities/Product';
+import { User } from '../entities/User';
+import { InternalProductNestedUseCase } from './InternalProductNestedUseCase';
+
+export class ProductUseCase {
+  constructor(
+    private productRepository: AbstractProductRepository,
+    private userRepository: AbstractUserRepository, // Cross-module dependency!
+    private internalNestedUseCase: InternalProductNestedUseCase
+  ) {}
+
+  async createProduct(productData: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>): Promise<Product> {
+    // Validate that the user exists before creating the product
+    const user = await this.userRepository.findById(productData.userId);
+    if (!user) {
+      throw new Error(`User with ID ${productData.userId} not found`);
+    }
+
+    const product: Product = {
+      id: Math.random().toString(36).substr(2, 9),
+      ...productData,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    return await this.productRepository.save(product);
+  }
+
+  async getProductById(id: string): Promise<Product | null> {
+    return await this.productRepository.findById(id);
+  }
+
+  async getProductsByUserId(userId: string): Promise<Product[]> {
+    return await this.productRepository.findByUserId(userId);
+  }
+
+  async getProductWithUser(productId: string): Promise<{ product: Product; user: User } | null> {
+    const product = await this.productRepository.findById(productId);
+    if (!product) {
+      return null;
+    }
+
+    const user = await this.userRepository.findById(product.userId);
+    if (!user) {
+      throw new Error(`User with ID ${product.userId} not found`);
+    }
+
+    return { product, user };
+  }
+
+  async updateProduct(product: Product): Promise<Product> {
+    // Validate that the user exists
+    const user = await this.userRepository.findById(product.userId);
+    if (!user) {
+      throw new Error(`User with ID ${product.userId} not found`);
+    }
+
+    return await this.productRepository.save(product);
+  }
+
+  async deleteProduct(id: string): Promise<boolean> {
+    return await this.productRepository.delete(id);
+  }
+}
+```
+
+## Configuration
+
+```json
+{
+  "source": ".",
+  "output": "container.gen.ts",
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ],
+  "verbose": true,
+  "modules": {
+    "UserModule": [
+      "**/**/*User*"
+    ],
+    "ProductModule": [
+      "**/**/*Product*"
+    ]
+  }
+}
+```
+
+## Usage
+
+### Direct Container Access
+
+```typescript
+import { container } from './container.gen';
+
+// Access services from different modules
+const userUseCase = container.userModule.UserUseCase;
+const productUseCase = container.productModule.ProductUseCase;
+
+// Create a user
+const newUser = await userUseCase.createUser({
+  name: 'John Doe',
+  email: 'john@example.com'
+});
+
+// Create a product for this user (cross-module validation)
+const newProduct = await productUseCase.createProduct({
+  name: 'Awesome Product',
+  description: 'A really great product',
+  price: 99.99,
+  userId: newUser.id
+});
+```
+
+### Type-Safe inject() Function
+
+```typescript
+import { inject } from './container.gen';
+
+// Use the fully type-safe inject method
+const userUseCase = inject('userModule.UserUseCase');
+const productUseCase = inject('productModule.ProductUseCase');
+
+// Get product with user details (cross-module operation)
+const productWithUser = await productUseCase.getProductWithUser(newProduct.id);
+console.log('Product with user:', productWithUser);
+```
+
+## Container Post-Construction Setup
+
+The generated container includes an `onInit()` function that's automatically called:
+
+```typescript
+// This function is exported from ./container.gen.ts
+// You can modify it there for custom initialization logic
+import { onInit } from './container.gen';
+
+// onInit() is called automatically when inject() is first used
+// It's NOT a method on classes - it's at the container level
+```
+
+{/* Conclusion Section */}
+
+## Key Benefits
+
+- **Abstract Class Support**: IoC Arise automatically resolves abstract class dependencies across modules
+- **Modular Architecture**: Clean separation between UserModule and ProductModule
+- **Cross-Module Dependencies**: ProductUseCase safely depends on UserRepository from another module
+- **Type-Safe Injection**: Both direct container access and `inject()` function provide full type safety
+- **Zero Configuration Overhead**: Just organize files and IoC Arise handles the rest
+- **Implementation Flexibility**: Easy to swap repository implementations without changing use cases

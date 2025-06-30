@@ -1,0 +1,263 @@
+---
+title: Name Collision Example
+description: Demonstrates how IoC Arise handles classes with identical names across different modules
+sidebar:
+  order: 5
+---
+
+{/* Hook Section */}
+This example demonstrates how IoC Arise automatically handles classes with **identical names** across different directories using directory-based prefixing. You'll learn how the container resolves naming conflicts while maintaining clean separation of concerns across different domains.
+
+import { FileTree } from '@astrojs/starlight/components';
+
+## Project Structure
+
+<FileTree>
+- name-collision-example/
+  - user/
+    - CreateItemUseCase.ts
+    - DeleteItemUseCase.ts
+    - GetItemUseCase.ts
+    - ListItemsUseCase.ts
+    - UpdateItemUseCase.ts
+    - UserController.ts
+    - UserRepository.ts
+  - product/
+    - CreateItemUseCase.ts
+    - DeleteItemUseCase.ts
+    - GetItemUseCase.ts
+    - ListItemsUseCase.ts
+    - UpdateItemUseCase.ts
+    - ProductController.ts
+    - ProductRepository.ts
+  - order/
+    - CreateItemUseCase.ts
+    - DeleteItemUseCase.ts
+    - GetItemUseCase.ts
+    - ListItemsUseCase.ts
+    - UpdateItemUseCase.ts
+    - OrderController.ts
+    - OrderRepository.ts
+  - container.gen.ts
+  - ioc.config.json
+  - README.md
+</FileTree>
+
+## The Problem
+
+Multiple classes have identical names across different domains:
+- Three `CreateItemUseCase` classes (user, product, order)
+- Three `DeleteItemUseCase` classes (user, product, order)
+- Three `GetItemUseCase` classes (user, product, order)
+- Three `ListItemsUseCase` classes (user, product, order)
+- Three `UpdateItemUseCase` classes (user, product, order)
+
+## IoC Arise's Solution
+
+IoC Arise automatically resolves name collisions using **directory-based prefixing**:
+
+### Name Resolution Strategy
+1. **Directory Prefix**: Classes get prefixed with their directory name
+   - `user/CreateItemUseCase.ts` → `UserCreateItemUseCase`
+   - `product/CreateItemUseCase.ts` → `ProductCreateItemUseCase`
+   - `order/CreateItemUseCase.ts` → `OrderCreateItemUseCase`
+
+2. **Unique Import Aliases**: Generated imports use unique aliases
+   ```typescript
+   import { CreateItemUseCase as UserCreateItemUseCase } from './user/CreateItemUseCase';
+   import { CreateItemUseCase as ProductCreateItemUseCase } from './product/CreateItemUseCase';
+   import { CreateItemUseCase as OrderCreateItemUseCase } from './order/CreateItemUseCase';
+   ```
+
+3. **Predictable Naming**: Easy to understand based on directory structure
+
+{/* Body Section with Open Loops */}
+
+## Domain Implementations
+
+### User Domain
+```typescript
+// user/CreateItemUseCase.ts
+export class CreateItemUseCase {
+  constructor(private userRepository: IUserRepository) {}
+
+  async execute(itemData: { name: string; description: string }): Promise<void> {
+    console.log(`Creating user item: ${itemData.name}`);
+    await this.userRepository.saveUserItem(itemData);
+  }
+}
+```
+
+### Product Domain
+```typescript
+// product/CreateItemUseCase.ts
+export class CreateItemUseCase {
+  constructor(private productRepository: IProductRepository) {}
+
+  async execute(itemData: { name: string; price: number; category: string }): Promise<void> {
+    console.log(`Creating product item: ${itemData.name} - $${itemData.price}`);
+    await this.productRepository.saveProduct(itemData);
+  }
+}
+```
+
+### Order Domain
+```typescript
+// order/CreateItemUseCase.ts
+export class CreateItemUseCase {
+  constructor(private orderRepository: IOrderRepository) {}
+
+  async execute(itemData: { name: string; quantity: number; unitPrice: number }): Promise<void> {
+    console.log(`Creating order item: ${itemData.name}`);
+    await this.orderRepository.saveOrderItem(itemData);
+  }
+}
+```
+
+## Usage with Container
+
+### Method 1: Direct Container Access
+
+```typescript
+import { container } from './container.gen';
+
+// Access services with automatically prefixed names
+const userCreateUseCase = container.coreModule.UserCreateItemUseCase;
+const productCreateUseCase = container.coreModule.ProductCreateItemUseCase;
+const orderCreateUseCase = container.coreModule.OrderCreateItemUseCase;
+
+// All repositories and controllers are similarly prefixed
+const userRepo = container.coreModule.UserRepository;
+const productRepo = container.coreModule.ProductRepository;
+const orderRepo = container.coreModule.OrderRepository;
+
+const userController = container.coreModule.UserController;
+const productController = container.coreModule.ProductController;
+const orderController = container.coreModule.OrderController;
+```
+
+### Method 2: Using inject() Function (Type-Safe)
+
+```typescript
+import { inject } from './container.gen';
+
+// Access services using directory-prefixed names with full type safety
+const userCreateUseCase = inject('coreModule.UserCreateItemUseCase');
+const productCreateUseCase = inject('coreModule.ProductCreateItemUseCase');
+const orderCreateUseCase = inject('coreModule.OrderCreateItemUseCase');
+
+// Access other similarly named services
+const userListUseCase = inject('coreModule.UserListItemsUseCase');
+const productListUseCase = inject('coreModule.ProductListItemsUseCase');
+const orderListUseCase = inject('coreModule.OrderListItemsUseCase');
+```
+
+## Example Usage
+
+```typescript
+// Each service works with its own domain data structure
+await userCreateUseCase.execute({
+  name: 'User Profile',
+  description: 'User profile information'
+});
+
+await productCreateUseCase.execute({
+  name: 'Laptop',
+  price: 999.99,
+  category: 'Electronics'
+});
+
+await orderCreateUseCase.execute({
+  name: 'Order Item',
+  quantity: 2,
+  unitPrice: 49.99
+});
+
+// List items from each domain
+const userItems = await userListUseCase.execute();
+const productItems = await productListUseCase.execute();
+const orderItems = await orderListUseCase.execute();
+
+console.log('User items:', userItems);
+console.log('Product items:', productItems);
+console.log('Order items:', orderItems);
+```
+
+## Cross-Domain Dependencies (Advanced)
+
+You can use post-construction injection for cross-domain dependencies:
+
+```typescript
+// Example: Order service that validates products
+export class OrderCreateItemUseCase {
+  private productRepository: IProductRepository;
+
+  constructor(private orderRepository: IOrderRepository) {}
+
+  // Would be called if this was in the container's onInit function
+  initializeCrossDomainDependencies(): void {
+    this.productRepository = inject('coreModule.ProductRepository');
+  }
+
+  async execute(itemData: { name: string; quantity: number; unitPrice: number }): Promise<void> {
+    // Validate product exists before creating order
+    const product = await this.productRepository.getProduct(itemData.name);
+    if (!product) {
+      throw new Error(`Product ${itemData.name} not found`);
+    }
+
+    await this.orderRepository.saveOrderItem(itemData);
+  }
+}
+```
+
+## Post-Construction Initialization
+
+The `onInit()` function is **exported from the generated container.gen.ts file**, not a method in your classes:
+
+```typescript
+import { onInit } from './container.gen';
+
+// The onInit function is called automatically when inject() is first used
+// You can modify it in the generated container.gen.ts file for custom initialization
+```
+
+## IoC Configuration
+
+```json
+{
+  "srcDir": ".",
+  "outputFile": "container.gen.ts"
+}
+```
+
+This minimal configuration:
+- Scans the current directory for classes
+- Automatically detects name collisions
+- Applies directory-based prefixing to resolve conflicts
+- Generates a single coreModule container
+
+## Name Resolution Examples
+
+| Original File Path | Generated Service Name |
+|-------------------|------------------------|
+| `user/CreateItemUseCase.ts` | `UserCreateItemUseCase` |
+| `product/CreateItemUseCase.ts` | `ProductCreateItemUseCase` |
+| `order/CreateItemUseCase.ts` | `OrderCreateItemUseCase` |
+| `user/UserController.ts` | `UserController` |
+| `product/ProductController.ts` | `ProductController` |
+| `order/OrderController.ts` | `OrderController` |
+
+{/* Conclusion Section */}
+
+## Benefits of Automatic Name Resolution
+
+1. **Automatic Resolution**: IoC Arise automatically detects and resolves name collisions
+2. **Predictable Naming**: Directory-based prefixing is easy to understand and predict
+3. **Type Safety**: Full TypeScript support with proper type inference for all prefixed names
+4. **Clean Separation**: Each domain maintains its own classes with identical names
+5. **No Manual Configuration**: Works automatically without additional configuration
+6. **Maintainable**: Clear naming convention based on directory structure
+7. **Scalable**: Easy to add new domains without worrying about name conflicts
+
+This example shows how IoC Arise intelligently handles naming conflicts, making it perfect for large applications with multiple domains that naturally have similar operations and naming patterns!

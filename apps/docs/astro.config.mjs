@@ -52,14 +52,35 @@ export default defineConfig({
         },
         sidebar: [
             {
-                label: 'Guides',
+                label: 'Getting Started',
                 items: [
-                    { label: 'Getting Started', link: '/guides/getting-started/' },
+                    { label: 'Quick Start', link: '/guides/getting-started/' },
+                    { label: 'Basic Example', link: '/examples/minimal-todo/' },
                 ],
             },
             {
-                label: 'Examples',
-                autogenerate: { directory: "examples" }
+                label: 'Core Features',
+                items: [
+                    { label: 'Module System', link: '/core-features/simple-modules/' },
+                    { label: 'Abstract Classes Support', link: '/core-features/abstract-classes-example/' },
+                    { label: 'Non-Interface Classes', link: '/core-features/use-cases-example/' },
+                    { label: 'Scope Management', link: '/core-features/scope-example/' },
+                ],
+            },
+            {
+                label: 'Architecture Patterns',
+                items: [
+                    { label: 'Clean Architecture', link: '/architecture-patterns/clean-architecture/' },
+                ],
+            },
+            {
+                label: 'Error Detection',
+                items: [
+                    { label: 'Name Collision Detection', link: '/error-detection/name-collision-example/' },
+                    { label: 'Duplicate Interface Detection', link: '/error-detection/duplicate-interfaces-example/' },
+                    { label: 'Circular Dependencies - Classes', link: '/error-detection/circular-deps-classes/' },
+                    { label: 'Circular Dependencies - Modules', link: '/error-detection/circular-deps-modules/' },
+                ],
             },
             {
                 label: 'Reference',

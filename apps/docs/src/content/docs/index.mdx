@@ -91,7 +91,7 @@ import { Card, CardGrid, Badge, Tabs, TabItem,Steps,FileTree } from '@astrojs/st
    npx @notjustcoders/ioc-arise generate
    ```
 
-   This generates a type-safe container with all dependencies automatically resolved:
+   This generates a type-safe container with all dependencies automatically resolved, including the `inject` helper function:
 
    ```typescript
    // container.gen.ts (generated)
@@ -107,18 +107,21 @@ import { Card, CardGrid, Badge, Tabs, TabItem,Steps,FileTree } from '@astrojs/st
    };
 
    export type Container = typeof container;
+
+   // ... other generated code including the inject function
+   export function inject<T extends ContainerKey>(key: T): GetByPath<Container, T> { /* ... */ }
    ```
 
    Then use your generated container in your application:
 
    ```typescript
-   import { container } from './container.gen';
+   import { inject } from './container.gen'; // inject is exported from the generated container
 
    // Get fully resolved instances with all dependencies injected
-   const userService = container.userModule.UserService;
+   const userService = inject('userModule.UserService');
    const user = await userService.createUser('John Doe', 'john@example.com');
 
-   const todoService = container.todoModule.TodoService;
+   const todoService = inject('todoModule.TodoService');
    const todo = await todoService.createTodo('Learn IoC Arise', user.id);
    ```
 

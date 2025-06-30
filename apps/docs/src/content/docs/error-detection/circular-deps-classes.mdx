@@ -1,0 +1,136 @@
+---
+title: Circular Dependencies (Classes) Example
+description: Demonstrates how IoC Arise detects and handles circular dependencies between classes
+sidebar:
+  order: 7
+---
+
+import { FileTree } from '@astrojs/starlight/components';
+
+## Project Structure
+
+<FileTree>
+- circular-deps-classes/
+  - interfaces/
+    - IClassA.ts
+    - IClassB.ts
+  - services/
+    - ClassA.ts
+    - ClassB.ts
+  - ioc.config.json
+  - README.md
+</FileTree>
+
+## Interface Definitions
+
+```typescript
+export interface IClassA {
+  methodA(): string;
+}
+
+export interface IClassB {
+  methodB(): string;
+}
+```
+
+## ClassA depends on ClassB
+
+```typescript
+import { IClassB } from '../interfaces/IClassB';
+
+export class ClassA implements IClassA {
+  constructor(private classB: IClassB) {}
+  
+  methodA(): string {
+    return 'ClassA calling: ' + this.classB.methodB();
+  }
+}
+```
+
+## ClassB depends on ClassA
+
+```typescript
+import { IClassA } from '../interfaces/IClassA';
+
+export class ClassB implements IClassB {
+  constructor(private classA: IClassA) {}
+  
+  methodB(): string {
+    return 'ClassB calling: ' + this.classA.methodA();
+  }
+}
+```
+
+## Configuration
+
+```json
+{
+  "source": ".",
+  "output": "container.gen.ts",
+  "interface": "I[A-Z].*",
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ],
+  "verbose": true,
+  "modules": {
+    "CircularModule": [
+      "services/*.ts",
+      "interfaces/*.ts"
+    ]
+  }
+}
+```
+
+## Expected Error
+
+```
+Error: Circular dependency detected in the dependency graph.
+
+Circular dependency chain:
+  ClassA -> IClassB (ClassB) -> IClassA (ClassA)
+
+Classes involved in circular dependencies:
+  - ClassA (/path/to/services/ClassA.ts)
+  - ClassB (/path/to/services/ClassB.ts)
+```
+
+## Key Features Demonstrated
+
+1. **Type-Safe inject() Method** - Type-safe dependency resolution that prevents circular dependencies
+2. **Post-Construction Initialization** - onInit method can help break circular dependencies
+3. **Circular Dependency Detection** - Comprehensive error reporting for circular dependencies
+4. **Dependency Graph Analysis** - Visual representation of dependency chains
+
+## onInit Method for Breaking Circular Dependencies
+
+If you need to break circular dependencies, the onInit method can help:
+
+```typescript
+import { inject } from './container.gen';
+
+// Break the circular dependency by using onInit
+export class ClassA implements IClassA {
+  private classB!: IClassB;
+  
+  onInit() {
+    // Initialize dependency after construction
+    this.classB = inject('circularModule.IClassB');
+    console.log('ClassA initialized with delayed ClassB dependency');
+  }
+  
+  methodA(): string {
+    return 'ClassA calling: ' + this.classB.methodB();
+  }
+}
+
+// ClassB can use constructor injection since it's no longer circular
+export class ClassB implements IClassB {
+  // ClassB no longer depends on ClassA - circular dependency broken
+  methodB(): string {
+    return 'ClassB method called';
+  }
+}
+```
+
+**Note**: The above solution works by removing the circular dependency entirely. If you truly need bidirectional communication, consider using the Observer pattern, event emitters, or dependency injection through a mediator service.

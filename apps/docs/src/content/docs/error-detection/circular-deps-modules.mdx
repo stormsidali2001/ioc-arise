@@ -1,0 +1,181 @@
+---
+title: Circular Dependencies (Modules) Example
+description: Demonstrates how IoC Arise detects and handles circular dependencies between modules
+sidebar:
+  order: 8
+---
+
+import { FileTree } from '@astrojs/starlight/components';
+
+## Project Structure
+
+<FileTree>
+- circular-deps-modules/
+  - interfaces/
+    - IServiceA.ts
+    - IServiceB.ts
+  - services/
+    - ServiceA.ts
+    - ServiceB.ts
+  - ioc.config.json
+  - README.md
+</FileTree>
+
+## Module Configuration
+
+```json
+{
+  "source": ".",
+  "output": "container.gen.ts",
+  "interface": "I[A-Z].*",
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ],
+  "verbose": true,
+  "modules": {
+    "ModuleA": [
+      "services/ServiceA.ts",
+      "interfaces/IServiceA.ts"
+    ],
+    "ModuleB": [
+      "services/ServiceB.ts", 
+      "interfaces/IServiceB.ts"
+    ]
+  }
+}
+```
+
+## Interface Definitions
+
+```typescript
+export interface IServiceA {
+  doSomething(): string;
+}
+
+export interface IServiceB {
+  doSomething(): string;
+}
+```
+
+## ServiceA depends on ServiceB
+
+```typescript
+import { IServiceB } from '../interfaces/IServiceB';
+
+export class ServiceA implements IServiceA {
+  constructor(private serviceB: IServiceB) {}
+  
+  doSomething(): string {
+    return 'A: ' + this.serviceB.doSomething();
+  }
+}
+```
+
+## ServiceB depends on ServiceA
+
+```typescript
+import { IServiceA } from '../interfaces/IServiceA';
+
+export class ServiceB implements IServiceB {
+  constructor(private serviceA: IServiceA) {}
+  
+  doSomething(): string {
+    return 'B: ' + this.serviceA.doSomething();
+  }
+}
+```
+
+## Expected Error
+
+```
+Error: Circular dependency detected between modules.
+
+Module dependency chain:
+  ModuleA -> ModuleB -> ModuleA
+
+Detailed circular dependency:
+  ServiceA (ModuleA) -> IServiceB (ServiceB in ModuleB) -> IServiceA (ServiceA in ModuleA)
+
+Modules involved in circular dependencies:
+  - ModuleA: services/ServiceA.ts, interfaces/IServiceA.ts
+  - ModuleB: services/ServiceB.ts, interfaces/IServiceB.ts
+```
+
+## Key Features Demonstrated
+
+1. **Type-Safe inject() Method** - Type-safe dependency resolution that prevents circular module dependencies
+2. **Post-Construction Initialization** - onInit method can help break circular module dependencies
+3. **Module Circular Dependency Detection** - Comprehensive error reporting for module-level circular dependencies
+4. **Cross-Module Dependency Analysis** - Detailed analysis of dependencies across module boundaries
+
+## onInit Method for Breaking Module Circular Dependencies
+
+If you need to break circular module dependencies, the onInit method can help:
+
+```typescript
+import { inject } from './container.gen';
+
+// Break the circular dependency by using onInit in one of the services
+export class ServiceA implements IServiceA {
+  private serviceB!: IServiceB;
+  
+  onInit() {
+    // Initialize cross-module dependency after construction
+    this.serviceB = inject('moduleB.IServiceB');
+    console.log('ServiceA initialized with delayed ServiceB dependency');
+  }
+  
+  doSomething(): string {
+    return 'A: ' + this.serviceB.doSomething();
+  }
+}
+
+// ServiceB in ModuleB can avoid depending on ServiceA
+export class ServiceB implements IServiceB {
+  // ServiceB no longer depends on ServiceA - circular dependency broken
+  doSomething(): string {
+    return 'B: service completed';
+  }
+}
+```
+
+## Alternative: Use a Mediator Pattern
+
+For complex cross-module communication, consider using a mediator:
+
+```typescript
+import { inject } from './container.gen';
+
+// Shared module with mediator
+export interface IServiceMediator {
+  notifyServiceA(message: string): void;
+  notifyServiceB(message: string): void;
+}
+
+export class ServiceMediator implements IServiceMediator {
+  notifyServiceA(message: string): void {
+    console.log(`Mediator forwarding to ServiceA: ${message}`);
+  }
+  
+  notifyServiceB(message: string): void {
+    console.log(`Mediator forwarding to ServiceB: ${message}`);
+  }
+}
+
+// ServiceA uses mediator instead of direct ServiceB dependency
+export class ServiceA implements IServiceA {
+  private mediator!: IServiceMediator;
+  
+  onInit() {
+    this.mediator = inject('sharedModule.IServiceMediator');
+  }
+  
+  doSomething(): string {
+    this.mediator.notifyServiceB('Message from ServiceA');
+    return 'ServiceA completed via mediator';
+  }
+}
+```
+
+**Note**: Breaking circular dependencies often requires architectural changes. Consider whether the circular dependency indicates a design issue that should be resolved through refactoring.

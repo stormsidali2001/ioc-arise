@@ -1,58 +1,211 @@
 ---
 title: Minimal Todo Example
-description: A simple todo list application demonstrating repository pattern and service layer with IoC Arise
+description: A simple todo list application demonstrating basic IoC Arise usage with repository and service patterns
 sidebar:
   order: 1
 ---
 
+import { FileTree } from '@astrojs/starlight/components';
+
+{/* Hook Section */}
+This example demonstrates the simplest possible IoC Arise setup with a todo list application, showing how to use interface-based dependency injection with repository and service patterns in just a few files.
+
 ## Project Structure
 
-```
-minimal-todo/
-├── entities/Todo.ts
-├── repositories/
-│   ├── ITodoRepository.ts
-│   └── InMemoryTodoRepository.ts
-├── services/
-│   ├── ITodoService.ts
-│   └── TodoService.ts
-├── ioc.config.json
-└── container.gen.ts
-```
+<FileTree>
+- minimal-todo/
+  - entities/
+    - Todo.ts Todo entity class with business logic
+  - repositories/
+    - ITodoRepository.ts Repository interface
+    - InMemoryTodoRepository.ts In-memory repository implementation
+  - services/
+    - ITodoService.ts Service interface
+    - TodoService.ts Service implementation
+  - container.gen.ts Generated IoC container
+  - ioc.config.json IoC configuration
+  - README.md
+</FileTree>
+
+{/* Body Section with Open Loops */}
 
 ## Todo Entity
 
+The Todo entity includes built-in business logic and validation:
+
 ```typescript
-export interface Todo {
+// entities/Todo.ts
+export interface CreateTodoData {
+  title: string;
+  description?: string;
+}
+
+export interface UpdateTodoData {
+  title?: string;
+  description?: string;
+  completed?: boolean;
+}
+
+export class Todo {
   id: string;
   title: string;
-  description: string;
+  description?: string;
   completed: boolean;
   createdAt: Date;
   updatedAt: Date;
+
+  constructor(data: CreateTodoData) {
+    this.id = Math.random().toString(36).substr(2, 9);
+    this.title = data.title;
+    this.description = data.description;
+    this.completed = false;
+    this.createdAt = new Date();
+    this.updatedAt = new Date();
+  }
+
+  markAsCompleted(): void {
+    this.completed = true;
+    this.updatedAt = new Date();
+  }
+
+  markAsPending(): void {
+    this.completed = false;
+    this.updatedAt = new Date();
+  }
+
+  update(data: UpdateTodoData): void {
+    if (data.title !== undefined) this.title = data.title;
+    if (data.description !== undefined) this.description = data.description;
+    if (data.completed !== undefined) this.completed = data.completed;
+    this.updatedAt = new Date();
+  }
 }
 ```
 
-## Repository Interface
+## Repository Pattern
+
+How do we abstract data access? Through interfaces and implementations:
 
 ```typescript
+// repositories/ITodoRepository.ts
 export interface ITodoRepository {
-  findById(id: string): Promise<Todo | null>;
+  create(todo: Todo): Promise<Todo>;
+  findById(id: string): Promise<Todo | undefined>;
   findAll(): Promise<Todo[]>;
-  create(title: string, description: string): Promise<Todo>;
-  update(id: string, updates: Partial<Todo>): Promise<Todo | null>;
+  update(id: string, data: UpdateTodoData): Promise<Todo | undefined>;
   delete(id: string): Promise<boolean>;
+  findByCompleted(completed: boolean): Promise<Todo[]>;
+}
+```
+
+```typescript
+// repositories/InMemoryTodoRepository.ts
+export class InMemoryTodoRepository implements ITodoRepository {
+  private todos: Todo[] = [];
+
+  async create(todo: Todo): Promise<Todo> {
+    this.todos.push(todo);
+    return todo;
+  }
+
+  async findById(id: string): Promise<Todo | undefined> {
+    return this.todos.find(todo => todo.id === id);
+  }
+
+  async findAll(): Promise<Todo[]> {
+    return [...this.todos];
+  }
+
+  async update(id: string, data: UpdateTodoData): Promise<Todo | undefined> {
+    const todo = this.todos.find(t => t.id === id);
+    if (todo) {
+      todo.update(data);
+      return todo;
+    }
+    return undefined;
+  }
+
+  async delete(id: string): Promise<boolean> {
+    const initialLength = this.todos.length;
+    this.todos = this.todos.filter(todo => todo.id !== id);
+    return this.todos.length < initialLength;
+  }
+
+  async findByCompleted(completed: boolean): Promise<Todo[]> {
+    return this.todos.filter(todo => todo.completed === completed);
+  }
 }
 ```
 
 ## Service Layer
 
+What about business logic? That goes in services:
+
 ```typescript
+// services/ITodoService.ts
+export interface ITodoService {
+  createTodo(data: CreateTodoData): Promise<Todo>;
+  getAllTodos(): Promise<Todo[]>;
+  getTodoById(id: string): Promise<Todo | undefined>;
+  updateTodo(id: string, data: UpdateTodoData): Promise<Todo | undefined>;
+  deleteTodo(id: string): Promise<boolean>;
+  markAsCompleted(id: string): Promise<Todo | undefined>;
+  markAsPending(id: string): Promise<Todo | undefined>;
+  getCompletedTodos(): Promise<Todo[]>;
+  getPendingTodos(): Promise<Todo[]>;
+}
+```
+
+```typescript
+// services/TodoService.ts (singleton by default)
 export class TodoService implements ITodoService {
   constructor(private todoRepository: ITodoRepository) {}
 
-  async createTodo(data: { title: string; description: string }): Promise<Todo> {
-    return await this.todoRepository.create(data.title, data.description);
+  async createTodo(data: CreateTodoData): Promise<Todo> {
+    const todo = new Todo(data);
+    return await this.todoRepository.create(todo);
+  }
+
+  async getAllTodos(): Promise<Todo[]> {
+    return await this.todoRepository.findAll();
+  }
+
+  async getTodoById(id: string): Promise<Todo | undefined> {
+    return await this.todoRepository.findById(id);
+  }
+
+  async updateTodo(id: string, data: UpdateTodoData): Promise<Todo | undefined> {
+    return await this.todoRepository.update(id, data);
+  }
+
+  async deleteTodo(id: string): Promise<boolean> {
+    return await this.todoRepository.delete(id);
+  }
+
+  async markAsCompleted(id: string): Promise<Todo | undefined> {
+    const todo = await this.todoRepository.findById(id);
+    if (todo) {
+      todo.markAsCompleted();
+      return await this.todoRepository.update(id, { completed: true });
+    }
+    return undefined;
+  }
+
+  async markAsPending(id: string): Promise<Todo | undefined> {
+    const todo = await this.todoRepository.findById(id);
+    if (todo) {
+      todo.markAsPending();
+      return await this.todoRepository.update(id, { completed: false });
+    }
+    return undefined;
+  }
+
+  async getCompletedTodos(): Promise<Todo[]> {
+    return await this.todoRepository.findByCompleted(true);
+  }
+
+  async getPendingTodos(): Promise<Todo[]> {
+    return await this.todoRepository.findByCompleted(false);
   }
 }
 ```
@@ -68,12 +221,78 @@ export class TodoService implements ITodoService {
 
 ## Usage
 
+### Direct Container Access
+
 ```typescript
 import { container } from './container.gen';
 
 const todoService = container.coreModule.ITodoService;
+const todoRepository = container.coreModule.ITodoRepository;
+
+// Create a new todo
 await todoService.createTodo({ 
   title: 'Learn IoC Arise', 
   description: 'Study dependency injection' 
 });
+
+// Get all todos
+const todos = await todoService.getAllTodos();
+console.log('All todos:', todos);
 ```
+
+### Type-Safe inject() Function
+
+```typescript
+import { inject } from './container.gen';
+
+// Access services with full type safety
+const todoService = inject('coreModule.ITodoService');
+
+// Create todos
+await todoService.createTodo({
+  title: 'Buy groceries',
+  description: 'Milk, bread, eggs'
+});
+
+await todoService.createTodo({
+  title: 'Walk the dog',
+  description: 'Take Rex for a 30-minute walk'
+});
+
+// Update a todo
+const todos = await todoService.getAllTodos();
+if (todos.length > 0) {
+  await todoService.updateTodo(todos[0].id, {
+    title: 'Buy groceries - DONE',
+    completed: true
+  });
+}
+
+// Get completed vs pending todos
+const completedTodos = await todoService.getCompletedTodos();
+const pendingTodos = await todoService.getPendingTodos();
+```
+
+## Container-Level Initialization
+
+The generated container includes an `onInit()` function for custom setup:
+
+```typescript
+// This function is exported from ./container.gen.ts
+// You can modify it there for any custom initialization
+import { onInit } from './container.gen';
+
+// onInit() is called automatically when inject() is first used
+// It's at the container level, NOT in individual classes
+```
+
+{/* Conclusion Section */}
+
+## Key Benefits
+
+- **Simplicity**: Easy to understand and extend with minimal configuration
+- **Interface-Based Design**: Clean separation between contracts and implementations  
+- **Type Safety**: Full TypeScript support with interface-driven service keys
+- **Repository Pattern**: Clean data access abstraction for easy testing and swapping
+- **Service Layer**: Centralized business logic with dependency injection
+- **Zero Configuration**: Just organize files and IoC Arise handles dependency resolution

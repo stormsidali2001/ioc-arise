@@ -1,0 +1,220 @@
+---
+title: Duplicate Interfaces Example
+description: Demonstrates how IoC Arise handles the error case where multiple classes implement the same interface
+sidebar:
+  order: 6
+---
+
+{/* Hook Section */}
+This example demonstrates how IoC Arise handles the **error case** where multiple classes implement the same interface. You'll learn why this creates ambiguity for dependency injection and how IoC Arise provides clear error messages to help you resolve these conflicts.
+
+import { FileTree } from '@astrojs/starlight/components';
+
+## Project Structure
+
+<FileTree>
+- duplicate-interfaces-example/
+  - ioc.config.json
+  - services/
+    - INotificationService.ts
+    - EmailNotificationService.ts
+    - SmsNotificationService.ts
+    - PushNotificationService.ts
+</FileTree>
+
+## The Problem
+
+1. **Single Interface**: `INotificationService` defines the contract for notification services
+2. **Multiple Implementations**: Three different classes implement the same interface
+3. **Ambiguity Problem**: This creates ambiguity for dependency injection - which implementation should be used?
+4. **Error Detection**: IoC Arise detects this and throws a clear error to prevent runtime issues
+
+{/* Body Section with Open Loops */}
+
+## Interface Definition
+
+```typescript
+// services/INotificationService.ts
+export interface INotificationService {
+  sendNotification(message: string, recipient: string): Promise<void>;
+  getServiceName(): string;
+}
+```
+
+## Multiple Implementations
+
+### EmailNotificationService
+```typescript
+import { INotificationService } from './INotificationService';
+
+export class EmailNotificationService implements INotificationService {
+  async sendNotification(message: string, recipient: string): Promise<void> {
+    console.log(`Sending EMAIL notification to ${recipient}: ${message}`);
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+
+  getServiceName(): string {
+    return 'Email Notification Service';
+  }
+}
+```
+
+### SmsNotificationService
+```typescript
+import { INotificationService } from './INotificationService';
+
+export class SmsNotificationService implements INotificationService {
+  async sendNotification(message: string, recipient: string): Promise<void> {
+    console.log(`Sending SMS notification to ${recipient}: ${message}`);
+    await new Promise(resolve => setTimeout(resolve, 50));
+  }
+
+  getServiceName(): string {
+    return 'SMS Notification Service';
+  }
+}
+```
+
+### PushNotificationService
+```typescript
+import { INotificationService } from './INotificationService';
+
+export class PushNotificationService implements INotificationService {
+  async sendNotification(message: string, recipient: string): Promise<void> {
+    console.log(`Sending PUSH notification to ${recipient}: ${message}`);
+    await new Promise(resolve => setTimeout(resolve, 25));
+  }
+
+  getServiceName(): string {
+    return 'Push Notification Service';
+  }
+}
+```
+
+## Expected Behavior
+
+When running `npx @notjustcoders/ioc-arise generate`, the tool should:
+- Scan all classes and detect interface implementations
+- Identify that `INotificationService` is implemented by multiple classes
+- Log detailed error information showing which classes implement the duplicate interface
+- Throw an error with a clear message about the duplicate implementations
+- Stop the generation process to prevent ambiguous dependency injection
+
+## Expected Error Message
+
+```
+Error: Interface 'INotificationService' is implemented by multiple classes:
+  - EmailNotificationService (/path/to/services/EmailNotificationService.ts)
+  - SmsNotificationService (/path/to/services/SmsNotificationService.ts)
+  - PushNotificationService (/path/to/services/PushNotificationService.ts)
+
+Multiple classes implement the same interface(s): INotificationService. Each interface should only be implemented by one class for proper dependency injection.
+```
+
+## Why This Happens
+
+IoC Arise follows the principle that each interface should have exactly one implementation for dependency injection to work correctly. When multiple classes implement the same interface, the container doesn't know which one to inject.
+
+## Resolution Strategies
+
+To fix this issue, you have several options:
+
+### Option 1: Use Factory Pattern
+Create a factory class that decides which implementation to use:
+
+```typescript
+export interface INotificationFactory {
+  createEmailService(): INotificationService;
+  createSmsService(): INotificationService;
+  createPushService(): INotificationService;
+}
+```
+
+### Option 2: Use Specific Interfaces
+Create specific interfaces for each implementation:
+
+```typescript
+export interface IEmailNotificationService extends INotificationService {}
+export interface ISmsNotificationService extends INotificationService {}
+export interface IPushNotificationService extends INotificationService {}
+```
+
+### Option 3: Use Modules with Different Names
+Organize implementations into different modules or use different naming patterns to avoid conflicts.
+
+## Configuration
+
+```json
+{
+  "source": ".",
+  "output": "container.gen.ts",
+  "interface": "I[A-Z].*",
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ],
+  "verbose": true,
+  "modules": {
+    "DuplicateModule": [
+      "services/**"
+    ]
+  }
+}
+```
+
+## Running the Example
+
+1. Try to generate the container (this should fail):
+   ```bash
+   npx @notjustcoders/ioc-arise generate
+   ```
+
+2. The command should exit with an error and detailed information about the duplicate implementations
+
+## Post-Construction Initialization
+
+The `onInit()` function is **exported from the generated container.gen.ts file**, not a method in your classes:
+
+```typescript
+import { onInit } from './container.gen';
+
+// The onInit function is called automatically when inject() is first used
+// You can modify it in the generated container.gen.ts file for custom initialization
+```
+
+If the interfaces were properly separated, here's how you would use post-construction dependency injection:
+
+```typescript
+export class NotificationManager {
+  private emailService!: IEmailNotificationService;
+  private smsService!: ISmsNotificationService;
+  private pushService!: IPushNotificationService;
+  
+  initializeServices() {
+    this.emailService = inject('duplicateModule.IEmailNotificationService');
+    this.smsService = inject('duplicateModule.ISmsNotificationService');
+    this.pushService = inject('duplicateModule.IPushNotificationService');
+    console.log('NotificationManager initialized with all notification services');
+  }
+  
+  async sendToAll(message: string, recipient: string) {
+    await Promise.all([
+      this.emailService.sendNotification(message, recipient),
+      this.smsService.sendNotification(message, recipient),
+      this.pushService.sendNotification(message, recipient)
+    ]);
+  }
+}
+```
+
+{/* Conclusion Section */}
+
+## Benefits of Duplicate Detection
+
+1. **Error Prevention**: Catches ambiguous dependency injection at build time
+2. **Clear Error Messages**: Detailed reporting of which classes cause conflicts
+3. **Architecture Validation**: Ensures clean dependency injection patterns
+4. **Type Safety**: Maintains full TypeScript support with proper interface contracts
+5. **Development Guidance**: Provides clear paths to resolve conflicts
+
+This example demonstrates how IoC Arise's strict validation prevents runtime ambiguity and guides you toward better architectural decisions by catching interface conflicts early in the development process!

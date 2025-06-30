@@ -1,24 +1,36 @@
-import { EmailService } from './services/EmailService';
-import { ApplicationService } from './services/ApplicationService';
 import { UserController } from './use-cases/UserController';
 import { GetUserUseCase } from './use-cases/GetUserUseCase';
 import { CreateUserUseCase } from './use-cases/CreateUserUseCase';
+import { EmailService } from './services/EmailService';
+import { ApplicationService } from './services/ApplicationService';
 import { UserRepository } from './repositories/UserRepository';
 
 function createCoreModuleContainer() {
 
+  let applicationService: ApplicationService | undefined;
   let createUserUseCase: CreateUserUseCase | undefined;
+  let emailService: EmailService | undefined;
   let getUserUseCase: GetUserUseCase | undefined;
   let userRepository: UserRepository | undefined;
   let userController: UserController | undefined;
-  let applicationService: ApplicationService | undefined;
-  let emailService: EmailService | undefined;
 
+  const getApplicationService = (): ApplicationService => {
+    if (!applicationService) {
+      applicationService = new ApplicationService(getUserController());
+    }
+    return applicationService;
+  };
   const getCreateUserUseCase = (): CreateUserUseCase => {
     if (!createUserUseCase) {
       createUserUseCase = new CreateUserUseCase(getUserRepository(), getEmailService());
     }
     return createUserUseCase;
+  };
+  const getEmailService = (): EmailService => {
+    if (!emailService) {
+      emailService = new EmailService();
+    }
+    return emailService;
   };
   const getGetUserUseCase = (): GetUserUseCase => {
     if (!getUserUseCase) {
@@ -38,26 +50,8 @@ function createCoreModuleContainer() {
     }
     return userController;
   };
-  const getApplicationService = (): ApplicationService => {
-    if (!applicationService) {
-      applicationService = new ApplicationService(getUserController());
-    }
-    return applicationService;
-  };
-  const getEmailService = (): EmailService => {
-    if (!emailService) {
-      emailService = new EmailService();
-    }
-    return emailService;
-  };
 
   return {
-        get IEmailService(): EmailService {
-          return getEmailService();
-        },
-        get IApplicationService(): ApplicationService {
-          return getApplicationService();
-        },
         get UserController(): UserController {
           return getUserController();
         },
@@ -66,6 +60,12 @@ function createCoreModuleContainer() {
         },
         get CreateUserUseCase(): CreateUserUseCase {
           return getCreateUserUseCase();
+        },
+        get IEmailService(): EmailService {
+          return getEmailService();
+        },
+        get IApplicationService(): ApplicationService {
+          return getApplicationService();
         },
         get IUserRepository(): UserRepository {
           return getUserRepository();

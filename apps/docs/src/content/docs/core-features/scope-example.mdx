@@ -1,0 +1,250 @@
+---
+title: Scope Example
+description: Demonstrates how to use singleton and transient scopes in IoC Arise
+sidebar:
+  order: 3
+---
+
+{/* Hook Section */}
+This example demonstrates how to use **singleton** and **transient** scopes in IoC Arise. You'll learn how to control the lifecycle of your services and understand the difference between shared and new instances.
+
+import { FileTree } from '@astrojs/starlight/components';
+
+## Project Structure
+
+<FileTree>
+- scope-example/
+  - services/
+    - SingletonService.ts  # Default scope (singleton)
+    - TransientService.ts  # Explicitly transient
+    - ScopedService.ts     # Explicitly singleton
+    - ILogger.ts           # Interface for logging
+  - container.gen.ts         # Generated container
+  - demo.ts                  # Demonstration of scopes
+  - ioc.config.json          # IoC configuration
+  - README.md                # This file
+</FileTree>
+
+## Key Concepts
+
+1. **Singleton Scope** (default)
+   - One instance is created and shared across the entire application
+   - Perfect for services that are stateless or manage shared state
+   - All classes are singletons unless specified otherwise
+
+2. **Transient Scope**
+   - A new instance is created every time the service is requested
+   - Ideal for services that are stateful and need to be isolated
+   - Use the `@scope transient` JSDoc tag to mark a class as transient
+
+{/* Body Section with Open Loops */}
+
+## Service Definitions
+
+### SingletonService (Default)
+
+No special annotation is needed for singleton scope:
+
+```typescript
+import { ILogger } from './ILogger';
+
+// This service is a singleton by default
+export class SingletonService {
+  private static instanceCounter = 0;
+  private instanceId: number;
+
+  constructor(private logger: ILogger) {
+    SingletonService.instanceCounter++;
+    this.instanceId = SingletonService.instanceCounter;
+    this.logger.log(`SingletonService instance ${this.instanceId} created`);
+  }
+
+  getServiceId(): string {
+    return `SingletonService (instance ${this.instanceId})`;
+  }
+}
+```
+
+### TransientService
+
+Use the `@scope transient` JSDoc tag:
+
+```typescript
+import { ILogger } from './ILogger';
+
+/**
+ * @scope transient
+ */
+export class TransientService {
+  private static instanceCounter = 0;
+  private instanceId: number;
+
+  constructor(private logger: ILogger) {
+    TransientService.instanceCounter++;
+    this.instanceId = TransientService.instanceCounter;
+    this.logger.log(`TransientService instance ${this.instanceId} created`);
+  }
+
+  getServiceId(): string {
+    return `TransientService (instance ${this.instanceId})`;
+  }
+}
+```
+
+### ScopedService (Explicit Singleton)
+
+You can also explicitly mark a class as a singleton:
+
+```typescript
+import { ILogger } from './ILogger';
+
+/**
+ * @scope singleton
+ */
+export class ScopedService {
+  private static instanceCounter = 0;
+  private instanceId: number;
+
+  constructor(private logger: ILogger) {
+    ScopedService.instanceCounter++;
+    this.instanceId = ScopedService.instanceCounter;
+    this.logger.log(`ScopedService instance ${this.instanceId} created`);
+  }
+
+  getServiceId(): string {
+    return `ScopedService (instance ${this.instanceId})`;
+  }
+}
+```
+
+## Usage with Container
+
+### Method 1: Direct Container Access
+
+```typescript
+import { container } from './container.gen';
+
+// Access singleton services (same instance every time)
+const singleton1 = container.coreModule.SingletonService;
+const singleton2 = container.coreModule.SingletonService;
+
+// Access transient services (new instance every time)
+const transient1 = container.coreModule.TransientService;
+const transient2 = container.coreModule.TransientService;
+
+console.log(singleton1.getServiceId()); // SingletonService (instance 1)
+console.log(singleton2.getServiceId()); // SingletonService (instance 1)
+
+console.log(transient1.getServiceId()); // TransientService (instance 1)
+console.log(transient2.getServiceId()); // TransientService (instance 2)
+```
+
+### Method 2: Using inject() Function (Type-Safe)
+
+```typescript
+import { inject } from './container.gen';
+
+// Inject singleton services
+const singleton1 = inject('coreModule.SingletonService');
+const singleton2 = inject('coreModule.SingletonService');
+
+// Inject transient services
+const transient1 = inject('coreModule.TransientService');
+const transient2 = inject('coreModule.TransientService');
+
+console.log(singleton1 === singleton2); // true
+console.log(transient1 === transient2); // false
+```
+
+## Example Workflow
+
+```typescript
+// 1. Get singleton instances
+const s1 = inject('coreModule.SingletonService');
+const s2 = inject('coreModule.SingletonService');
+console.log(`s1 === s2: ${s1 === s2}`); // true
+
+// 2. Get transient instances
+const t1 = inject('coreModule.TransientService');
+const t2 = inject('coreModule.TransientService');
+console.log(`t1 === t2: ${t1 === t2}`); // false
+
+// 3. Get explicitly scoped singleton instances
+const scoped1 = inject('coreModule.ScopedService');
+const scoped2 = inject('coreModule.ScopedService');
+console.log(`scoped1 === scoped2: ${scoped1 === scoped2}`); // true
+
+// 4. Verify instance IDs
+console.log(s1.getServiceId()); // SingletonService (instance 1)
+console.log(s2.getServiceId()); // SingletonService (instance 1)
+
+console.log(t1.getServiceId()); // TransientService (instance 1)
+console.log(t2.getServiceId()); // TransientService (instance 2)
+
+console.log(scoped1.getServiceId()); // ScopedService (instance 1)
+console.log(scoped2.getServiceId()); // ScopedService (instance 1)
+```
+
+## Post-Construction Initialization
+
+The `onInit()` function is **exported from the generated container.gen.ts file**, not a method in your classes:
+
+```typescript
+import { onInit } from './container.gen';
+
+// The onInit function is called automatically when inject() is first used
+// You can modify it in the generated container.gen.ts file for custom initialization
+```
+
+For services that need post-construction setup:
+
+```typescript
+export class ApplicationManager {
+  private singletonService!: SingletonService;
+  private transientService!: TransientService;
+  
+  initializeServices() {
+    this.singletonService = inject('coreModule.SingletonService');
+    this.transientService = inject('coreModule.TransientService');
+    console.log('ApplicationManager initialized with scoped services');
+  }
+  
+  run() {
+    console.log('Running with:', this.singletonService.getServiceId());
+    console.log('Running with:', this.transientService.getServiceId());
+  }
+}
+```
+
+## IoC Configuration
+
+```json
+{
+  "source": ".",
+  "output": "container.gen.ts",
+  "interface": "I[A-Z].*",
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ],
+  "verbose": true
+}
+```
+
+This configuration:
+- Scans the current directory for classes
+- Automatically detects `@scope` JSDoc tags
+- Generates a container with proper singleton and transient providers
+
+{/* Conclusion Section */}
+
+## Benefits of Scoped Services
+
+1. **Lifecycle Control**: Precisely manage the lifecycle of your services
+2. **State Management**: Use singletons for shared state and transients for isolated state
+3. **Performance**: Singletons are created once, reducing overhead
+4. **Flexibility**: Mix and match scopes to fit your application's needs
+5. **Testability**: Easy to mock services regardless of their scope
+6. **Clean Code**: No complex configuration needed - just a simple JSDoc tag
+
+This example shows how IoC Arise's scope management provides powerful control over service lifecycles with minimal effort, enabling you to build robust and efficient applications!

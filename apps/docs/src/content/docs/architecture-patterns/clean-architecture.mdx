@@ -1,0 +1,1803 @@
+---
+title: Clean Architecture Example
+description: Advanced example demonstrating Clean Architecture principles with use cases, ports, adapters, and presenters
+sidebar:
+  order: 3
+---
+
+import { FileTree } from '@astrojs/starlight/components';
+
+## Project Structure
+
+<FileTree>
+- clean-architecture/
+  - entities/
+    - Todo.ts
+    - User.ts
+  - dtos/
+    - TodoDTOs.ts
+    - UserDTOs.ts
+  - ports/
+    - IInputPort.ts
+    - IOutputPort.ts
+    - ITodoInputPort.ts
+    - ITodoOutputPort.ts
+  - use-cases/
+    - CreateTodoUseCase.ts
+    - GetTodoUseCase.ts
+    - UpdateTodoUseCase.ts
+    - DeleteTodoUseCase.ts
+    - GetTodosByUserUseCase.ts
+    - CreateUserUseCase.ts
+    - GetUserUseCase.ts
+    - DeleteUserUseCase.ts
+  - repositories/
+    - ITodoRepository.ts
+    - TodoRepository.ts
+    - IUserRepository.ts
+    - UserRepository.ts
+  - presenters/
+    - CreateTodoPresenter.ts
+    - GetTodoPresenter.ts
+    - UpdateTodoPresenter.ts
+    - DeleteTodoPresenter.ts
+    - GetTodosByUserPresenter.ts
+    - CreateUserPresenter.ts
+    - GetUserPresenter.ts
+    - DeleteUserPresenter.ts
+  - view-models/
+    - TodoViewModels.ts
+    - UserViewModels.ts
+  - ioc.config.json
+  - container.gen.ts
+</FileTree>
+
+## Entities
+
+```typescript
+// entities/User.ts
+import { Todo, CreateTodoData, UpdateTodoData } from './Todo';
+
+export interface CreateUserData {
+  email: string;
+  name: string;
+}
+
+// User Aggregate Root - manages Todo entities
+export class User {
+  private _todos: Map<string, Todo> = new Map();
+
+  constructor(
+    public readonly id: string,
+    private _email: string,
+    private _name: string,
+    public readonly createdAt: Date = new Date()
+  ) {
+    this.validateEmail(_email);
+    this.validateName(_name);
+  }
+
+  get email(): string {
+    return this._email;
+  }
+
+  get name(): string {
+    return this._name;
+  }
+
+  get todos(): Todo[] {
+    return Array.from(this._todos.values());
+  }
+
+  // Critical business logic: Email validation
+  private validateEmail(email: string): void {
+    const emailRegex = /^[^
+@]+@[^
+@]+\.[^
+@]+$/;
+    if (!emailRegex.test(email)) {
+      throw new Error('Invalid email format');
+    }
+  }
+
+  // Critical business logic: Name validation
+  private validateName(name: string): void {
+    if (!name || name.trim().length < 2) {
+      throw new Error('Name must be at least 2 characters long');
+    }
+    if (name.trim().length > 100) {
+      throw new Error('Name cannot exceed 100 characters');
+    }
+  }
+
+  // Critical business logic: Update email with validation
+  updateEmail(newEmail: string): void {
+    this.validateEmail(newEmail);
+    this._email = newEmail;
+  }
+
+  // Critical business logic: Update name with validation
+  updateName(newName: string): void {
+    this.validateName(newName);
+    this._name = newName;
+  }
+
+  // Critical business logic: Get display name
+  getDisplayName(): string {
+    return this._name.trim();
+  }
+
+  // Critical business logic: Check if user has valid contact info
+  hasValidContactInfo(): boolean {
+    return this.email.length > 0 && this.name.trim().length > 0;
+  }
+
+  // Aggregate business logic: Add a new todo
+  addTodo(todoData: CreateTodoData): Todo {
+    if (todoData.userId !== this.id) {
+      throw new Error('Todo must belong to this user');
+    }
+
+    // Business rule: User cannot have more than 100 todos
+    if (this._todos.size >= 100) {
+      throw new Error('User cannot have more than 100 todos');
+    }
+
+    // Business rule: User cannot have duplicate todo titles
+    const existingTodo = Array.from(this._todos.values())
+      .find(todo => todo.title.toLowerCase() === todoData.title.toLowerCase());
+    if (existingTodo) {
+      throw new Error('User already has a todo with this title');
+    }
+
+    const todo = Todo.create(todoData);
+    this._todos.set(todo.id, todo);
+    return todo;
+  }
+
+  // Aggregate business logic: Get a specific todo
+  getTodo(todoId: string): Todo | null {
+    return this._todos.get(todoId) || null;
+  }
+
+  // Aggregate business logic: Update a todo
+  updateTodo(todoId: string, updateData: UpdateTodoData): Todo {
+    const todo = this._todos.get(todoId);
+    if (!todo) {
+      throw new Error('Todo not found');
+    }
+
+    // Business rule: Check for duplicate titles when updating
+    if (updateData.title) {
+      const existingTodo = Array.from(this._todos.values())
+        .find(t => t.id !== todoId && t.title.toLowerCase() === updateData.title!.toLowerCase());
+      if (existingTodo) {
+        throw new Error('User already has a todo with this title');
+      }
+    }
+
+    todo.update(updateData);
+    return todo;
+  }
+
+  // Aggregate business logic: Remove a todo
+  removeTodo(todoId: string): boolean {
+    return this._todos.delete(todoId);
+  }
+
+  // Aggregate business logic: Get completed todos
+  getCompletedTodos(): Todo[] {
+    return Array.from(this._todos.values()).filter(todo => todo.completed);
+  }
+
+  // Aggregate business logic: Get pending todos
+  getPendingTodos(): Todo[] {
+    return Array.from(this._todos.values()).filter(todo => !todo.completed);
+  }
+
+  // Aggregate business logic: Get todos by priority
+  getTodosByPriority(priority: 'high' | 'medium' | 'low'): Todo[] {
+    return Array.from(this._todos.values()).filter(todo => todo.getPriority() === priority);
+  }
+
+  // Aggregate business logic: Mark all todos as completed
+  completeAllTodos(): void {
+    for (const todo of Array.from(this._todos.values())) {
+      if (!todo.completed) {
+        todo.markAsCompleted();
+      }
+    }
+  }
+
+  // Aggregate business logic: Get todo statistics
+  getTodoStats(): { total: number; completed: number; pending: number; highPriority: number } {
+    const todos = Array.from(this._todos.values());
+    return {
+      total: todos.length,
+      completed: todos.filter(t => t.completed).length,
+      pending: todos.filter(t => !t.completed).length,
+      highPriority: todos.filter(t => t.getPriority() === 'high').length
+    };
+  }
+
+  // Aggregate business logic: Check if user is productive (has completed todos)
+  isProductive(): boolean {
+    return this.getCompletedTodos().length > 0;
+  }
+
+  // Factory method for creating new users
+  static create(data: CreateUserData): User {
+    const id = crypto.randomUUID();
+    return new User(id, data.email, data.name);
+  }
+
+  // Load existing todos into the aggregate (for repository loading)
+  loadTodos(todos: Todo[]): void {
+    this._todos.clear();
+    for (const todo of todos) {
+      if (todo.userId !== this.id) {
+        throw new Error('Cannot load todo that does not belong to this user');
+      }
+      this._todos.set(todo.id, todo);
+    }
+  }
+
+  // Convert to plain object for serialization
+  toJSON(): object {
+    return {
+      id: this.id,
+      email: this.email,
+      name: this.name,
+      createdAt: this.createdAt,
+      todos: this.todos.map(todo => todo.toJSON())
+    };
+  }
+}
+```
+
+```typescript
+// entities/Todo.ts
+export interface CreateTodoData {
+  title: string;
+  description: string;
+  userId: string;
+}
+
+export interface UpdateTodoData {
+  title?: string;
+  description?: string;
+  completed?: boolean;
+}
+
+export class Todo {
+  constructor(
+    public readonly id: string,
+    private _title: string,
+    private _description: string,
+    private _completed: boolean,
+    public readonly userId: string,
+    public readonly createdAt: Date = new Date(),
+    private _updatedAt: Date = new Date()
+  ) {
+    this.validateTitle(_title);
+    this.validateDescription(_description);
+    this.validateUserId(userId);
+  }
+
+  get title(): string {
+    return this._title;
+  }
+
+  get description(): string {
+    return this._description;
+  }
+
+  get completed(): boolean {
+    return this._completed;
+  }
+
+  get updatedAt(): Date {
+    return this._updatedAt;
+  }
+
+  // Critical business logic: Title validation
+  private validateTitle(title: string): void {
+    if (!title || title.trim().length < 3) {
+      throw new Error('Title must be at least 3 characters long');
+    }
+    if (title.trim().length > 200) {
+      throw new Error('Title cannot exceed 200 characters');
+    }
+  }
+
+  // Critical business logic: Description validation
+  private validateDescription(description: string): void {
+    if (description && description.length > 1000) {
+      throw new Error('Description cannot exceed 1000 characters');
+    }
+  }
+
+  // Critical business logic: User ID validation
+  private validateUserId(userId: string): void {
+    if (!userId || userId.trim().length === 0) {
+      throw new Error('User ID is required');
+    }
+  }
+
+  // Critical business logic: Update title with validation
+  updateTitle(newTitle: string): void {
+    this.validateTitle(newTitle);
+    this._title = newTitle;
+    this.touch();
+  }
+
+  // Critical business logic: Update description with validation
+  updateDescription(newDescription: string): void {
+    this.validateDescription(newDescription);
+    this._description = newDescription;
+    this.touch();
+  }
+
+  // Critical business logic: Mark as completed
+  markAsCompleted(): void {
+    if (this._completed) {
+      throw new Error('Todo is already completed');
+    }
+    this._completed = true;
+    this.touch();
+  }
+
+  // Critical business logic: Mark as incomplete
+  markAsIncomplete(): void {
+    if (!this._completed) {
+      throw new Error('Todo is already incomplete');
+    }
+    this._completed = false;
+    this.touch();
+  }
+
+  // Critical business logic: Toggle completion status
+  toggleCompletion(): void {
+    this._completed = !this._completed;
+    this.touch();
+  }
+
+  // Critical business logic: Check if todo is overdue (if it has a due date)
+  isOverdue(dueDate?: Date): boolean {
+    if (!dueDate) return false;
+    return !this._completed && new Date() > dueDate;
+  }
+
+  // Critical business logic: Get todo priority based on age and completion
+  getPriority(): 'high' | 'medium' | 'low' {
+    if (this._completed) return 'low';
+    
+    const daysSinceCreated = Math.floor(
+      (Date.now() - this.createdAt.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    
+    if (daysSinceCreated > 7) return 'high';
+    if (daysSinceCreated > 3) return 'medium';
+    return 'low';
+  }
+
+  // Critical business logic: Check if todo belongs to user
+  belongsToUser(userId: string): boolean {
+    return this.userId === userId;
+  }
+
+  // Critical business logic: Get summary for display
+  getSummary(maxLength: number = 50): string {
+    const summary = this._title.length > maxLength 
+      ? this._title.substring(0, maxLength) + '...'
+      : this._title;
+    return `${this._completed ? '✓' : '○'} ${summary}`;
+  }
+
+  // Update the updatedAt timestamp
+  private touch(): void {
+    this._updatedAt = new Date();
+  }
+
+  // Factory method for creating new todos
+  static create(data: CreateTodoData): Todo {
+    const id = crypto.randomUUID();
+    return new Todo(id, data.title, data.description, false, data.userId);
+  }
+
+  // Update todo with partial data
+  update(data: UpdateTodoData): void {
+    if (data.title !== undefined) {
+      this.updateTitle(data.title);
+    }
+    if (data.description !== undefined) {
+      this.updateDescription(data.description);
+    }
+    if (data.completed !== undefined) {
+      if (data.completed && !this._completed) {
+        this.markAsCompleted();
+      } else if (!data.completed && this._completed) {
+        this.markAsIncomplete();
+      }
+    }
+  }
+
+  // Convert to plain object for serialization
+  toJSON(): object {
+    return {
+      id: this.id,
+      title: this.title,
+      description: this.description,
+      completed: this.completed,
+      userId: this.userId,
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt
+    };
+  }
+}
+```
+
+## Use Cases
+
+```typescript
+// use-cases/CreateTodoUseCase.ts
+import { ICreateTodoInputPort } from '../ports/ITodoInputPort';
+import { IUserRepository } from '../repositories/IUserRepository';
+import { CreateTodoData } from '../entities/Todo';
+import { CreateTodoRequestDTO, TodoResponseDTO } from '../dtos/TodoDTOs';
+import { ICreateTodoOutputPort } from '../ports/ITodoOutputPort';
+
+export class CreateTodoUseCase implements ICreateTodoInputPort {
+  constructor(
+    private userRepository: IUserRepository,
+    private outputPort: ICreateTodoOutputPort
+  ) {}
+
+  async execute(todoData: CreateTodoRequestDTO): Promise<void> {
+    try {
+      // Validate input
+      if (!todoData.title.trim()) {
+        this.outputPort.presentError('Todo title is required');
+        return;
+      }
+
+      if (!todoData.userId.trim()) {
+        this.outputPort.presentError('User ID is required');
+        return;
+      }
+
+      // Get the user aggregate
+      const user = await this.userRepository.findById(todoData.userId);
+      if (!user) {
+        this.outputPort.presentError('User not found');
+        return;
+      }
+
+      // Create todo through the user aggregate
+      const createData: CreateTodoData = {
+        title: todoData.title.trim(),
+        description: todoData.description.trim(),
+        userId: todoData.userId
+      };
+      
+      const todo = user.addTodo(createData);
+
+      // Save the user aggregate (which includes the new todo)
+      await this.userRepository.save(user);
+      
+      // Convert entity to DTO for presentation
+      const todoDTO: TodoResponseDTO = {
+        id: todo.id,
+        title: todo.title,
+        description: todo.description,
+        completed: todo.completed,
+        userId: todo.userId,
+        createdAt: todo.createdAt.toISOString(),
+        updatedAt: todo.updatedAt.toISOString()
+      };
+      
+      this.outputPort.presentSuccess(todoDTO);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.outputPort.presentError(errorMessage);
+    }
+  }
+}
+```
+
+```typescript
+// use-cases/CreateUserUseCase.ts
+import { ICreateUserInputPort } from '../ports/IInputPort';
+import { IUserRepository } from '../repositories/IUserRepository';
+import { User, CreateUserData } from '../entities/User';
+import { CreateUserRequestDTO, UserResponseDTO } from '../dtos/UserDTOs';
+import { ICreateUserOutputPort as OutputPort  } from '../ports/IOutputPort';
+
+export class CreateUserUseCase implements ICreateUserInputPort {
+  constructor(
+    private userRepository: IUserRepository,
+    private outputPort: OutputPort
+  ) {}
+
+  async execute(userData: CreateUserRequestDTO): Promise<void> {
+    try {
+      // Check if user already exists
+      const existingUser = await this.userRepository.findByEmail(userData.email);
+      if (existingUser) {
+        this.outputPort.presentError('User with this email already exists');
+        return;
+      }
+
+      // Create new user entity using factory method
+      const createData: CreateUserData = {
+        email: userData.email,
+        name: userData.name
+      };
+      const user = User.create(createData);
+
+      await this.userRepository.save(user);
+      
+      // Convert entity to DTO for presentation
+      const userDTO: UserResponseDTO = {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        createdAt: user.createdAt.toISOString()
+      };
+      
+      this.outputPort.presentSuccess(userDTO);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.outputPort.presentError(errorMessage);
+    }
+  }
+}
+```
+
+```typescript
+// use-cases/DeleteTodoUseCase.ts
+import { IDeleteTodoInputPort } from '../ports/ITodoInputPort';
+import { IUserRepository } from '../repositories/IUserRepository';
+import { ITodoRepository } from '../repositories/ITodoRepository';
+import { DeleteTodoRequestDTO } from '../dtos/TodoDTOs';
+import { IDeleteTodoOutputPort } from '../ports/ITodoOutputPort';
+
+export class DeleteTodoUseCase implements IDeleteTodoInputPort {
+  constructor(
+    private userRepository: IUserRepository,
+    private todoRepository: ITodoRepository,
+    private outputPort: IDeleteTodoOutputPort
+  ) {}
+
+  async execute(request: DeleteTodoRequestDTO): Promise<void> {
+    try {
+      // First, find the todo to get its owner's userId
+      const todo = await this.todoRepository.findById(request.id);
+      
+      if (!todo) {
+        this.outputPort.presentNotFound();
+        return;
+      }
+      
+      // Now fetch only the specific user who owns this todo
+      const ownerUser = await this.userRepository.findById(todo.userId);
+      
+      if (!ownerUser) {
+        this.outputPort.presentNotFound();
+        return;
+      }
+
+      // Remove todo through the user aggregate
+      const wasRemoved = ownerUser.removeTodo(request.id);
+      
+      if (!wasRemoved) {
+        this.outputPort.presentNotFound();
+        return;
+      }
+      
+      // Save the user aggregate
+      await this.userRepository.save(ownerUser);
+      
+      this.outputPort.presentSuccess();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.outputPort.presentError(errorMessage);
+    }
+  }
+}
+```
+
+```typescript
+// use-cases/DeleteUserUseCase.ts
+import { IDeleteUserInputPort } from '../ports/IInputPort';
+import { IUserRepository } from '../repositories/IUserRepository';
+import { DeleteUserRequestDTO } from '../dtos/UserDTOs';
+import { IDeleteUserOutputPort } from '../ports/IOutputPort';
+
+export class DeleteUserUseCase implements IDeleteUserInputPort {
+  constructor(
+    private userRepository: IUserRepository,
+    private outputPort: IDeleteUserOutputPort
+  ) {}
+
+  async execute(request: DeleteUserRequestDTO): Promise<void> {
+    try {
+      const user = await this.userRepository.findById(request.id);
+      
+      if (!user) {
+        this.outputPort.presentNotFound();
+        return;
+      }
+
+      await this.userRepository.delete(request.id);
+      this.outputPort.presentSuccess();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.outputPort.presentError(errorMessage);
+    }
+  }
+}
+```
+
+```typescript
+// use-cases/GetTodoUseCase.ts
+import { IGetTodoInputPort } from '../ports/ITodoInputPort';
+import { IUserRepository } from '../repositories/IUserRepository';
+import { ITodoRepository } from '../repositories/ITodoRepository';
+import { GetTodoRequestDTO, TodoResponseDTO } from '../dtos/TodoDTOs';
+import { IGetTodoOutputPort } from '../ports/ITodoOutputPort';
+
+export class GetTodoUseCase implements IGetTodoInputPort {
+  constructor(
+    private userRepository: IUserRepository,
+    private todoRepository: ITodoRepository,
+    private outputPort: IGetTodoOutputPort
+  ) {}
+
+  async execute(request: GetTodoRequestDTO): Promise<void> {
+    try {
+      // Directly fetch the todo by ID
+      const foundTodo = await this.todoRepository.findById(request.id);
+      
+      if (foundTodo) {
+        // Convert entity to DTO for presentation
+        const todoDTO: TodoResponseDTO = {
+          id: foundTodo.id,
+          title: foundTodo.title,
+          description: foundTodo.description,
+          completed: foundTodo.completed,
+          userId: foundTodo.userId,
+          createdAt: foundTodo.createdAt.toISOString(),
+          updatedAt: foundTodo.updatedAt.toISOString()
+        };
+        this.outputPort.presentTodo(todoDTO);
+      } else {
+        this.outputPort.presentNotFound();
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.outputPort.presentError(errorMessage);
+    }
+  }
+}
+```
+
+```typescript
+// use-cases/GetTodosByUserUseCase.ts
+import { IGetTodosByUserInputPort } from '../ports/ITodoInputPort';
+import { IUserRepository } from '../repositories/IUserRepository';
+import { GetTodosByUserRequestDTO, TodoResponseDTO } from '../dtos/TodoDTOs';
+import { IGetTodosByUserOutputPort } from '../ports/ITodoOutputPort';
+
+export class GetTodosByUserUseCase implements IGetTodosByUserInputPort {
+  constructor(
+    private userRepository: IUserRepository,
+    private outputPort: IGetTodosByUserOutputPort
+  ) {}
+
+  async execute(request: GetTodosByUserRequestDTO): Promise<void> {
+    try {
+      const user = await this.userRepository.findById(request.userId);
+      
+      if (!user) {
+        this.outputPort.presentTodos([]);
+        return;
+      }
+      
+      const todos = user.todos;
+      
+      // Convert entities to DTOs for presentation
+      const todoDTOs: TodoResponseDTO[] = todos.map(todo => ({
+        id: todo.id,
+        title: todo.title,
+        description: todo.description,
+        completed: todo.completed,
+        userId: todo.userId,
+        createdAt: todo.createdAt.toISOString(),
+        updatedAt: todo.updatedAt.toISOString()
+      }));
+      
+      this.outputPort.presentTodos(todoDTOs);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.outputPort.presentError(errorMessage);
+    }
+  }
+}
+```
+
+```typescript
+// use-cases/GetUserUseCase.ts
+import { IGetUserInputPort } from '../ports/IInputPort';
+import { IUserRepository } from '../repositories/IUserRepository';
+import { User } from '../entities/User';
+import { GetUserRequestDTO, UserResponseDTO } from '../dtos/UserDTOs';
+import { IGetUserOutputPort } from '../ports/IOutputPort';
+
+export class GetUserUseCase implements IGetUserInputPort {
+  constructor(
+    private userRepository: IUserRepository,
+    private outputPort: IGetUserOutputPort
+  ) {}
+
+  async execute(request: GetUserRequestDTO): Promise<void> {
+    try {
+      const user = await this.userRepository.findById(request.id);
+      
+      if (user) {
+        // Convert entity to DTO for presentation
+        const userDTO: UserResponseDTO = {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          createdAt: user.createdAt.toISOString()
+        };
+        this.outputPort.presentUser(userDTO);
+      } else {
+        this.outputPort.presentNotFound();
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.outputPort.presentError(errorMessage);
+    }
+  }
+}
+```
+
+```typescript
+// use-cases/UpdateTodoUseCase.ts
+import { IUpdateTodoInputPort } from '../ports/ITodoInputPort';
+import { IUserRepository } from '../repositories/IUserRepository';
+import { ITodoRepository } from '../repositories/ITodoRepository';
+import { UpdateTodoRequestDTO, TodoResponseDTO } from '../dtos/TodoDTOs';
+import { IUpdateTodoOutputPort } from '../ports/ITodoOutputPort';
+
+export class UpdateTodoUseCase implements IUpdateTodoInputPort {
+  constructor(
+    private userRepository: IUserRepository,
+    private todoRepository: ITodoRepository,
+    private outputPort: IUpdateTodoOutputPort
+  ) {}
+
+  async execute(request: UpdateTodoRequestDTO): Promise<void> {
+    try {
+      // First, find the todo to get its owner's userId
+      const existingTodo = await this.todoRepository.findById(request.id);
+      
+      if (!existingTodo) {
+        this.outputPort.presentNotFound();
+        return;
+      }
+      
+      // Now fetch only the specific user who owns this todo
+      const ownerUser = await this.userRepository.findById(existingTodo.userId);
+      
+      if (!ownerUser) {
+        this.outputPort.presentNotFound();
+        return;
+      }
+
+      // Validate input if title is being updated
+      if (request.title !== undefined && !request.title.trim()) {
+        this.outputPort.presentError('Todo title cannot be empty');
+        return;
+      }
+
+      // Prepare update data
+      const updateData = {
+        ...(request.title !== undefined && { title: request.title.trim() }),
+        ...(request.description !== undefined && { description: request.description.trim() }),
+        ...(request.completed !== undefined && { completed: request.completed })
+      };
+
+      // Update todo through the user aggregate
+      const updatedTodo = ownerUser.updateTodo(request.id, updateData);
+      
+      // Save the user aggregate
+      await this.userRepository.save(ownerUser);
+      
+      // Convert entity to DTO for presentation
+      const todoDTO: TodoResponseDTO = {
+        id: updatedTodo.id,
+        title: updatedTodo.title,
+        description: updatedTodo.description,
+        completed: updatedTodo.completed,
+        userId: updatedTodo.userId,
+        createdAt: updatedTodo.createdAt.toISOString(),
+        updatedAt: updatedTodo.updatedAt.toISOString()
+      };
+      
+      this.outputPort.presentSuccess(todoDTO);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.outputPort.presentError(errorMessage);
+    }
+  }
+}
+```
+
+## Ports
+
+```typescript
+// ports/IInputPort.ts
+import { CreateUserRequestDTO, UserResponseDTO, GetUserRequestDTO, DeleteUserRequestDTO } from '../dtos/UserDTOs';
+
+export interface ICreateUserInputPort {
+  execute(userData: CreateUserRequestDTO): Promise<void>;
+}
+
+export interface IGetUserInputPort {
+  execute(request: GetUserRequestDTO): Promise<void>;
+}
+
+export interface IDeleteUserInputPort {
+  execute(request: DeleteUserRequestDTO): Promise<void>;
+}
+```
+
+```typescript
+// ports/IOutputPort.ts
+import { UserResponseDTO } from '../dtos/UserDTOs';
+
+export interface ICreateUserOutputPort {
+  presentSuccess(user: UserResponseDTO): void;
+  presentError(error: string): void;
+}
+
+export interface IGetUserOutputPort {
+  presentUser(user: UserResponseDTO): void;
+  presentNotFound(): void;
+  presentError(error: string): void;
+}
+
+export interface IDeleteUserOutputPort {
+  presentSuccess(): void;
+  presentNotFound(): void;
+  presentError(error: string): void;
+}
+```
+
+```typescript
+// ports/ITodoInputPort.ts
+import { CreateTodoRequestDTO, UpdateTodoRequestDTO, GetTodoRequestDTO, GetTodosByUserRequestDTO, DeleteTodoRequestDTO } from '../dtos/TodoDTOs';
+
+export interface ICreateTodoInputPort {
+  execute(todoData: CreateTodoRequestDTO): Promise<void>;
+}
+
+export interface IGetTodoInputPort {
+  execute(request: GetTodoRequestDTO): Promise<void>;
+}
+
+export interface IGetTodosByUserInputPort {
+  execute(request: GetTodosByUserRequestDTO): Promise<void>;
+}
+
+export interface IUpdateTodoInputPort {
+  execute(request: UpdateTodoRequestDTO): Promise<void>;
+}
+
+export interface IDeleteTodoInputPort {
+  execute(request: DeleteTodoRequestDTO): Promise<void>;
+}
+```
+
+```typescript
+// ports/ITodoOutputPort.ts
+import { TodoResponseDTO } from '../dtos/TodoDTOs';
+
+export interface ICreateTodoOutputPort {
+  presentSuccess(todo: TodoResponseDTO): void;
+  presentError(error: string): void;
+}
+
+export interface IGetTodoOutputPort {
+  presentTodo(todo: TodoResponseDTO): void;
+  presentNotFound(): void;
+  presentError(error: string): void;
+}
+
+export interface IGetTodosByUserOutputPort {
+  presentTodos(todos: TodoResponseDTO[]): void;
+  presentError(error: string): void;
+}
+
+export interface IUpdateTodoOutputPort {
+  presentSuccess(todo: TodoResponseDTO): void;
+  presentNotFound(): void;
+  presentError(error: string): void;
+}
+
+export interface IDeleteTodoOutputPort {
+  presentSuccess(): void;
+  presentNotFound(): void;
+  presentError(error: string): void;
+}
+```
+
+## DTOs
+
+```typescript
+// dtos/TodoDTOs.ts
+// DTOs for Todo clean architecture - no entity dependencies
+
+export interface CreateTodoRequestDTO {
+  title: string;
+  description: string;
+  userId: string;
+}
+
+export interface UpdateTodoRequestDTO {
+  id: string;
+  title?: string;
+  description?: string;
+  completed?: boolean;
+}
+
+export interface TodoResponseDTO {
+  id: string;
+  title: string;
+  description: string;
+  completed: boolean;
+  userId: string;
+  createdAt: string; // ISO string instead of Date object
+  updatedAt: string; // ISO string instead of Date object
+}
+
+export interface GetTodoRequestDTO {
+  id: string;
+}
+
+export interface GetTodosByUserRequestDTO {
+  userId: string;
+}
+
+export interface DeleteTodoRequestDTO {
+  id: string;
+}
+```
+
+```typescript
+// dtos/UserDTOs.ts
+// DTOs for clean architecture - no entity dependencies
+
+export interface CreateUserRequestDTO {
+  email: string;
+  name: string;
+}
+
+export interface UserResponseDTO {
+  id: string;
+  email: string;
+  name: string;
+  createdAt: string; // ISO string instead of Date object
+}
+
+export interface GetUserRequestDTO {
+  id: string;
+}
+
+export interface DeleteUserRequestDTO {
+  id: string;
+}
+```
+
+## Presenters
+
+```typescript
+// presenters/CreateTodoPresenter.ts
+import { TodoResponseDTO } from '../dtos/TodoDTOs';
+import { ICreateTodoOutputPort } from '../ports/ITodoOutputPort';
+import { CreateTodoViewModel } from '../view-models/TodoViewModels';
+
+/**
+ * @scope transient
+ */
+export class CreateTodoPresenter implements ICreateTodoOutputPort {
+  private viewModel: CreateTodoViewModel = {
+    isLoading: false,
+    isSuccess: false,
+    isError: false,
+    errorMessage: '',
+    successMessage: '',
+    todo: null
+  };
+
+  // Getter for ViewModel (for UI consumption)
+  getViewModel(): CreateTodoViewModel {
+    return { ...this.viewModel };
+  }
+
+  // View-related business logic methods
+  setLoading(isLoading: boolean): void {
+    this.viewModel.isLoading = isLoading;
+    if (isLoading) {
+      this.resetState();
+    }
+  }
+
+  private resetState(): void {
+    this.viewModel.isSuccess = false;
+    this.viewModel.isError = false;
+    this.viewModel.errorMessage = '';
+    this.viewModel.successMessage = '';
+    this.viewModel.todo = null;
+  }
+
+  // Output port implementations
+  presentSuccess(todo: TodoResponseDTO): void {
+    this.viewModel.isLoading = false;
+    this.viewModel.isSuccess = true;
+    this.viewModel.isError = false;
+    this.viewModel.successMessage = `Todo '${todo.title}' created successfully`;
+    this.viewModel.todo = {
+      id: todo.id,
+      title: todo.title,
+      description: todo.description,
+      completed: todo.completed,
+      userId: todo.userId
+    };
+    
+    // Console output for demo purposes
+    console.log('Todo created successfully:', todo);
+  }
+
+  presentError(error: string): void {
+    this.viewModel.isLoading = false;
+    this.viewModel.isSuccess = false;
+    this.viewModel.isError = true;
+    this.viewModel.errorMessage = error;
+    this.viewModel.todo = null;
+    
+    // Console output for demo purposes
+    console.error('Error creating todo:', error);
+  }
+
+  // Legacy methods for backward compatibility
+  getResult() {
+    return {
+      success: this.viewModel.isSuccess,
+      todo: this.viewModel.todo,
+      error: this.viewModel.errorMessage || undefined
+    };
+  }
+
+  clearResult(): void {
+    this.resetState();
+  }
+}
+```
+
+```typescript
+// presenters/CreateUserPresenter.ts
+import { UserResponseDTO } from '../dtos/UserDTOs';
+import { ICreateUserOutputPort } from '../ports/IOutputPort';
+import { CreateUserViewModel } from '../view-models/UserViewModels';
+
+/**
+ * @scope transient
+ */
+export class CreateUserPresenter implements ICreateUserOutputPort {
+  private viewModel: CreateUserViewModel = {
+    isLoading: false,
+    isSuccess: false,
+    isError: false,
+    errorMessage: '',
+    successMessage: '',
+    user: null
+  };
+
+  // Getter for ViewModel (for UI consumption)
+  getViewModel(): CreateUserViewModel {
+    return { ...this.viewModel };
+  }
+
+  // View-related business logic methods
+  setLoading(isLoading: boolean): void {
+    this.viewModel.isLoading = isLoading;
+    if (isLoading) {
+      this.resetState();
+    }
+  }
+
+  private resetState(): void {
+    this.viewModel.isSuccess = false;
+    this.viewModel.isError = false;
+    this.viewModel.errorMessage = '';
+    this.viewModel.successMessage = '';
+    this.viewModel.user = null;
+  }
+
+  // Output port implementations
+  presentSuccess(user: UserResponseDTO): void {
+    this.viewModel.isLoading = false;
+    this.viewModel.isSuccess = true;
+    this.viewModel.isError = false;
+    this.viewModel.successMessage = `User '${user.name}' created successfully`;
+    this.viewModel.user = {
+      id: user.id,
+      name: user.name,
+      email: user.email
+    };
+    
+    // Console output for demo purposes
+    console.log('User created successfully:', user);
+  }
+
+  presentError(error: string): void {
+    this.viewModel.isLoading = false;
+    this.viewModel.isSuccess = false;
+    this.viewModel.isError = true;
+    this.viewModel.errorMessage = error;
+    this.viewModel.user = null;
+    
+    // Console output for demo purposes
+    console.error('Error creating user:', error);
+  }
+
+  // Legacy methods for backward compatibility
+  getResult() {
+    return {
+      success: this.viewModel.isSuccess,
+      user: this.viewModel.user,
+      error: this.viewModel.errorMessage || undefined
+    };
+  }
+
+  clearResult(): void {
+    this.resetState();
+  }
+}
+```
+
+```typescript
+// presenters/DeleteTodoPresenter.ts
+import { IDeleteTodoOutputPort } from '../ports/ITodoOutputPort';
+import { DeleteTodoViewModel } from '../view-models/TodoViewModels';
+
+/**
+ * @scope transient
+ */
+export class DeleteTodoPresenter implements IDeleteTodoOutputPort {
+  private viewModel: DeleteTodoViewModel = {
+    isLoading: false,
+    isSuccess: false,
+    isError: false,
+    isNotFound: false,
+    errorMessage: '',
+    successMessage: ''
+  };
+
+  // Getter for ViewModel (for UI consumption)
+  getViewModel(): DeleteTodoViewModel {
+    return { ...this.viewModel };
+  }
+
+  // View-related business logic methods
+  setLoading(isLoading: boolean): void {
+    this.viewModel.isLoading = isLoading;
+    if (isLoading) {
+      this.resetState();
+    }
+  }
+
+  private resetState(): void {
+    this.viewModel.isSuccess = false;
+    this.viewModel.isError = false;
+    this.viewModel.isNotFound = false;
+    this.viewModel.errorMessage = '';
+    this.viewModel.successMessage = '';
+  }
+
+  // Output port implementations
+  presentSuccess(): void {
+    this.viewModel.isLoading = false;
+    this.viewModel.isSuccess = true;
+    this.viewModel.isError = false;
+    this.viewModel.isNotFound = false;
+    this.viewModel.successMessage = 'Todo deleted successfully';
+    
+    // Console output for demo purposes
+    console.log('Todo deleted successfully');
+  }
+
+  presentNotFound(): void {
+    this.viewModel.isLoading = false;
+    this.viewModel.isSuccess = false;
+    this.viewModel.isError = false;
+    this.viewModel.isNotFound = true;
+    
+    // Console output for demo purposes
+    console.log('Todo not found for deletion');
+  }
+
+  presentError(error: string): void {
+    this.viewModel.isLoading = false;
+    this.viewModel.isSuccess = false;
+    this.viewModel.isError = true;
+    this.viewModel.isNotFound = false;
+    this.viewModel.errorMessage = error;
+    
+    // Console output for demo purposes
+    console.error('Error deleting todo:', error);
+  }
+
+  // Legacy methods for backward compatibility
+  getResult() {
+    return {
+      success: this.viewModel.isSuccess,
+      notFound: this.viewModel.isNotFound || undefined,
+      error: this.viewModel.errorMessage || undefined
+    };
+  }
+
+  clearResult(): void {
+    this.resetState();
+  }
+}
+```
+
+```typescript
+// presenters/DeleteUserPresenter.ts
+import { IDeleteUserOutputPort } from '../ports/IOutputPort';
+import { DeleteUserViewModel } from '../view-models/UserViewModels';
+
+/**
+ * @scope transient
+ */
+export class DeleteUserPresenter implements IDeleteUserOutputPort {
+  private viewModel: DeleteUserViewModel = {
+    isLoading: false,
+    isSuccess: false,
+    isError: false,
+    isNotFound: false,
+    errorMessage: '',
+    successMessage: ''
+  };
+
+  // Getter for ViewModel (for UI consumption)
+  getViewModel(): DeleteUserViewModel {
+    return { ...this.viewModel };
+  }
+
+  // View-related business logic methods
+  setLoading(isLoading: boolean): void {
+    this.viewModel.isLoading = isLoading;
+    if (isLoading) {
+      this.resetState();
+    }
+  }
+
+  private resetState(): void {
+    this.viewModel.isSuccess = false;
+    this.viewModel.isError = false;
+    this.viewModel.isNotFound = false;
+    this.viewModel.errorMessage = '';
+    this.viewModel.successMessage = '';
+  }
+
+  // Output port implementations
+  presentSuccess(): void {
+    this.viewModel.isLoading = false;
+    this.viewModel.isSuccess = true;
+    this.viewModel.isError = false;
+    this.viewModel.isNotFound = false;
+    this.viewModel.successMessage = 'User deleted successfully';
+    
+    // Console output for demo purposes
+    console.log('User deleted successfully');
+  }
+
+  presentNotFound(): void {
+    this.viewModel.isLoading = false;
+    this.viewModel.isSuccess = false;
+    this.viewModel.isError = false;
+    this.viewModel.isNotFound = true;
+    this.viewModel.errorMessage = 'User not found for deletion';
+    
+    // Console output for demo purposes
+    console.log('User not found for deletion');
+  }
+
+  presentError(error: string): void {
+    this.viewModel.isLoading = false;
+    this.viewModel.isSuccess = false;
+    this.viewModel.isError = true;
+    this.viewModel.isNotFound = false;
+    this.viewModel.errorMessage = error;
+    
+    // Console output for demo purposes
+    console.error('Error deleting user:', error);
+  }
+
+  // Legacy methods for backward compatibility
+  getResult() {
+    return {
+      success: this.viewModel.isSuccess,
+      notFound: this.viewModel.isNotFound || undefined,
+      error: this.viewModel.errorMessage || undefined
+    };
+  }
+
+  clearResult(): void {
+    this.resetState();
+  }
+}
+```
+
+```typescript
+// presenters/GetTodoPresenter.ts
+import { TodoResponseDTO } from '../dtos/TodoDTOs';
+import { IGetTodoOutputPort } from '../ports/ITodoOutputPort';
+import { GetTodoViewModel } from '../view-models/TodoViewModels';
+
+/**
+ * @scope transient
+ */
+export class GetTodoPresenter implements IGetTodoOutputPort {
+  private viewModel: GetTodoViewModel = {
+    isLoading: false,
+    isSuccess: false,
+    isError: false,
+    isNotFound: false,
+    errorMessage: '',
+    todo: null
+  };
+
+  // Getter for ViewModel (for UI consumption)
+  getViewModel(): GetTodoViewModel {
+    return { ...this.viewModel };
+  }
+
+  // View-related business logic methods
+  setLoading(isLoading: boolean): void {
+    this.viewModel.isLoading = isLoading;
+    if (isLoading) {
+      this.resetState();
+    }
+  }
+
+  private resetState(): void {
+    this.viewModel.isSuccess = false;
+    this.viewModel.isError = false;
+    this.viewModel.isNotFound = false;
+    this.viewModel.errorMessage = '';
+    this.viewModel.todo = null;
+  }
+
+  // Output port implementations
+  presentTodo(todo: TodoResponseDTO): void {
+    this.viewModel.isLoading = false;
+    this.viewModel.isSuccess = true;
+    this.viewModel.isError = false;
+    this.viewModel.isNotFound = false;
+    this.viewModel.todo = {
+      id: todo.id,
+      title: todo.title,
+      description: todo.description,
+      completed: todo.completed,
+      userId: todo.userId
+    };
+    
+    // Console output for demo purposes
+    console.log('Todo found:', todo);
+  }
+
+  presentNotFound(): void {
+    this.viewModel.isLoading = false;
+    this.viewModel.isSuccess = false;
+    this.viewModel.isError = false;
+    this.viewModel.isNotFound = true;
+    this.viewModel.todo = null;
+    
+    // Console output for demo purposes
+    console.log('Todo not found');
+  }
+
+  presentError(error: string): void {
+    this.viewModel.isLoading = false;
+    this.viewModel.isSuccess = false;
+    this.viewModel.isError = true;
+    this.viewModel.isNotFound = false;
+    this.viewModel.errorMessage = error;
+    this.viewModel.todo = null;
+    
+    // Console output for demo purposes
+    console.error('Error getting todo:', error);
+  }
+
+  // Legacy methods for backward compatibility
+  getResult() {
+    return {
+      success: this.viewModel.isSuccess,
+      todo: this.viewModel.todo,
+      notFound: this.viewModel.isNotFound || undefined,
+      error: this.viewModel.errorMessage || undefined
+    };
+  }
+
+  clearResult(): void {
+    this.resetState();
+  }
+}
+```
+
+```typescript
+// presenters/GetTodosByUserPresenter.ts
+import { TodoResponseDTO } from '../dtos/TodoDTOs';
+import { IGetTodosByUserOutputPort } from '../ports/ITodoOutputPort';
+import { GetTodosByUserViewModel } from '../view-models/TodoViewModels';
+
+/**
+ * @scope transient
+ */
+export class GetTodosByUserPresenter implements IGetTodosByUserOutputPort {
+  private viewModel: GetTodosByUserViewModel = {
+    isLoading: false,
+    isSuccess: false,
+    isError: false,
+    errorMessage: '',
+    todos: []
+  };
+
+  // Getter for ViewModel (for UI consumption)
+  getViewModel(): GetTodosByUserViewModel {
+    return { ...this.viewModel };
+  }
+
+  // View-related business logic methods
+  setLoading(isLoading: boolean): void {
+    this.viewModel.isLoading = isLoading;
+    if (isLoading) {
+      this.resetState();
+    }
+  }
+
+  private resetState(): void {
+    this.viewModel.isSuccess = false;
+    this.viewModel.isError = false;
+    this.viewModel.errorMessage = '';
+    this.viewModel.todos = [];
+  }
+
+  // Output port implementations
+  presentTodos(todos: TodoResponseDTO[]): void {
+    this.viewModel.isLoading = false;
+    this.viewModel.isSuccess = true;
+    this.viewModel.isError = false;
+    this.viewModel.todos = todos.map(todo => ({
+      id: todo.id,
+      title: todo.title,
+      description: todo.description,
+      completed: todo.completed,
+      userId: todo.userId
+    }));
+    
+    // Console output for demo purposes
+    console.log(`Found ${todos.length} todos for user:`, todos);
+  }
+
+  presentError(error: string): void {
+    this.viewModel.isLoading = false;
+    this.viewModel.isSuccess = false;
+    this.viewModel.isError = true;
+    this.viewModel.errorMessage = error;
+    this.viewModel.todos = [];
+    
+    // Console output for demo purposes
+    console.error('Error getting todos by user:', error);
+  }
+
+  // Legacy methods for backward compatibility
+  getResult() {
+    return {
+      success: this.viewModel.isSuccess,
+      todos: this.viewModel.todos,
+      error: this.viewModel.errorMessage || undefined
+    };
+  }
+
+  clearResult(): void {
+    this.resetState();
+  }
+}
+```
+
+```typescript
+// presenters/GetUserPresenter.ts
+import { UserResponseDTO } from '../dtos/UserDTOs';
+import { IGetUserOutputPort } from '../ports/IOutputPort';
+import { GetUserViewModel } from '../view-models/UserViewModels';
+
+/**
+ * @scope transient
+ */
+export class GetUserPresenter implements IGetUserOutputPort {
+  private viewModel: GetUserViewModel = {
+    isLoading: false,
+    isSuccess: false,
+    isError: false,
+    isNotFound: false,
+    errorMessage: '',
+    user: null
+  };
+
+  // Getter for ViewModel (for UI consumption)
+  getViewModel(): GetUserViewModel {
+    return { ...this.viewModel };
+  }
+
+  // View-related business logic methods
+  setLoading(isLoading: boolean): void {
+    this.viewModel.isLoading = isLoading;
+    if (isLoading) {
+      this.resetState();
+    }
+  }
+
+  private resetState(): void {
+    this.viewModel.isSuccess = false;
+    this.viewModel.isError = false;
+    this.viewModel.isNotFound = false;
+    this.viewModel.errorMessage = '';
+    this.viewModel.user = null;
+  }
+
+  // Output port implementations
+  presentUser(user: UserResponseDTO): void {
+    this.viewModel.isLoading = false;
+    this.viewModel.isSuccess = true;
+    this.viewModel.isError = false;
+    this.viewModel.isNotFound = false;
+    this.viewModel.user = {
+      id: user.id,
+      name: user.name,
+      email: user.email
+    };
+    
+    // Console output for demo purposes
+    console.log('User found:', user);
+  }
+
+  presentNotFound(): void {
+    this.viewModel.isLoading = false;
+    this.viewModel.isSuccess = false;
+    this.viewModel.isError = false;
+    this.viewModel.isNotFound = true;
+    this.viewModel.user = null;
+    
+    // Console output for demo purposes
+    console.log('User not found');
+  }
+
+  presentError(error: string): void {
+    this.viewModel.isLoading = false;
+    this.viewModel.isSuccess = false;
+    this.viewModel.isError = true;
+    this.viewModel.isNotFound = false;
+    this.viewModel.errorMessage = error;
+    this.viewModel.user = null;
+    
+    // Console output for demo purposes
+    console.error('Error getting user:', error);
+  }
+
+  // Legacy methods for backward compatibility
+  getResult() {
+    return {
+      success: this.viewModel.isSuccess,
+      user: this.viewModel.user,
+      notFound: this.viewModel.isNotFound || undefined,
+      error: this.viewModel.errorMessage || undefined
+    };
+  }
+
+  clearResult(): void {
+    this.resetState();
+  }
+}
+```
+
+```typescript
+// presenters/UpdateTodoPresenter.ts
+import { TodoResponseDTO } from '../dtos/TodoDTOs';
+import { IUpdateTodoOutputPort } from '../ports/ITodoOutputPort';
+import { UpdateTodoViewModel } from '../view-models/TodoViewModels';
+
+/**
+ * @scope transient
+ */
+export class UpdateTodoPresenter implements IUpdateTodoOutputPort {
+  private viewModel: UpdateTodoViewModel = {
+    isLoading: false,
+    isSuccess: false,
+    isError: false,
+    isNotFound: false,
+    errorMessage: '',
+    successMessage: '',
+    todo: null
+  };
+
+  // Getter for ViewModel (for UI consumption)
+  getViewModel(): UpdateTodoViewModel {
+    return { ...this.viewModel };
+  }
+
+  // View-related business logic methods
+  setLoading(isLoading: boolean): void {
+    this.viewModel.isLoading = isLoading;
+    if (isLoading) {
+      this.resetState();
+    }
+  }
+
+  private resetState(): void {
+    this.viewModel.isSuccess = false;
+    this.viewModel.isError = false;
+    this.viewModel.isNotFound = false;
+    this.viewModel.errorMessage = '';
+    this.viewModel.successMessage = '';
+    this.viewModel.todo = null;
+  }
+
+  // Output port implementations
+  presentSuccess(todo: TodoResponseDTO): void {
+    this.viewModel.isLoading = false;
+    this.viewModel.isSuccess = true;
+    this.viewModel.isError = false;
+    this.viewModel.isNotFound = false;
+    this.viewModel.successMessage = `Todo '${todo.title}' updated successfully`;
+    this.viewModel.todo = {
+      id: todo.id,
+      title: todo.title,
+      description: todo.description,
+      completed: todo.completed,
+      userId: todo.userId
+    };
+    
+    // Console output for demo purposes
+    console.log('Todo updated successfully:', todo);
+  }
+
+  presentNotFound(): void {
+    this.viewModel.isLoading = false;
+    this.viewModel.isSuccess = false;
+    this.viewModel.isError = false;
+    this.viewModel.isNotFound = true;
+    this.viewModel.todo = null;
+    
+    // Console output for demo purposes
+    console.log('Todo not found for update');
+  }
+
+  presentError(error: string): void {
+    this.viewModel.isLoading = false;
+    this.viewModel.isSuccess = false;
+    this.viewModel.isError = true;
+    this.viewModel.isNotFound = false;
+    this.viewModel.errorMessage = error;
+    this.viewModel.todo = null;
+    
+    // Console output for demo purposes
+    console.error('Error updating todo:', error);
+  }
+
+  // Legacy methods for backward compatibility
+  getResult() {
+    return {
+      success: this.viewModel.isSuccess,
+      todo: this.viewModel.todo,
+      notFound: this.viewModel.isNotFound || undefined,
+      error: this.viewModel.errorMessage || undefined
+    };
+  }
+
+  clearResult(): void {
+    this.resetState();
+  }
+}
+```
+
+## Configuration
+
+```json
+{
+  "source": ".",
+  "output": "container.gen.ts",
+  "interface": "I[A-Z].*",
+  "modules": {
+    "UserModule": [
+      "use-cases/*User*",
+      "repositories/UserRepository.ts",
+      "presenters/*User*"
+    ],
+    "TodoModule": [
+      "use-cases/*Todo*",
+      "repositories/TodoRepository.ts",
+      "presenters/*Todo*"
+    ]
+  }
+}
+```
+
+## Usage with inject() method
+
+```typescript
+import { inject } from './container.gen';
+
+// Using the inject method (recommended)
+const createUserUseCase = inject('userModule.ICreateUserInputPort');
+const createUserPresenter = inject('userModule.ICreateUserOutputPort');
+
+await createUserUseCase.execute({
+  name: 'John Doe',
+  email: 'john@example.com'
+});
+
+const userResult = createUserPresenter.getViewModel();
+if (userResult?.isSuccess) {
+  const createTodoUseCase = inject('todoModule.ICreateTodoInputPort');
+  const createTodoPresenter = inject('todoModule.ICreateTodoOutputPort');
+  
+  await createTodoUseCase.execute({
+    title: 'Learn Clean Architecture',
+    description: 'Study the principles and patterns',
+    userId: userResult.user.id
+  });
+  
+  const todoResult = createTodoPresenter.getViewModel();
+}
+```
+
+## onInit Method
+
+The generated container includes an `onInit()` function that's automatically called when `inject()` is first used. You can customize it for post-construction logic:
+
+```typescript
+// This function is exported from ./container.gen.ts
+// You can modify it there for custom initialization logic
+import { container } from './container.gen';
+
+export function onInit(): void {
+  // Custom initialization logic added by user
+  console.log('🚀 IoC Container initialized!');
+
+  // Example: Accessing a service from the container
+  const userRepository = container.userModule.IUserRepository;
+  console.log('User repository accessed during initialization:', userRepository);
+
+  // Initialize global state or set up event listeners
+  console.log('✅ Container initialization complete!');
+}
+```
+
+## Key Features Demonstrated
+
+1. **Type-Safe inject() Method** - Type-safe dependency resolution using the inject() method across modules
+2. **Post-Construction Initialization** - onInit method support for complex Clean Architecture setup
+3. **Clean Architecture layers** - Entities, Use Cases, Ports, Adapters, and Presenters
+4. **Port and Adapter pattern** - Input and Output ports with concrete adapters
+5. **DTO pattern** - Request and Response DTOs for data transfer
+6. **Presenter pattern** - Separation of presentation logic from business logic
+7. **Cross-module dependencies** - Use cases spanning multiple modules
+8. **Interface-based design** - All dependencies through interfaces for testability
