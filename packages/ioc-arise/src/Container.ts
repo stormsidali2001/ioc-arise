@@ -49,6 +49,9 @@ export class Container<TRegistry = Record<string, any>> implements IContainer<TR
     }
   }
 
+  private getTokenId(token: Token<any>): string | symbol {
+    return typeof token === 'function' ? token.name : token;
+  }
   public register<T>(
     token: Token<T>,
     provider: {
@@ -57,7 +60,7 @@ export class Container<TRegistry = Record<string, any>> implements IContainer<TR
       lifecycle?: Lifecycle;
     }
   ): void {
-    this.providers.set(token, {
+    this.providers.set(this.getTokenId(token), {
       token,
       useClass: provider.useClass,
       lifecycle: provider.lifecycle || Lifecycle.Transient,
@@ -68,17 +71,15 @@ export class Container<TRegistry = Record<string, any>> implements IContainer<TR
   public resolve<K extends keyof TRegistry>(token: K): TRegistry[K];
   public resolve<T>(token: Token<T>): T;
   public resolve(token: any): any {
-    const provider = this.providers.get(token);
+    console.log({ token, providers: this.providers, provider: this.providers.get(this.getTokenId(token)) })
+    const provider = this.providers.get(this.getTokenId(token));
 
-    if (!provider) {
-      if (this.parent) {
-        return this.parent.resolve(token);
-      }
+    if (provider == null) {
       throw new Error(`No provider found for token: ${String(token)}`);
     }
 
     // Circular dependency check
-    if (this.resolutionStack.has(token)) {
+    if (this.resolutionStack.has(this.getTokenId(token))) {
       const cycle = [...this.resolutionStack, token].map(t => String(t)).join(' -> ');
       throw new Error(`Circular dependency detected: ${cycle}`);
     }
@@ -93,11 +94,11 @@ export class Container<TRegistry = Record<string, any>> implements IContainer<TR
       const args = this.resolveDependencies(provider.dependencies || []);
       const instance = new provider.useClass(...args);
 
-    if (provider.lifecycle === Lifecycle.Singleton) {
-      provider.instance = instance;
-    }
+      if (provider.lifecycle === Lifecycle.Singleton) {
+        provider.instance = instance;
+      }
 
-    return instance;
+      return instance;
     } finally {
       this.resolutionStack.delete(token);
     }

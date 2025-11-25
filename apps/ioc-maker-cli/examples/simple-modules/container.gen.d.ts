@@ -15,3 +15,6 @@ export interface ContainerRegistry {
   'ITodoService': ITodoService;
   'ITodoRepository': ITodoRepository;
 }
+
+type t = keyof ContainerRegistry
+type value = ContainerRegistry[t]

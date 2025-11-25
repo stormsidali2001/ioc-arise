@@ -1,5 +1,17 @@
 # @notjustcoders/di-container
 
+## 1.0.4
+
+### Patch Changes
+
+- fix: Resolve token injection bug by normalizing token identifiers in the DI container.
+
+## 1.0.3
+
+### Patch Changes
+
+- fix: token injection bug
+
 ## 1.0.2
 
 ### Patch Changes

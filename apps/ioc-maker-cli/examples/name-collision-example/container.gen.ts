@@ -68,6 +68,7 @@ container.register(UserCreateItemUseCase, {
   dependencies: ['IUserRepository'],
   lifecycle: Lifecycle.Singleton,
 });
+console.log(UserCreateItemUseCase.name)
 
 container.register(ProductUpdateItemUseCase, {
   useClass: ProductUpdateItemUseCase,
