@@ -1,5 +1,11 @@
 # @notjustcoders/ioc-arise
 
+## 1.1.16
+
+### Patch Changes
+
+- refactor: implement class name collision detection and resolution in IoC container generator
+
 ## 1.1.15
 
 ### Patch Changes

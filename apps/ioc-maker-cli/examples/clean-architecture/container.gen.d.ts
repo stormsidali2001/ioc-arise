@@ -4,6 +4,8 @@
  * 
  * This file provides type-safe resolution for string-based tokens.
  */
+import type { IUserRepository } from './repositories/IUserRepository';
+import type { ITodoRepository } from './repositories/ITodoRepository';
 import type { IUpdateTodoInputPort } from './ports/ITodoInputPort';
 import type { IGetUserInputPort } from './ports/IInputPort';
 import type { IGetTodosByUserInputPort } from './ports/ITodoInputPort';
@@ -12,8 +14,6 @@ import type { IDeleteUserInputPort } from './ports/IInputPort';
 import type { IDeleteTodoInputPort } from './ports/ITodoInputPort';
 import type { ICreateUserInputPort } from './ports/IInputPort';
 import type { ICreateTodoInputPort } from './ports/ITodoInputPort';
-import type { IUserRepository } from './repositories/IUserRepository';
-import type { ITodoRepository } from './repositories/ITodoRepository';
 import type { IUpdateTodoOutputPort } from './ports/ITodoOutputPort';
 import type { IGetUserOutputPort } from './ports/IOutputPort';
 import type { IGetTodosByUserOutputPort } from './ports/ITodoOutputPort';
@@ -22,8 +22,12 @@ import type { IDeleteUserOutputPort } from './ports/IOutputPort';
 import type { IDeleteTodoOutputPort } from './ports/ITodoOutputPort';
 import type { ICreateUserOutputPort } from './ports/IOutputPort';
 import type { ICreateTodoOutputPort } from './ports/ITodoOutputPort';
+import type { User } from './entities/User';
+import type { Todo } from './entities/Todo';
 
 export interface ContainerRegistry {
+  'IUserRepository': IUserRepository;
+  'ITodoRepository': ITodoRepository;
   'IUpdateTodoInputPort': IUpdateTodoInputPort;
   'IGetUserInputPort': IGetUserInputPort;
   'IGetTodosByUserInputPort': IGetTodosByUserInputPort;
@@ -32,8 +36,6 @@ export interface ContainerRegistry {
   'IDeleteTodoInputPort': IDeleteTodoInputPort;
   'ICreateUserInputPort': ICreateUserInputPort;
   'ICreateTodoInputPort': ICreateTodoInputPort;
-  'IUserRepository': IUserRepository;
-  'ITodoRepository': ITodoRepository;
   'IUpdateTodoOutputPort': IUpdateTodoOutputPort;
   'IGetUserOutputPort': IGetUserOutputPort;
   'IGetTodosByUserOutputPort': IGetTodosByUserOutputPort;
@@ -42,4 +44,6 @@ export interface ContainerRegistry {
   'IDeleteTodoOutputPort': IDeleteTodoOutputPort;
   'ICreateUserOutputPort': ICreateUserOutputPort;
   'ICreateTodoOutputPort': ICreateTodoOutputPort;
+  'User': User;
+  'Todo': Todo;
 }

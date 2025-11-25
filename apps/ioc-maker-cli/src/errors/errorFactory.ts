@@ -135,6 +135,18 @@ export class ErrorFactory {
     );
   }
 
+  static classNameCollision(className: string, filePaths: string[]): AnalysisError {
+    return new AnalysisError(
+      IoCErrorCode.CLASS_NAME_COLLISION,
+      `Class name collision detected for '${className}'. Multiple classes with the same name found in: ${filePaths.join(', ')}`,
+      { className },
+      [
+        'Rename classes to have unique names',
+        'Consider using more specific class names that reflect their purpose'
+      ]
+    );
+  }
+
   // Generation errors
   static generationFailed(reason: string, outputPath?: string): GenerationError {
     return new GenerationError(

@@ -2,9 +2,13 @@ import { ClassInfo } from '../types';
 import { relative, dirname } from 'path';
 import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'fs';
 import { glob } from 'glob';
+import { ErrorFactory } from '../errors/errorFactory';
 
 export class TypeDeclarationGenerator {
     static generate(classes: ClassInfo[], outputPath: string): void {
+        // Check for name collisions before generating
+        this.checkForNameCollisions(classes);
+        
         // outputPath already has .d.ts extension from the generator
         const typeDeclarations = this.generateTypeDeclarations(classes, outputPath);
         mkdirSync(dirname(outputPath), { recursive: true });
@@ -18,9 +22,6 @@ export class TypeDeclarationGenerator {
         // Classes without interfaces or abstract classes (direct class registrations)
         const directClasses = classes.filter(cls => !cls.interfaceName && !cls.abstractClassName);
 
-        // Calculate aliases for name collision resolution (same logic as container generator)
-        const classNameAliases = this.calculateClassNameAliases(classes);
-
         if (interfaceClasses.length === 0 && abstractClasses.length === 0 && directClasses.length === 0) {
             // No classes at all, generate minimal type file
             return `/**
@@ -32,7 +33,7 @@ export interface ContainerRegistry {}
 `;
         }
 
-        const typeImports = this.generateTypeImports(interfaceClasses, abstractClasses, directClasses, classNameAliases, outputPath);
+        const typeImports = this.generateTypeImports(interfaceClasses, abstractClasses, directClasses, outputPath);
 
         // Build registry entries for interfaces, abstract classes, and direct classes
         const registryEntries: string[] = [];
@@ -46,10 +47,9 @@ export interface ContainerRegistry {}
             registryEntries.push(`  '${cls.abstractClassName}': ${cls.name};`);
         });
 
-        // For direct classes, use the aliased class name as the token and the class type
+        // For direct classes, use the class name as the token and the class type
         directClasses.forEach(cls => {
-            const alias = classNameAliases.get(cls.filePath) || cls.name;
-            registryEntries.push(`  '${alias}': ${alias};`);
+            registryEntries.push(`  '${cls.name}': ${cls.name};`);
         });
 
         return `/**
@@ -70,7 +70,6 @@ ${registryEntries.join('\n')}
         interfaceClasses: ClassInfo[],
         abstractClasses: ClassInfo[],
         directClasses: ClassInfo[],
-        classNameAliases: Map<string, string>,
         outputPath: string
     ): string {
         const outputDir = dirname(outputPath);
@@ -100,9 +99,8 @@ ${registryEntries.join('\n')}
             imports.push(`import type { ${cls.name} } from '${relativePath}';`);
         });
 
-        // For direct classes, import with aliases if needed
+        // For direct classes, import without aliases
         directClasses.forEach(cls => {
-            const alias = classNameAliases.get(cls.filePath);
             let relativePath = relative(outputDir, cls.filePath);
             relativePath = relativePath.replace(/\.ts$/, '');
             if (!relativePath.startsWith('.')) {
@@ -110,13 +108,7 @@ ${registryEntries.join('\n')}
             }
             relativePath = relativePath.replace(/\\/g, '/');
 
-            if (alias && alias !== cls.name) {
-                // Import with alias
-                imports.push(`import type { ${cls.name} as ${alias} } from '${relativePath}';`);
-            } else {
-                // No alias needed
-                imports.push(`import type { ${cls.name} } from '${relativePath}';`);
-            }
+            imports.push(`import type { ${cls.name} } from '${relativePath}';`);
         });
 
         return imports.join('\n');
@@ -183,13 +175,11 @@ ${registrations}
     }
 
     /**
-     * Calculate class name aliases for name collision resolution (same logic as container generator)
+     * Checks for class name collisions and throws an error if any are found
      */
-    private static calculateClassNameAliases(classes: ClassInfo[]): Map<string, string> {
-        const classNameAliases = new Map<string, string>();
+    private static checkForNameCollisions(classes: ClassInfo[]): void {
         const nameToClasses = new Map<string, ClassInfo[]>();
-
-        // Group classes by name
+        
         classes.forEach(cls => {
             if (!nameToClasses.has(cls.name)) {
                 nameToClasses.set(cls.name, []);
@@ -197,27 +187,13 @@ ${registrations}
             nameToClasses.get(cls.name)!.push(cls);
         });
 
-        // For classes with name collisions, create aliases
-        nameToClasses.forEach((classesWithSameName, className) => {
+        // Check for collisions
+        for (const [className, classesWithSameName] of nameToClasses.entries()) {
             if (classesWithSameName.length > 1) {
-                // Name collision detected - create an alias
-                // Use the parent directory name as prefix (e.g., user/UpdateItemUseCase -> UserUpdateItemUseCase)
-                classesWithSameName.forEach(cls => {
-                    const pathParts = cls.filePath.split(/[/\\]/);
-                    const parentDir = pathParts[pathParts.length - 2] || 'Item';
-                    const alias = `${parentDir.charAt(0).toUpperCase() + parentDir.slice(1)}${cls.name}`;
-                    classNameAliases.set(cls.filePath, alias);
-                });
-            } else if (classesWithSameName.length === 1) {
-                // No collision - use original name
-                const cls = classesWithSameName[0];
-                if (cls) {
-                    classNameAliases.set(cls.filePath, cls.name);
-                }
+                const filePaths = classesWithSameName.map(cls => cls.filePath);
+                throw ErrorFactory.classNameCollision(className, filePaths);
             }
-        });
-
-        return classNameAliases;
+        }
     }
 
     private static generateModuleAugmentation(): string {

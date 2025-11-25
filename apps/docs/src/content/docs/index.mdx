@@ -604,7 +604,7 @@ How does IoC Arise stack up against other approaches?
 | **Auto-Wiring** | ✅ Fully automated | ⚠️ Manual decorators | ❌ 100% manual |
 | **Circular Dep Detection** | ✅ CLI + Runtime (both levels) | ⚠️ Runtime only | ❌ No detection |
 | **Module Organization** | ✅ Auto-generated files | ⚠️ Manual setup | ⚠️ Manual setup |
-| **Name Collision Handling** | ✅ Auto-aliasing | ❌ Manual resolution | ❌ Manual resolution |
+| **Name Collision Detection** | ✅ Compile-time error | ❌ Manual resolution | ❌ Manual resolution |
 | **Bundle Size** | ✅ ~4KB runtime | ⚠️ 15-20KB | ✅ 0KB (but labor cost) |
 | **Framework Coupling** | ✅ Zero (pure TypeScript) | ❌ Tight coupling | ✅ Zero |
 | **Learning Curve** | ✅ Very low | ⚠️ Medium-High | ⚠️ High |
@@ -620,16 +620,6 @@ IoC Arise combines the **clean code** of manual DI with the **automation** of fr
 Production-ready features you won't find anywhere else
 
 <CardGrid stagger>
-  <Card title="🚨 Name Collision Detection" icon="warning">
-    **Problem:** Two classes named `UpdateUserUseCase` in different modules?  
-    **Solution:** IoC Arise auto-detects and generates aliased imports:
-   ```typescript
-    import { UpdateUserUseCase as UserUpdateUserUseCase } from './user/...';
-    import { UpdateUserUseCase as OrderUpdateUserUseCase } from './order/...';
-    ```
-    No more "Cannot resolve constructor" errors!
-  </Card>
-  
   <Card title="🔍 Dependency Analysis" icon="star">
     **Understand your architecture:**
     ```bash

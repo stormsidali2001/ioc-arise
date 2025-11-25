@@ -5,22 +5,22 @@
  * Module: UserModule
  */
 import { ContainerModule, Lifecycle } from '@notjustcoders/di-container';
+import { UserRepository } from '../repositories/UserRepository';
 import { GetUserUseCase } from '../use-cases/GetUserUseCase';
 import { GetTodosByUserUseCase } from '../use-cases/GetTodosByUserUseCase';
 import { DeleteUserUseCase } from '../use-cases/DeleteUserUseCase';
 import { CreateUserUseCase } from '../use-cases/CreateUserUseCase';
-import { UserRepository } from '../repositories/UserRepository';
 import { GetUserPresenter } from '../presenters/GetUserPresenter';
 import { GetTodosByUserPresenter } from '../presenters/GetTodosByUserPresenter';
 import { DeleteUserPresenter } from '../presenters/DeleteUserPresenter';
 import { CreateUserPresenter } from '../presenters/CreateUserPresenter';
 
 export const userModule = new ContainerModule()
+  .register('IUserRepository', { useClass: UserRepository, lifecycle: Lifecycle.Singleton })
   .register('IGetUserInputPort', { useClass: GetUserUseCase, dependencies: ['IUserRepository', 'IGetUserOutputPort'], lifecycle: Lifecycle.Singleton })
   .register('IGetTodosByUserInputPort', { useClass: GetTodosByUserUseCase, dependencies: ['IUserRepository', 'IGetTodosByUserOutputPort'], lifecycle: Lifecycle.Singleton })
   .register('IDeleteUserInputPort', { useClass: DeleteUserUseCase, dependencies: ['IUserRepository', 'IDeleteUserOutputPort'], lifecycle: Lifecycle.Singleton })
   .register('ICreateUserInputPort', { useClass: CreateUserUseCase, dependencies: ['IUserRepository', 'ICreateUserOutputPort'], lifecycle: Lifecycle.Singleton })
-  .register('IUserRepository', { useClass: UserRepository, lifecycle: Lifecycle.Singleton })
   .register('IGetUserOutputPort', { useClass: GetUserPresenter, lifecycle: Lifecycle.Transient })
   .register('IGetTodosByUserOutputPort', { useClass: GetTodosByUserPresenter, lifecycle: Lifecycle.Transient })
   .register('IDeleteUserOutputPort', { useClass: DeleteUserPresenter, lifecycle: Lifecycle.Transient })

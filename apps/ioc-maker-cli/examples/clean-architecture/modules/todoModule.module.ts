@@ -5,22 +5,22 @@
  * Module: TodoModule
  */
 import { ContainerModule, Lifecycle } from '@notjustcoders/di-container';
+import { TodoRepository } from '../repositories/TodoRepository';
 import { UpdateTodoUseCase } from '../use-cases/UpdateTodoUseCase';
 import { GetTodoUseCase } from '../use-cases/GetTodoUseCase';
 import { DeleteTodoUseCase } from '../use-cases/DeleteTodoUseCase';
 import { CreateTodoUseCase } from '../use-cases/CreateTodoUseCase';
-import { TodoRepository } from '../repositories/TodoRepository';
 import { UpdateTodoPresenter } from '../presenters/UpdateTodoPresenter';
 import { GetTodoPresenter } from '../presenters/GetTodoPresenter';
 import { DeleteTodoPresenter } from '../presenters/DeleteTodoPresenter';
 import { CreateTodoPresenter } from '../presenters/CreateTodoPresenter';
 
 export const todoModule = new ContainerModule()
+  .register('ITodoRepository', { useClass: TodoRepository, lifecycle: Lifecycle.Singleton })
   .register('IUpdateTodoInputPort', { useClass: UpdateTodoUseCase, dependencies: ['IUserRepository', 'ITodoRepository', 'IUpdateTodoOutputPort'], lifecycle: Lifecycle.Singleton })
   .register('IGetTodoInputPort', { useClass: GetTodoUseCase, dependencies: ['IUserRepository', 'ITodoRepository', 'IGetTodoOutputPort'], lifecycle: Lifecycle.Singleton })
   .register('IDeleteTodoInputPort', { useClass: DeleteTodoUseCase, dependencies: ['IUserRepository', 'ITodoRepository', 'IDeleteTodoOutputPort'], lifecycle: Lifecycle.Singleton })
   .register('ICreateTodoInputPort', { useClass: CreateTodoUseCase, dependencies: ['IUserRepository', 'ICreateTodoOutputPort'], lifecycle: Lifecycle.Singleton })
-  .register('ITodoRepository', { useClass: TodoRepository, lifecycle: Lifecycle.Singleton })
   .register('IUpdateTodoOutputPort', { useClass: UpdateTodoPresenter, lifecycle: Lifecycle.Transient })
   .register('IGetTodoOutputPort', { useClass: GetTodoPresenter, lifecycle: Lifecycle.Transient })
   .register('IDeleteTodoOutputPort', { useClass: DeleteTodoPresenter, lifecycle: Lifecycle.Transient })

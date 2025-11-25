@@ -90,7 +90,6 @@ export default defineConfig({
             {
                 label: 'Error Detection',
                 items: [
-                    { label: 'Name Collision Detection', link: '/error-detection/name-collision-example/' },
                     { label: 'Duplicate Interface Detection', link: '/error-detection/duplicate-interfaces-example/' },
                     { label: 'Circular Dependencies - Classes', link: '/error-detection/circular-deps-classes/' },
                     { label: 'Circular Dependencies - Modules', link: '/error-detection/circular-deps-modules/' },

@@ -2,6 +2,7 @@ import { ClassInfo } from '../types';
 import { relative, dirname, join, basename } from 'path';
 import { writeFileSync, mkdirSync } from 'fs';
 import { TypeDeclarationGenerator } from './type-declaration-generator';
+import { ErrorFactory } from '../errors/errorFactory';
 
 export class IoCContainerGenerator {
     /**
@@ -15,6 +16,13 @@ export class IoCContainerGenerator {
         outputPath: string,
         moduleGroupedClasses?: Map<string, ClassInfo[]>
     ): void {
+        // Check for name collisions before generating
+        // If moduleGroupedClasses is provided, check all classes from all modules
+        const allClassesToCheck = moduleGroupedClasses && moduleGroupedClasses.size > 1
+            ? Array.from(moduleGroupedClasses.values()).flat()
+            : classes;
+        this.checkForNameCollisions(allClassesToCheck);
+
         // Ensure directory exists
         const outputDir = dirname(outputPath);
         mkdirSync(outputDir, { recursive: true });
@@ -252,15 +260,12 @@ ${registrations};`);
         abstractClassNames: Set<string> = new Set()
     ): string {
         return classes.map(cls => {
-            // Get the aliased class name (or original if no alias)
-            const className = this.classNameAliases.get(cls.filePath) || cls.name;
-
             // Determine registration token
             const token = cls.interfaceName
                 ? `'${cls.interfaceName}'`
                 : cls.abstractClassName
                     ? `'${cls.abstractClassName}'`
-                    : className;
+                    : cls.name;
 
             // Generate dependencies array
             const dependencies = cls.dependencies.length > 0
@@ -275,18 +280,7 @@ ${registrations};`);
                         return `'${dep.name}'`;
                     }
 
-                    // Check if this dependency name has collisions (multiple aliases)
-                    const aliasMap = this.classNameToAliasMap.get(dep.name);
-                    if (aliasMap && aliasMap.size > 0) {
-                        // Resolve which specific alias to use based on import path
-                        const depFilePath = this.resolveDependencyFilePath(cls.filePath, dep.importPath, dep.name);
-                        const alias = this.classNameAliases.get(depFilePath);
-                        if (alias) {
-                            return alias;
-                        }
-                    }
-
-                    // No collision or couldn't resolve - use original name
+                    // Use original class name
                     return dep.name;
                 }).join(', ')}]`
                 : '';
@@ -296,25 +290,13 @@ ${registrations};`);
                 ? 'Lifecycle.Singleton'
                 : 'Lifecycle.Transient';
 
-            return `  .register(${token}, { useClass: ${className}${dependencies}, lifecycle: ${lifecycle} })`;
+            return `  .register(${token}, { useClass: ${cls.name}${dependencies}, lifecycle: ${lifecycle} })`;
         }).join('\n');
     }
 
     private static generateImports(classes: ClassInfo[], outputPath: string): string {
         const outputDir = dirname(outputPath);
-
-        // Detect name collisions and create aliases
-        const nameToClasses = new Map<string, ClassInfo[]>();
-        classes.forEach(cls => {
-            if (!nameToClasses.has(cls.name)) {
-                nameToClasses.set(cls.name, []);
-            }
-            nameToClasses.get(cls.name)!.push(cls);
-        });
-
         const importStatements: string[] = [];
-        const classNameAliases = new Map<string, string>(); // filePath -> alias
-        const classNameToAliasMap = new Map<string, Map<string, string>>(); // className -> (filePath -> alias)
 
         classes.forEach(cls => {
             // Calculate relative path from output file to class file
@@ -331,56 +313,32 @@ ${registrations};`);
             // Use forward slashes for imports
             relativePath = relativePath.replace(/\\/g, '/');
 
-            // Check if this class name has collisions
-            const classesWithSameName = nameToClasses.get(cls.name) || [];
-            if (classesWithSameName.length > 1) {
-                // Name collision detected - create an alias
-                // Use the parent directory name as prefix (e.g., user/UpdateItemUseCase -> UserUpdateItemUseCase)
-                const pathParts = cls.filePath.split('/');
-                const parentDir = pathParts[pathParts.length - 2] || 'Item';
-                const alias = `${parentDir.charAt(0).toUpperCase() + parentDir.slice(1)}${cls.name}`;
-
-                classNameAliases.set(cls.filePath, alias);
-
-                // Track alias by class name too
-                if (!classNameToAliasMap.has(cls.name)) {
-                    classNameToAliasMap.set(cls.name, new Map());
-                }
-                classNameToAliasMap.get(cls.name)!.set(cls.filePath, alias);
-
-                importStatements.push(`import { ${cls.name} as ${alias} } from '${relativePath}';`);
-            } else {
-                // No collision - use regular import
-                classNameAliases.set(cls.filePath, cls.name);
-                importStatements.push(`import { ${cls.name} } from '${relativePath}';`);
-            }
+            importStatements.push(`import { ${cls.name} } from '${relativePath}';`);
         });
-
-        // Store aliases for use in registrations
-        this.classNameAliases = classNameAliases;
-        this.classNameToAliasMap = classNameToAliasMap;
 
         return importStatements.join('\n');
     }
 
-    private static classNameAliases = new Map<string, string>(); // filePath -> alias
-    private static classNameToAliasMap = new Map<string, Map<string, string>>(); // className -> (filePath -> alias)
-
     /**
-     * Resolves the full file path of a dependency based on the importing file and relative import path
+     * Checks for class name collisions and throws an error if any are found
      */
-    private static resolveDependencyFilePath(importerFilePath: string, relativeImportPath: string, depName: string): string {
-        const importerDir = dirname(importerFilePath);
-        const resolvedPath = join(importerDir, relativeImportPath);
+    private static checkForNameCollisions(classes: ClassInfo[]): void {
+        const nameToClasses = new Map<string, ClassInfo[]>();
+        
+        classes.forEach(cls => {
+            if (!nameToClasses.has(cls.name)) {
+                nameToClasses.set(cls.name, []);
+            }
+            nameToClasses.get(cls.name)!.push(cls);
+        });
 
-        // Try with .ts extension first
-        if (resolvedPath.endsWith('.ts')) {
-            return resolvedPath;
+        // Check for collisions
+        for (const [className, classesWithSameName] of nameToClasses.entries()) {
+            if (classesWithSameName.length > 1) {
+                const filePaths = classesWithSameName.map(cls => cls.filePath);
+                throw ErrorFactory.classNameCollision(className, filePaths);
+            }
         }
-
-        // Add .ts extension and normalize
-        const withExtension = `${resolvedPath}.ts`;
-        return withExtension;
     }
 
 
@@ -391,9 +349,6 @@ ${registrations};`);
         abstractClassNames: Set<string> = new Set()
     ): string {
         return classes.map(cls => {
-            // Get the aliased class name (or original if no alias)
-            const className = this.classNameAliases.get(cls.filePath) || cls.name;
-
             // Determine registration token:
             // - If implements interface, use string token of interface name
             // - If extends abstract class, use string token of abstract class name
@@ -402,7 +357,7 @@ ${registrations};`);
                 ? `'${cls.interfaceName}'`
                 : cls.abstractClassName
                     ? `'${cls.abstractClassName}'`
-                    : className;
+                    : cls.name;
 
             // Generate dependencies array
             const dependencies = cls.dependencies.length > 0
@@ -417,19 +372,7 @@ ${registrations};`);
                         return `'${dep.name}'`;
                     }
 
-                    // Check if this dependency name has collisions (multiple aliases)
-                    const aliasMap = this.classNameToAliasMap.get(dep.name);
-                    if (aliasMap && aliasMap.size > 0) {
-                        // We need to resolve which specific alias to use based on import path
-                        // Try to find the matching class by resolving the import path
-                        const depFilePath = this.resolveDependencyFilePath(cls.filePath, dep.importPath, dep.name);
-                        const alias = this.classNameAliases.get(depFilePath);
-                        if (alias) {
-                            return alias;
-                        }
-                    }
-
-                    // No collision or couldn't resolve - use original name
+                    // Use original class name
                     return dep.name;
                 }).join(', ')}],`
                 : '';
@@ -440,7 +383,7 @@ ${registrations};`);
                 : 'Lifecycle.Transient';
 
             return `${indent}container.register(${token}, {
-${indent}  useClass: ${className},${dependencies}
+${indent}  useClass: ${cls.name},${dependencies}
 ${indent}  lifecycle: ${lifecycle},
 ${indent}});`;
         }).join('\n\n');
