@@ -7,9 +7,45 @@
 import type { IUserRepository } from './user/CreateItemUseCase';
 import type { IProductRepository } from './product/CreateItemUseCase';
 import type { IOrderRepository } from './order/CreateItemUseCase';
+import type { UserController } from './user/UserController';
+import type { UpdateItemUseCase as UserUpdateItemUseCase } from './user/UpdateItemUseCase';
+import type { ListItemsUseCase as UserListItemsUseCase } from './user/ListItemsUseCase';
+import type { GetItemUseCase as UserGetItemUseCase } from './user/GetItemUseCase';
+import type { DeleteItemUseCase as UserDeleteItemUseCase } from './user/DeleteItemUseCase';
+import type { CreateItemUseCase as UserCreateItemUseCase } from './user/CreateItemUseCase';
+import type { UpdateItemUseCase as ProductUpdateItemUseCase } from './product/UpdateItemUseCase';
+import type { ProductController } from './product/ProductController';
+import type { ListItemsUseCase as ProductListItemsUseCase } from './product/ListItemsUseCase';
+import type { GetItemUseCase as ProductGetItemUseCase } from './product/GetItemUseCase';
+import type { DeleteItemUseCase as ProductDeleteItemUseCase } from './product/DeleteItemUseCase';
+import type { CreateItemUseCase as ProductCreateItemUseCase } from './product/CreateItemUseCase';
+import type { UpdateItemUseCase as OrderUpdateItemUseCase } from './order/UpdateItemUseCase';
+import type { OrderController } from './order/OrderController';
+import type { ListItemsUseCase as OrderListItemsUseCase } from './order/ListItemsUseCase';
+import type { GetItemUseCase as OrderGetItemUseCase } from './order/GetItemUseCase';
+import type { DeleteItemUseCase as OrderDeleteItemUseCase } from './order/DeleteItemUseCase';
+import type { CreateItemUseCase as OrderCreateItemUseCase } from './order/CreateItemUseCase';
 
 export interface ContainerRegistry {
   'IUserRepository': IUserRepository;
   'IProductRepository': IProductRepository;
   'IOrderRepository': IOrderRepository;
+  'UserController': UserController;
+  'UserUpdateItemUseCase': UserUpdateItemUseCase;
+  'UserListItemsUseCase': UserListItemsUseCase;
+  'UserGetItemUseCase': UserGetItemUseCase;
+  'UserDeleteItemUseCase': UserDeleteItemUseCase;
+  'UserCreateItemUseCase': UserCreateItemUseCase;
+  'ProductUpdateItemUseCase': ProductUpdateItemUseCase;
+  'ProductController': ProductController;
+  'ProductListItemsUseCase': ProductListItemsUseCase;
+  'ProductGetItemUseCase': ProductGetItemUseCase;
+  'ProductDeleteItemUseCase': ProductDeleteItemUseCase;
+  'ProductCreateItemUseCase': ProductCreateItemUseCase;
+  'OrderUpdateItemUseCase': OrderUpdateItemUseCase;
+  'OrderController': OrderController;
+  'OrderListItemsUseCase': OrderListItemsUseCase;
+  'OrderGetItemUseCase': OrderGetItemUseCase;
+  'OrderDeleteItemUseCase': OrderDeleteItemUseCase;
+  'OrderCreateItemUseCase': OrderCreateItemUseCase;
 }

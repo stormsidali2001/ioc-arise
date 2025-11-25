@@ -1,5 +1,11 @@
 # @notjustcoders/ioc-arise
 
+## 1.1.13
+
+### Patch Changes
+
+- fix: token mapping is not generated for classes that implement no interface but posse dependencies
+
 ## 1.1.12
 
 ### Patch Changes
