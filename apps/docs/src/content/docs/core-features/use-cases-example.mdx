@@ -203,62 +203,82 @@ export class UserController {
 }
 ```
 
-## Post-Construction Initialization
-
-The `onInit()` function is **exported from the generated container.gen.ts file**, not a method in your classes:
+## Generated Container
 
 ```typescript
-import { onInit } from './container.gen';
+// container.gen.ts
+import { Container, Lifecycle } from '@notjustcoders/di-container';
+import type { ContainerRegistry } from './container.gen.d';
+import { UserRepository } from './repositories/UserRepository';
+import { UserService } from './services/UserService';
+import { CreateUserUseCase } from './use-cases/CreateUserUseCase';
+import { GetUserUseCase } from './use-cases/GetUserUseCase';
+import { UserController } from './services/UserController';
 
-// The onInit function is called automatically when first accessing the container
-// You can customize it for post-construction logic:
-export function onInit(): void {
-  console.log('Container initialized');
-  // Add your initialization logic here
-}
+export const container = new Container<ContainerRegistry>();
+
+container.register('IUserRepository', {
+  useClass: UserRepository,
+  lifecycle: Lifecycle.Singleton,
+});
+
+container.register('IUserService', {
+  useClass: UserService,
+  dependencies: ['IUserRepository'],
+  lifecycle: Lifecycle.Singleton,
+});
+
+container.register(CreateUserUseCase, {
+  useClass: CreateUserUseCase,
+  dependencies: ['IUserService'],
+  lifecycle: Lifecycle.Singleton,
+});
+
+container.register(GetUserUseCase, {
+  useClass: GetUserUseCase,
+  dependencies: ['IUserService'],
+  lifecycle: Lifecycle.Singleton,
+});
+
+container.register(UserController, {
+  useClass: UserController,
+  dependencies: [CreateUserUseCase, GetUserUseCase],
+  lifecycle: Lifecycle.Singleton,
+});
 ```
 
-For services that need additional setup:
+## Usage
 
 ```typescript
-export class ApplicationService {
-  private createUserUseCase!: CreateUserUseCase;
-  private getUserUseCase!: GetUserUseCase;
-  private userController!: UserController;
-  
-  initializeDependencies() {
-    this.createUserUseCase = inject('coreModule.CreateUserUseCase');
-    this.getUserUseCase = inject('coreModule.GetUserUseCase');
-    this.userController = inject('coreModule.UserController');
-    console.log('ApplicationService initialized with use cases and controller');
-  }
-  
-  async processUserRegistration(name: string, email: string) {
-    // Use the controller for user creation
-    await this.userController.createUser(name, email);
-    console.log(`User registration processed for ${name}`);
-  }
-  
-  async processUserLookup(userId: string) {
-    // Use the use case directly
-    await this.getUserUseCase.execute(userId);
-    console.log(`User lookup processed for ${userId}`);
-  }
-}
+import { container } from './container.gen';
+
+// Resolve by interface (string token)
+const userRepo = container.resolve('IUserRepository');
+const userService = container.resolve('IUserService');
+
+// Resolve by class constructor (use cases & controllers)
+const createUserUseCase = container.resolve(CreateUserUseCase);
+const getUserUseCase = container.resolve(GetUserUseCase);
+const userController = container.resolve(UserController);
+
+// Use the services
+await userController.createUser('John Doe', 'john@example.com');
+await userController.getUser('user-123');
 ```
 
 ## Configuration
 
 ```json
 {
-  "source": ".",
-  "output": "container.gen.ts",
-  "interface": "I[A-Z].*",
+  "sourceDir": ".",
+  "outputPath": "container.gen.ts",
+  "interface": "I*.ts",
   "exclude": [
+    "node_modules",
+    "dist",
     "**/*.test.ts",
     "**/*.spec.ts"
-  ],
-  "verbose": true
+  ]
 }
 ```
 
@@ -273,9 +293,9 @@ export class ApplicationService {
    - Implementing interfaces (repositories and services), OR
    - Used as dependencies by other classes (use cases and controllers)
 
-3. Use either direct container access or the `inject()` function to retrieve dependencies
+3. Use `container.resolve()` to retrieve dependencies with full type safety
 
-4. The container handles all dependency injection automatically with proper singleton management
+4. The container handles all dependency injection automatically with proper lifecycle management
 
 {/* Conclusion Section */}
 

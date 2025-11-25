@@ -105,23 +105,36 @@ ioc-arise visualize --source ./modules
 
 ## Configuration File
 
+Create an `ioc.config.json` file in your project root:
+
 ```json
 {
-  "source": "src",
-  "output": "container.gen.ts",
-  "interface": "I[A-Z].*",
+  "sourceDir": "./src",
+  "outputPath": "./src/container.gen.ts",
+  "interface": "I*.ts",
   "exclude": [
+    "node_modules",
+    "dist",
     "**/*.test.ts",
     "**/*.spec.ts"
   ],
-  "checkCycles": false,
-  "verbose": false,
   "modules": {
     "UserModule": ["user/**"],
-    "TodoModule": ["todo/**"]
+    "TodoModule": ["todo/**"],
+    "CoreModule": ["core/**"]
   }
 }
 ```
+
+### Configuration Options
+
+| Option       | Type     | Description                                    | Default            |
+| ------------ | -------- | ---------------------------------------------- | ------------------ |
+| `sourceDir`  | string   | Source directory to analyze                    | `"./src"`          |
+| `outputPath` | string   | Output file path for generated container       | `"container.gen.ts"` |
+| `interface`  | string   | File pattern for interfaces                    | `"I*.ts"`          |
+| `exclude`    | string[] | Patterns to exclude from analysis              | `[]`               |
+| `modules`    | object   | Module groupings (optional)                    | `undefined`        |
 
 ## Interface Patterns
 

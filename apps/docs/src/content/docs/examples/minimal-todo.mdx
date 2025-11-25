@@ -219,48 +219,58 @@ export class TodoService implements ITodoService {
 }
 ```
 
+## Generated Container
+
+After running `npx @notjustcoders/ioc-arise generate`, you'll get:
+
+```typescript
+// container.gen.ts
+import { Container, Lifecycle } from '@notjustcoders/di-container';
+import type { ContainerRegistry } from './container.gen.d';
+import { TodoService } from './services/TodoService';
+import { InMemoryTodoRepository } from './repositories/InMemoryTodoRepository';
+
+export const container = new Container<ContainerRegistry>();
+
+container.register('ITodoRepository', {
+  useClass: InMemoryTodoRepository,
+  lifecycle: Lifecycle.Singleton,
+});
+
+container.register('ITodoService', {
+  useClass: TodoService,
+  dependencies: ['ITodoRepository'],
+  lifecycle: Lifecycle.Singleton,
+});
+```
+
 ## Usage
 
-### Direct Container Access
+### Type-Safe Resolution
 
 ```typescript
 import { container } from './container.gen';
 
-const todoService = container.coreModule.ITodoService;
-const todoRepository = container.coreModule.ITodoRepository;
-
-// Create a new todo
-await todoService.createTodo({ 
-  title: 'Learn IoC Arise', 
-  description: 'Study dependency injection' 
-});
-
-// Get all todos
-const todos = await todoService.getAllTodos();
-console.log('All todos:', todos);
-```
-
-### Type-Safe inject() Function
-
-```typescript
-import { inject } from './container.gen';
-
-// Access services with full type safety
-const todoService = inject('coreModule.ITodoService');
+// Resolve services with full type safety
+const todoService = container.resolve('ITodoService');
+const todoRepository = container.resolve('ITodoRepository');
 
 // Create todos
+await todoService.createTodo({
+  title: 'Learn IoC Arise',
+  description: 'Study dependency injection'
+});
+
 await todoService.createTodo({
   title: 'Buy groceries',
   description: 'Milk, bread, eggs'
 });
 
-await todoService.createTodo({
-  title: 'Walk the dog',
-  description: 'Take Rex for a 30-minute walk'
-});
+// Get all todos
+const todos = await todoService.getAllTodos();
+console.log('All todos:', todos);
 
 // Update a todo
-const todos = await todoService.getAllTodos();
 if (todos.length > 0) {
   await todoService.updateTodo(todos[0].id, {
     title: 'Buy groceries - DONE',
@@ -271,19 +281,8 @@ if (todos.length > 0) {
 // Get completed vs pending todos
 const completedTodos = await todoService.getCompletedTodos();
 const pendingTodos = await todoService.getPendingTodos();
-```
 
-## Container-Level Initialization
-
-The generated container includes an `onInit()` function for custom setup:
-
-```typescript
-// This function is exported from ./container.gen.ts
-// You can modify it there for any custom initialization
-import { onInit } from './container.gen';
-
-// onInit() is called automatically when inject() is first used
-// It's at the container level, NOT in individual classes
+console.log(`Completed: ${completedTodos.length}, Pending: ${pendingTodos.length}`);
 ```
 
 {/* Conclusion Section */}

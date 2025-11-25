@@ -1,38 +1,139 @@
 ---
 title: Getting Started
-description: Quick start guide for ioc-arise
+description: Quick start guide for IOC-Arise
 ---
+
+import { Tabs, TabItem, Steps } from '@astrojs/starlight/components';
+
+## Overview
+
+IOC-Arise is a complete dependency injection solution for TypeScript consisting of two packages:
+
+1. **`@notjustcoders/ioc-arise`** - CLI tool for analyzing code and generating containers
+2. **`@notjustcoders/di-container`** - Lightweight runtime DI container (zero decorators)
 
 ## Installation
 
-```bash
-npm install -g @notjustcoders/ioc-arise
-```
+<Tabs>
+  <TabItem label="CLI Only (Recommended)">
+    ```bash
+    # Install CLI globally or as dev dependency
+    npm install -D @notjustcoders/ioc-arise
+    
+    # The CLI will automatically add @notjustcoders/di-container as a dependency
+    ```
+  </TabItem>
+  <TabItem label="Both Packages">
+    ```bash
+    # If you want to install both explicitly
+    npm install -D @notjustcoders/ioc-arise
+    npm install @notjustcoders/di-container
+    ```
+  </TabItem>
+  <TabItem label="Runtime Only">
+    ```bash
+    # If you only want the DI container (manual setup)
+    npm install @notjustcoders/di-container
+    ```
+  </TabItem>
+</Tabs>
 
-## Usage
+## Quick Start
 
-1. **Generate IoC Container**
+<Steps>
 
-```bash
-ioc-arise generate
-```
+1. **Install the CLI**
 
-2. **Use the Container**
+   ```bash
+   npm install -D @notjustcoders/ioc-arise
+   ```
+
+2. **Create Your Services**
+
+   ```typescript
+   // services/IUserService.ts
+   export interface IUserService {
+     getUser(id: string): Promise<User>;
+   }
+
+   // services/UserService.ts
+   export class UserService implements IUserService {
+     async getUser(id: string): Promise<User> {
+       // Implementation
+     }
+   }
+   ```
+
+3. **Generate Container**
+
+   ```bash
+   npx @notjustcoders/ioc-arise generate
+   ```
+
+4. **Use the Container**
+
+   ```typescript
+   import { container } from "./container.gen";
+
+   const userService = container.resolve('IUserService');
+   const user = await userService.getUser('123');
+   ```
+
+</Steps>
+
+## Generated Code
+
+The CLI generates two main files:
+
+### `container.gen.ts` - Main Container
 
 ```typescript
-import { inject } from "./container.gen";
+import { Container } from '@notjustcoders/di-container';
+import type { ContainerRegistry } from './container.gen.d';
+import { userModule } from './modules/userModule.module';
 
-const userService = inject('coreModule.UserService');
+export const container = new Container<ContainerRegistry>();
+
+container.registerModule(userModule);
 ```
 
-### Modules Configuration
+### `container.gen.d.ts` - Type Declarations
 
-Organize code into separate modules:
+```typescript
+export interface ContainerRegistry {
+  'IUserService': IUserService;
+  // ... other registrations
+}
+```
+
+## Manual Usage (Without CLI)
+
+You can also use `@notjustcoders/di-container` directly without the CLI:
+
+```typescript
+import { Container, Lifecycle } from '@notjustcoders/di-container';
+
+const container = new Container();
+
+container.register('IUserService', {
+  useClass: UserService,
+  lifecycle: Lifecycle.Singleton
+});
+
+const service = container.resolve('IUserService');
+```
+
+See the [`@notjustcoders/di-container` documentation](https://www.npmjs.com/package/@notjustcoders/di-container) for more details.
+
+## Module Configuration
+
+Organize your code into logical modules using `ioc.config.json`:
 
 ```json
 {
-  "source": "./src",
-  "output": "./src/container.ts",
+  "sourceDir": "./src",
+  "outputPath": "./src/container.gen.ts",
+  "interface": "I*.ts",
   "modules": {
     "UserModule": ["user/**"],
     "TodoModule": ["todo/**"]
@@ -40,26 +141,79 @@ Organize code into separate modules:
 }
 ```
 
-Access: `inject('userModule.UserService')`
+This will generate separate module files:
 
-### Scopes
+```
+src/
+├── container.gen.ts          # Main container
+├── container.gen.d.ts        # Type declarations
+└── modules/
+    ├── userModule.module.ts  # User module registrations
+    └── todoModule.module.ts  # Todo module registrations
+```
 
-- **Singleton** (default): One instance per container
-- **Transient**: New instance each time
+Access services using string tokens:
+
+```typescript
+const userService = container.resolve('IUserService');
+const todoService = container.resolve('ITodoService');
+```
+
+## Lifecycle Scopes
+
+Control instance creation with lifecycle scopes using JSDoc comments:
+
+### Singleton (Default)
+
+One shared instance across the entire application:
+
+```typescript
+/**
+ * @scope singleton
+ */
+export class UserRepository implements IUserRepository {
+  // Same instance reused
+}
+```
+
+### Transient
+
+New instance created every time:
 
 ```typescript
 /**
  * @scope transient
  */
-export class TempService {}
+export class RequestLogger implements ILogger {
+  // New instance per resolve
+}
 ```
 
-Then run:
+## Configuration Options
 
-```bash
-npx @notjustcoders/ioc-arise generate
+Create an `ioc.config.json` file in your project root:
+
+```json
+{
+  "sourceDir": "./src",           // Source directory to analyze
+  "outputPath": "./src/container.gen.ts",  // Output file path
+  "interface": "I*.ts",            // Interface file pattern
+  "exclude": [                     // Files to exclude
+    "node_modules",
+    "dist",
+    "**/*.test.ts"
+  ],
+  "modules": {                     // Optional module grouping
+    "CoreModule": ["core/**"],
+    "UserModule": ["user/**"],
+    "TodoModule": ["todo/**"]
+  }
+}
 ```
 
----
+## Next Steps
 
-**Next Steps:** Check out our [examples](/examples/) for more advanced usage patterns.
+- Explore [Examples](/examples/minimal-todo/) for real-world usage patterns
+- Learn about [Abstract Classes](/core-features/abstract-classes-example/)
+- Understand [Error Detection](/error-detection/circular-deps-classes/)
+- Check the [CLI Reference](/reference/cli-reference/) for all commands

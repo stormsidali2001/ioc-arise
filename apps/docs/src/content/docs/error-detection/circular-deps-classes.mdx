@@ -65,9 +65,9 @@ export class ClassB implements IClassB {
 
 ```json
 {
-  "source": ".",
-  "output": "container.gen.ts",
-  "interface": "I[A-Z].*",
+  "sourceDir": ".",
+  "outputPath": "container.gen.ts",
+  "interface": "I*.ts",
   "exclude": [
     "**/*.test.ts",
     "**/*.spec.ts"
@@ -97,8 +97,8 @@ Classes involved in circular dependencies:
 
 ## Key Features Demonstrated
 
-1. **Type-Safe inject() Method** - Type-safe dependency resolution that prevents circular dependencies
-2. **Post-Construction Initialization** - onInit method can help break circular dependencies
+1. **Type-Safe Resolution** - Type-safe dependency resolution that prevents circular dependencies
+2. **Compile-Time Detection** - Circular dependencies are detected during code generation
 3. **Circular Dependency Detection** - Comprehensive error reporting for circular dependencies
 4. **Dependency Graph Analysis** - Visual representation of dependency chains
 
@@ -113,9 +113,9 @@ import { inject } from './container.gen';
 export class ClassA implements IClassA {
   private classB!: IClassB;
   
-  onInit() {
-    // Initialize dependency after construction
-    this.classB = inject('circularModule.IClassB');
+  initialize(classB: IClassB) {
+    // Initialize dependency after construction to break circular dependency
+    this.classB = classB;
     console.log('ClassA initialized with delayed ClassB dependency');
   }
   

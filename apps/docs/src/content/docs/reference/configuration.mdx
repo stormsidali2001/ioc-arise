@@ -9,39 +9,43 @@ sidebar:
 
 ## Basic Configuration
 
+Create an `ioc.config.json` file in your project root:
+
 ```json
 {
-  "source": "src",
-  "output": "container.gen.ts",
-  "interface": "I[A-Z].*",
-  "exclude": ["**/*.test.ts", "**/*.spec.ts"],
-  "checkCycles": false,
-  "verbose": false,
+  "sourceDir": "./src",
+  "outputPath": "./src/container.gen.ts",
+  "interface": "I*.ts",
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ],
   "modules": {
     "UserModule": ["user/**", "auth/**"],
-    "TodoModule": ["todo/**"]
+    "TodoModule": ["todo/**"],
+    "CoreModule": ["core/**"]
   }
 }
 ```
 
 ## Configuration Options
 
-| Option        | Type                       | Default              | Description                      |
-| ------------- | -------------------------- | -------------------- | -------------------------------- |
-| `source`      | `string`                   | `"src"`              | Source directory to scan         |
-| `output`      | `string`                   | `"container.gen.ts"` | Output file path                 |
-| `interface`   | `string`                   | `"I[A-Z].*"`         | Interface name pattern (regex)   |
-| `exclude`     | `string[]`                 | `[]`                 | File patterns to exclude         |
-| `checkCycles` | `boolean`                  | `false`              | Only check circular dependencies |
-| `verbose`     | `boolean`                  | `false`              | Enable detailed logging          |
-| `modules`     | `Record<string, string[]>` | `undefined`          | Module definitions               |
+| Option        | Type                       | Default                  | Description                           |
+| ------------- | -------------------------- | ------------------------ | ------------------------------------- |
+| `sourceDir`   | `string`                   | `"./src"`                | Source directory to analyze           |
+| `outputPath`  | `string`                   | `"container.gen.ts"`     | Output file path for generated code   |
+| `interface`   | `string`                   | `"I*.ts"`                | Interface file pattern (glob)         |
+| `exclude`     | `string[]`                 | `[]`                     | File patterns to exclude from analysis|
+| `modules`     | `Record<string, string[]>` | `undefined`              | Module groupings (optional)           |
 
 ### Interface Patterns
 
-- `"I[A-Z].*"` - Interfaces starting with 'I'
-- `".*Interface$"` - Interfaces ending with 'Interface'
-- `".*Service$"` - Interfaces ending with 'Service'
-- `"(I[A-Z].*|.*Service$|.*Repository$)"` - Multiple patterns
+- `"I*.ts"` - Files starting with 'I' (default)
+- `"*Interface.ts"` - Files ending with 'Interface'
+- `"*Service.ts"` - Files ending with 'Service'
+- `"I*.ts|*Repository.ts"` - Multiple patterns
 
 ### Exclude Patterns
 
@@ -85,10 +89,11 @@ ioc-arise generate --source lib --output custom.ts --verbose
 
 ```json
 {
-  "source": "packages",
+  "sourceDir": "./packages",
+  "outputPath": "./packages/container.gen.ts",
   "modules": {
-    "CoreModule": ["packages/core/**"],
-    "UIModule": ["packages/ui/**"]
+    "CoreModule": ["core/**"],
+    "UIModule": ["ui/**"]
   }
 }
 ```
@@ -97,10 +102,13 @@ ioc-arise generate --source lib --output custom.ts --verbose
 
 ```json
 {
-  "interface": "(I[A-Z].*|.*UseCase$|.*Repository$)",
+  "sourceDir": "./src",
+  "outputPath": "./src/container.gen.ts",
+  "interface": "I*.ts",
   "modules": {
     "DomainModule": ["domain/**"],
-    "UseCaseModule": ["use-cases/**"]
+    "ApplicationModule": ["application/**"],
+    "InfrastructureModule": ["infrastructure/**"]
   }
 }
 ```

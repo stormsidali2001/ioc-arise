@@ -117,103 +117,100 @@ export class ScopedService {
 }
 ```
 
+## Generated Container
+
+The CLI generates a container using `@notjustcoders/di-container` with proper lifecycle settings:
+
+```typescript
+// container.gen.ts
+import { Container, Lifecycle } from '@notjustcoders/di-container';
+import type { ContainerRegistry } from './container.gen.d';
+import { SingletonService } from './services/SingletonService';
+import { TransientService } from './services/TransientService';
+import { ScopedService } from './services/ScopedService';
+import { Logger } from './services/Logger';
+
+export const container = new Container<ContainerRegistry>();
+
+container.register('ILogger', {
+  useClass: Logger,
+  lifecycle: Lifecycle.Singleton, // Singletons share one instance
+});
+
+container.register(SingletonService, {
+  useClass: SingletonService,
+  dependencies: ['ILogger'],
+  lifecycle: Lifecycle.Singleton,
+});
+
+container.register(TransientService, {
+  useClass: TransientService,
+  dependencies: ['ILogger'],
+  lifecycle: Lifecycle.Transient, // Transients create new instances
+});
+
+container.register(ScopedService, {
+  useClass: ScopedService,
+  dependencies: ['ILogger'],
+  lifecycle: Lifecycle.Singleton,
+});
+```
+
 ## Usage with Container
 
-### Method 1: Direct Container Access
+### Resolving Services
 
 ```typescript
 import { container } from './container.gen';
 
-// Access singleton services (same instance every time)
-const singleton1 = container.coreModule.SingletonService;
-const singleton2 = container.coreModule.SingletonService;
+// Resolve singleton services (same instance every time)
+const singleton1 = container.resolve(SingletonService);
+const singleton2 = container.resolve(SingletonService);
 
-// Access transient services (new instance every time)
-const transient1 = container.coreModule.TransientService;
-const transient2 = container.coreModule.TransientService;
+// Resolve transient services (new instance every time)
+const transient1 = container.resolve(TransientService);
+const transient2 = container.resolve(TransientService);
 
 console.log(singleton1.getServiceId()); // SingletonService (instance 1)
-console.log(singleton2.getServiceId()); // SingletonService (instance 1)
+console.log(singleton2.getServiceId()); // SingletonService (instance 1) - Same!
 
 console.log(transient1.getServiceId()); // TransientService (instance 1)
-console.log(transient2.getServiceId()); // TransientService (instance 2)
-```
+console.log(transient2.getServiceId()); // TransientService (instance 2) - Different!
 
-### Method 2: Using inject() Function (Type-Safe)
-
-```typescript
-import { inject } from './container.gen';
-
-// Inject singleton services
-const singleton1 = inject('coreModule.SingletonService');
-const singleton2 = inject('coreModule.SingletonService');
-
-// Inject transient services
-const transient1 = inject('coreModule.TransientService');
-const transient2 = inject('coreModule.TransientService');
-
-console.log(singleton1 === singleton2); // true
-console.log(transient1 === transient2); // false
+// Verify instance identity
+console.log(singleton1 === singleton2); // true - Same instance!
+console.log(transient1 === transient2); // false - Different instances!
 ```
 
 ## Example Workflow
 
 ```typescript
-// 1. Get singleton instances
-const s1 = inject('coreModule.SingletonService');
-const s2 = inject('coreModule.SingletonService');
-console.log(`s1 === s2: ${s1 === s2}`); // true
+import { container } from './container.gen';
 
-// 2. Get transient instances
-const t1 = inject('coreModule.TransientService');
-const t2 = inject('coreModule.TransientService');
-console.log(`t1 === t2: ${t1 === t2}`); // false
+// 1. Resolve singleton services multiple times
+const s1 = container.resolve(SingletonService);
+const s2 = container.resolve(SingletonService);
+console.log(`s1 === s2: ${s1 === s2}`); // true - Same instance
 
-// 3. Get explicitly scoped singleton instances
-const scoped1 = inject('coreModule.ScopedService');
-const scoped2 = inject('coreModule.ScopedService');
+// 2. Resolve transient services multiple times
+const t1 = container.resolve(TransientService);
+const t2 = container.resolve(TransientService);
+console.log(`t1 === t2: ${t1 === t2}`); // false - Different instances
+
+// 3. Resolve explicitly scoped singleton
+const scoped1 = container.resolve(ScopedService);
+const scoped2 = container.resolve(ScopedService);
 console.log(`scoped1 === scoped2: ${scoped1 === scoped2}`); // true
 
 // 4. Verify instance IDs
 console.log(s1.getServiceId()); // SingletonService (instance 1)
-console.log(s2.getServiceId()); // SingletonService (instance 1)
+console.log(s2.getServiceId()); // SingletonService (instance 1) - Same!
 
 console.log(t1.getServiceId()); // TransientService (instance 1)
-console.log(t2.getServiceId()); // TransientService (instance 2)
+console.log(t2.getServiceId()); // TransientService (instance 2) - Different!
 
 console.log(scoped1.getServiceId()); // ScopedService (instance 1)
-console.log(scoped2.getServiceId()); // ScopedService (instance 1)
-```
-
-## Post-Construction Initialization
-
-The `onInit()` function is **exported from the generated container.gen.ts file**, not a method in your classes:
-
-```typescript
-import { onInit } from './container.gen';
-
-// The onInit function is called automatically when inject() is first used
-// You can modify it in the generated container.gen.ts file for custom initialization
-```
-
-For services that need post-construction setup:
-
-```typescript
-export class ApplicationManager {
-  private singletonService!: SingletonService;
-  private transientService!: TransientService;
-  
-  initializeServices() {
-    this.singletonService = inject('coreModule.SingletonService');
-    this.transientService = inject('coreModule.TransientService');
-    console.log('ApplicationManager initialized with scoped services');
-  }
-  
-  run() {
-    console.log('Running with:', this.singletonService.getServiceId());
-    console.log('Running with:', this.transientService.getServiceId());
-  }
-}
+console.log(scoped2.getServiceId()); // ScopedService (instance 1) - Same!
 ```
 
 ## IoC Configuration

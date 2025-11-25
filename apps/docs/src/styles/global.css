@@ -46,3 +46,100 @@
 	--sl-color-gray-7: oklch(0.96 0.005 240);
 	--sl-color-black: oklch(1 0 0); /* Pure white background for maximum contrast */
 }
+
+/**
+ * Enhanced Navbar Styling
+ */
+
+/* Glassmorphism effect for navbar */
+header.header {
+	backdrop-filter: blur(12px) saturate(180%);
+	background: rgba(18, 18, 18, 0.85) !important;
+	border-bottom: 1px solid rgba(124, 58, 237, 0.1);
+	box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+:root[data-theme='light'] header.header {
+	background: rgba(255, 255, 255, 0.85) !important;
+	border-bottom: 1px solid rgba(124, 58, 237, 0.1);
+	box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+}
+
+/* Enhanced site title hover effect */
+header.header a[href="/"] {
+	transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+header.header a[href="/"]:hover {
+	transform: translateY(-1px);
+	opacity: 0.9;
+}
+
+/* Smooth logo rotation on hover */
+header.header a[href="/"] img {
+	transition: transform 0.3s ease;
+}
+
+header.header a[href="/"]:hover img {
+	transform: rotate(5deg) scale(1.05);
+}
+
+/* Social icons enhancement */
+.social-icons a {
+	transition: all 0.2s ease;
+	border-radius: 0.5rem;
+	padding: 0.5rem;
+}
+
+.social-icons a:hover {
+	background: rgba(124, 58, 237, 0.1);
+	transform: translateY(-2px);
+}
+
+/* Search button enhancement */
+starlight-search button {
+	transition: all 0.2s ease;
+	border: 1px solid rgba(124, 58, 237, 0.2);
+	border-radius: 0.5rem;
+}
+
+starlight-search button:hover {
+	border-color: rgba(124, 58, 237, 0.4);
+	box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.1);
+	transform: translateY(-1px);
+}
+
+/* Theme toggle enhancement */
+starlight-theme-select button {
+	transition: all 0.2s ease;
+	border-radius: 0.5rem;
+}
+
+starlight-theme-select button:hover {
+	background: rgba(124, 58, 237, 0.1);
+	transform: rotate(20deg) scale(1.1);
+}
+
+/* Mobile menu button */
+button[aria-expanded] {
+	transition: all 0.2s ease;
+}
+
+button[aria-expanded]:hover {
+	background: rgba(124, 58, 237, 0.1);
+	transform: scale(1.05);
+}
+
+/* Add subtle gradient to navbar border */
+header.header::after {
+	content: '';
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	height: 1px;
+	background: linear-gradient(90deg, 
+		transparent 0%, 
+		rgba(124, 58, 237, 0.3) 50%, 
+		transparent 100%);
+}

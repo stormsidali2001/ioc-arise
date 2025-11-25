@@ -16,8 +16,8 @@ export default defineConfig({
     integrations: [starlight({
 
         title: 'IoC Arise',
+        tagline: 'Code-Generation Powered DI for TypeScript',
         logo: {
-
             light: "./src/assets/logoLight.svg",
             dark: "./src/assets/logoDark.svg"
         },
@@ -36,10 +36,24 @@ export default defineConfig({
             }
 
         ],
-        description: 'A powerful TypeScript IoC container generator CLI tool',
+        description: 'Code-generation powered Dependency Injection for TypeScript. Zero decorators, compile-time safety, auto-generated containers.',
         social: [
             { icon: 'github', label: 'GitHub', href: 'https://github.com/stormsidali2001/ioc-arise' },
-            { icon: 'external', label: 'NotJustCoders', href: 'https://notjustcoders.com' }
+            { 
+                icon: 'external', 
+                label: 'npm', 
+                href: 'https://www.npmjs.com/package/@notjustcoders/ioc-arise' 
+            },
+            { 
+                icon: 'discord', 
+                label: 'Discord', 
+                href: 'https://discord.gg/notjustcoders' 
+            },
+            { 
+                icon: 'twitter', 
+                label: 'Twitter', 
+                href: 'https://twitter.com/notjustcoders' 
+            }
         ],
         customCss: [
             // Path to your Tailwind base styles:

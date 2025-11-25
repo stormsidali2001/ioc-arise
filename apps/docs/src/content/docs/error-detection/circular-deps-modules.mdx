@@ -25,9 +25,9 @@ import { FileTree } from '@astrojs/starlight/components';
 
 ```json
 {
-  "source": ".",
-  "output": "container.gen.ts",
-  "interface": "I[A-Z].*",
+  "sourceDir": ".",
+  "outputPath": "container.gen.ts",
+  "interface": "I*.ts",
   "exclude": [
     "**/*.test.ts",
     "**/*.spec.ts"

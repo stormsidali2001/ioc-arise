@@ -1,0 +1,78 @@
+---
+// Optional announcement bar component
+---
+
+<div class="announcement-bar">
+    <div class="announcement-content">
+        <span class="announcement-badge">NEW</span>
+        <span class="announcement-text">
+            v1.0 Released! Auto-module generation, name collision detection, and
+            more →
+        </span>
+        <a href="/guides/getting-started/" class="announcement-link">
+            Get Started
+        </a>
+    </div>
+</div>
+
+<style>
+    .announcement-bar {
+        background: linear-gradient(
+            135deg,
+            rgba(124, 58, 237, 0.95),
+            rgba(168, 85, 247, 0.95)
+        );
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 0.5rem 1rem;
+        text-align: center;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        backdrop-filter: blur(10px);
+    }
+
+    .announcement-content {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        font-size: 0.875rem;
+        color: white;
+    }
+
+    .announcement-badge {
+        background: rgba(255, 255, 255, 0.2);
+        padding: 0.125rem 0.5rem;
+        border-radius: 0.25rem;
+        font-weight: 600;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .announcement-text {
+        font-weight: 500;
+    }
+
+    .announcement-link {
+        color: white;
+        text-decoration: underline;
+        text-decoration-thickness: 2px;
+        text-underline-offset: 2px;
+        font-weight: 600;
+        transition: all 0.2s ease;
+    }
+
+    .announcement-link:hover {
+        text-decoration-thickness: 3px;
+        opacity: 0.9;
+    }
+
+    @media (max-width: 640px) {
+        .announcement-text {
+            font-size: 0.8rem;
+        }
+    }
+</style>

@@ -19,9 +19,19 @@ program.addCommand(generateCommand);
 program.addCommand(analyzeCommand);
 program.addCommand(visualizeCommand);
 
-program.parse();
+// If no command is provided, default to 'generate'
+const args = process.argv.slice(2);
+const knownCommands = ['generate', 'analyze', 'visualize', '-h', '--help', '-V', '--version'];
+const firstArg = args[0];
 
-// If no command is provided, show help
-if (!process.argv.slice(2).length) {
-  program.outputHelp();
+if (args.length === 0) {
+  // No arguments provided, default to 'generate'
+  process.argv.splice(2, 0, 'generate');
+} else if (firstArg && !knownCommands.includes(firstArg)) {
+  // First argument is not a known command, assume it's a flag and prepend 'generate'
+  if (firstArg.startsWith('-')) {
+    process.argv.splice(2, 0, 'generate');
+  }
 }
+
+program.parse();

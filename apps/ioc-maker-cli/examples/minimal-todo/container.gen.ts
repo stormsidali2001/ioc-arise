@@ -6,6 +6,7 @@ import { Container, Lifecycle } from 'ioc-arise';
 import type { ContainerRegistry } from './container.gen.d';
 import { TodoService } from './services/TodoService';
 import { InMemoryTodoRepository } from './repositories/InMemoryTodoRepository';
+import { Todo } from './entities/Todo';
 
 export const container = new Container<ContainerRegistry>();
 
@@ -17,5 +18,10 @@ container.register('ITodoService', {
 
 container.register('ITodoRepository', {
   useClass: InMemoryTodoRepository,
+  lifecycle: Lifecycle.Singleton,
+});
+
+container.register(Todo, {
+  useClass: Todo,
   lifecycle: Lifecycle.Singleton,
 });

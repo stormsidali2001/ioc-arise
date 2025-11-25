@@ -61,7 +61,7 @@ sidebar:
 **How to fix:**
 
 - Create the missing source directory
-- Fix the `--source` flag path or config `source` property
+- Fix the `--source` flag path or config `sourceDir` property
 - Verify the path is relative to the current working directory
 - Check for typos in the directory name
 
@@ -114,14 +114,21 @@ sidebar:
 
 ### IOC_1202 - CIRCULAR_DEPENDENCY
 
-**Cause:** Circular dependency detected between classes in the dependency graph.
+**Cause:** Circular dependency detected between classes or modules in the dependency graph.
 
 **How to fix:**
 
+**For class-level circular dependencies:**
 - Identify the circular dependency chain in the error message
-- Refactor code to break the circular dependency
-- Use dependency injection patterns to decouple classes
-- Consider using interfaces to break tight coupling
+- Refactor classes to remove circular dependencies
+- Use interfaces to break dependency cycles
+- Consider using factory pattern or lazy loading
+
+**For module-level circular dependencies:**
+- Review module boundaries and dependencies
+- Refactor to ensure modules form a directed acyclic graph (DAG)
+- Consider merging tightly coupled modules
+- Move shared dependencies to a separate common module
 
 ### IOC_1203 - DUPLICATE_INTERFACE_IMPLEMENTATION
 
@@ -129,21 +136,32 @@ sidebar:
 
 **How to fix:**
 
-- Use unique interfaces for each class
-- Implement different interfaces or extend base interfaces
-- Use naming conventions to differentiate implementations
-- Consider using factory patterns for multiple implementations
+- Use different interface names for different implementations
+- Configure module-specific bindings to separate implementations
+- Use qualifiers to distinguish implementations
+- Ensure only one class implements each interface
 
-### IOC_1204 - INVALID_INTERFACE_PATTERN
+### IOC_1204 - DUPLICATE_ABSTRACT_CLASS_EXTENSION
 
-**Cause:** Interface pattern regex is malformed or invalid.
+**Cause:** Multiple classes extend the same abstract class, causing ambiguity.
 
 **How to fix:**
 
-- Fix the regex syntax in `--interface` flag or config
-- Test the regex pattern with online regex validators
-- Use simpler patterns like `I[A-Z].*` for interfaces starting with 'I'
-- Escape special regex characters properly
+- Use composition instead of inheritance where possible
+- Create separate abstract classes for different implementations
+- Consider using interfaces with default implementations
+- Ensure only one class extends each abstract class
+
+### IOC_1205 - INVALID_INTERFACE_PATTERN
+
+**Cause:** Interface pattern glob is malformed or invalid.
+
+**How to fix:**
+
+- Fix the glob pattern syntax in `--interface` flag or `interface` config property
+- Use valid glob patterns like `I*.ts` for files starting with 'I'
+- Test patterns with a glob testing tool
+- Check pattern documentation for valid syntax
 
 ## Generation Errors (1300-1399)
 

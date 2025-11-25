@@ -4,28 +4,71 @@ import logoLight from "../assets/logoLight.svg";
 import logoDark from "../assets/logoDark.svg";
 ---
 
-<a href="/" class="flex flex-row items-center no-underline text-inherit">
-	<picture>
-		<source srcset={logoDark.src} media="(prefers-color-scheme: dark)" />
-		<source srcset={logoLight.src} media="(prefers-color-scheme: light)" />
-		<img src={logoLight.src} alt="logo" class="w-14 h-14 rounded-full" />
-	</picture>
-	<div class="flex items-center gap-2 ml-2">
-		<span class="text-lg font-semibold" style="color: var(--sl-color-white)"
-			>IoC Arise</span
+<a href="/" class="site-title-wrapper flex flex-row items-center no-underline text-inherit group">
+	<div class="logo-container relative">
+		<picture>
+			<source srcset={logoDark.src} media="(prefers-color-scheme: dark)" />
+			<source srcset={logoLight.src} media="(prefers-color-scheme: light)" />
+			<img 
+				src={logoLight.src} 
+				alt="IoC Arise Logo" 
+				class="w-12 h-12 rounded-lg transition-all duration-300 group-hover:scale-105 group-hover:rotate-3" 
+			/>
+		</picture>
+		<!-- Glow effect on hover -->
+		<div class="absolute inset-0 rounded-lg bg-gradient-to-br from-purple-500/0 to-purple-600/0 group-hover:from-purple-500/20 group-hover:to-purple-600/20 transition-all duration-300 -z-10 blur-sm"></div>
+	</div>
+	<div class="flex items-center ml-3 gap-2">
+		<span 
+			class="text-xl font-bold bg-gradient-to-r from-purple-400 to-purple-600 bg-clip-text text-transparent group-hover:from-purple-300 group-hover:to-purple-500 transition-all duration-300" 
 		>
-		<span
-			class="text-xs font-normal opacity-80"
-			style="color: var(--sl-color-gray-3)">by</span
-		>
-		<a
-			href="https://notjustcoders.com"
-			target="_blank"
-			rel="noopener noreferrer"
-			class="text-xs no-underline font-normal opacity-80 transition-all duration-200 hover:opacity-100 hover:underline"
+			IoC Arise
+		</span>
+		<span 
+			class="px-2 py-0.5 text-[10px] font-semibold rounded-full border border-purple-500/30 bg-purple-500/10 transition-all duration-300 group-hover:border-purple-400/50 group-hover:bg-purple-400/20"
 			style="color: var(--sl-color-accent-high);"
 		>
-			NotJustCoders
-		</a>
+			v1.0
+		</span>
 	</div>
 </a>
+
+<style>
+	.site-title-wrapper {
+		position: relative;
+		padding: 0.5rem;
+		border-radius: 0.75rem;
+		transition: all 0.3s ease;
+	}
+
+	.site-title-wrapper:hover {
+		background: rgba(124, 58, 237, 0.05);
+	}
+
+	.logo-container {
+		position: relative;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	/* Subtle pulse animation for logo */
+	@keyframes subtle-pulse {
+		0%, 100% {
+			opacity: 1;
+		}
+		50% {
+			opacity: 0.8;
+		}
+	}
+
+	.site-title-wrapper:hover .logo-container::before {
+		content: '';
+		position: absolute;
+		inset: -4px;
+		border-radius: 0.75rem;
+		background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(168, 85, 247, 0.1));
+		animation: subtle-pulse 2s ease-in-out infinite;
+		z-index: -1;
+	}
+</style>

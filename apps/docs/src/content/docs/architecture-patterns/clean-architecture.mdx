@@ -1722,9 +1722,9 @@ export class UpdateTodoPresenter implements IUpdateTodoOutputPort {
 
 ```json
 {
-  "source": ".",
-  "output": "container.gen.ts",
-  "interface": "I[A-Z].*",
+  "sourceDir": ".",
+  "outputPath": "container.gen.ts",
+  "interface": "I*.ts",
   "modules": {
     "UserModule": [
       "use-cases/*User*",
@@ -1740,14 +1740,14 @@ export class UpdateTodoPresenter implements IUpdateTodoOutputPort {
 }
 ```
 
-## Usage with inject() method
+## Usage with Container
 
 ```typescript
-import { inject } from './container.gen';
+import { container } from './container.gen';
 
-// Using the inject method (recommended)
-const createUserUseCase = inject('userModule.ICreateUserInputPort');
-const createUserPresenter = inject('userModule.ICreateUserOutputPort');
+// Resolve services with full type safety
+const createUserUseCase = container.resolve('ICreateUserInputPort');
+const createUserPresenter = container.resolve('ICreateUserOutputPort');
 
 await createUserUseCase.execute({
   name: 'John Doe',

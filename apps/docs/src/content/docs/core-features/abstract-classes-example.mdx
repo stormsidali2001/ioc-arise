@@ -263,13 +263,15 @@ export class ProductUseCase {
 
 ```json
 {
-  "source": ".",
-  "output": "container.gen.ts",
+  "sourceDir": ".",
+  "outputPath": "container.gen.ts",
+  "interface": "I*.ts",
   "exclude": [
+    "node_modules",
+    "dist",
     "**/*.test.ts",
     "**/*.spec.ts"
   ],
-  "verbose": true,
   "modules": {
     "UserModule": [
       "**/**/*User*"
@@ -281,16 +283,77 @@ export class ProductUseCase {
 }
 ```
 
+## Generated Container
+
+After running `npx @notjustcoders/ioc-arise generate`:
+
+```typescript
+// container.gen.ts
+import { Container } from '@notjustcoders/di-container';
+import type { ContainerRegistry } from './container.gen.d';
+import { userModule } from './modules/userModule.module';
+import { productModule } from './modules/productModule.module';
+
+export const container = new Container<ContainerRegistry>();
+
+container.registerModule(userModule);
+container.registerModule(productModule);
+```
+
+### Module Files (Generated)
+
+```typescript
+// modules/userModule.module.ts
+import { ContainerModule, Lifecycle } from '@notjustcoders/di-container';
+import { UserUseCase } from '../use-cases/UserUseCase';
+import { UserRepository } from '../implementations/UserRepository';
+
+export const userModule = new ContainerModule()
+  .register(UserUseCase, { 
+    useClass: UserUseCase, 
+    dependencies: ['AbstractUserRepository'], 
+    lifecycle: Lifecycle.Singleton 
+  })
+  .register('AbstractUserRepository', { 
+    useClass: UserRepository, 
+    lifecycle: Lifecycle.Singleton 
+  });
+```
+
+```typescript
+// modules/productModule.module.ts
+import { ContainerModule, Lifecycle } from '@notjustcoders/di-container';
+import { ProductUseCase } from '../use-cases/ProductUseCase';
+import { InternalProductNestedUseCase } from '../use-cases/InternalProductNestedUseCase';
+import { ProductRepository } from '../implementations/ProductRepository';
+
+export const productModule = new ContainerModule()
+  .register(ProductUseCase, { 
+    useClass: ProductUseCase, 
+    dependencies: ['AbstractProductRepository', 'AbstractUserRepository', InternalProductNestedUseCase], 
+    lifecycle: Lifecycle.Singleton 
+  })
+  .register(InternalProductNestedUseCase, { 
+    useClass: InternalProductNestedUseCase, 
+    dependencies: ['AbstractProductRepository'], 
+    lifecycle: Lifecycle.Singleton 
+  })
+  .register('AbstractProductRepository', { 
+    useClass: ProductRepository, 
+    lifecycle: Lifecycle.Singleton 
+  });
+```
+
 ## Usage
 
-### Direct Container Access
+### Type-Safe Resolution
 
 ```typescript
 import { container } from './container.gen';
 
-// Access services from different modules
-const userUseCase = container.userModule.UserUseCase;
-const productUseCase = container.productModule.ProductUseCase;
+// Resolve services with full type safety
+const userUseCase = container.resolve(UserUseCase);
+const productUseCase = container.resolve(ProductUseCase);
 
 // Create a user
 const newUser = await userUseCase.createUser({
@@ -298,40 +361,28 @@ const newUser = await userUseCase.createUser({
   email: 'john@example.com'
 });
 
-// Create a product for this user (cross-module validation)
+// Create a product for this user (cross-module validation!)
 const newProduct = await productUseCase.createProduct({
   name: 'Awesome Product',
   description: 'A really great product',
   price: 99.99,
   userId: newUser.id
 });
-```
-
-### Type-Safe inject() Function
-
-```typescript
-import { inject } from './container.gen';
-
-// Use the fully type-safe inject method
-const userUseCase = inject('userModule.UserUseCase');
-const productUseCase = inject('productModule.ProductUseCase');
 
 // Get product with user details (cross-module operation)
 const productWithUser = await productUseCase.getProductWithUser(newProduct.id);
 console.log('Product with user:', productWithUser);
 ```
 
-## Container Post-Construction Setup
+### Abstract Class String Tokens
 
-The generated container includes an `onInit()` function that's automatically called:
+You can also resolve by abstract class string token:
 
 ```typescript
-// This function is exported from ./container.gen.ts
-// You can modify it there for custom initialization logic
-import { onInit } from './container.gen';
+const userRepo = container.resolve('AbstractUserRepository');
+const productRepo = container.resolve('AbstractProductRepository');
 
-// onInit() is called automatically when inject() is first used
-// It's NOT a method on classes - it's at the container level
+// Both return the concrete implementations
 ```
 
 {/* Conclusion Section */}

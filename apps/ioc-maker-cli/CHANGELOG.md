@@ -1,5 +1,11 @@
 # @notjustcoders/ioc-arise
 
+## 1.1.11
+
+### Patch Changes
+
+- 338c538: refactor: creating an ioc arise package and make the cli app generate boilerplates related to it instead of raw instantiations.
+
 ## 1.1.10
 
 ### Patch Changes

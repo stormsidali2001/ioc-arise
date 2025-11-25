@@ -83,66 +83,113 @@ IoC Arise automatically:
 
 {/* Body Section with Open Loops */}
 
+## Generated Container Structure
+
+After running `npx @notjustcoders/ioc-arise generate`, you'll get:
+
+```
+src/
+├── container.gen.ts          # Main container
+├── container.gen.d.ts        # Type declarations
+└── modules/
+    ├── userModule.module.ts  # User module registrations
+    └── todoModule.module.ts  # Todo module registrations
+```
+
+### Main Container
+
+```typescript
+// container.gen.ts
+import { Container } from '@notjustcoders/di-container';
+import type { ContainerRegistry } from './container.gen.d';
+import { userModule } from './modules/userModule.module';
+import { todoModule } from './modules/todoModule.module';
+
+export const container = new Container<ContainerRegistry>();
+
+container.registerModule(userModule);
+container.registerModule(todoModule);
+```
+
+### Module Files
+
+```typescript
+// modules/userModule.module.ts
+import { ContainerModule, Lifecycle } from '@notjustcoders/di-container';
+import { UserService } from '../user/UserService';
+import { UserRepository } from '../user/UserRepository';
+
+export const userModule = new ContainerModule()
+  .register('IUserService', { 
+    useClass: UserService, 
+    dependencies: ['IUserRepository'], 
+    lifecycle: Lifecycle.Singleton 
+  })
+  .register('IUserRepository', { 
+    useClass: UserRepository, 
+    lifecycle: Lifecycle.Singleton 
+  });
+```
+
 ## Usage with Container
 
-### Method 1: Direct Container Access
+### Type-Safe Resolution
 
 ```typescript
 import { container } from "./container.gen";
 
-// Access user module services
-const userService = container.userModule.IUserService;
-const userRepository = container.userModule.IUserRepository;
+// Resolve services with full type safety
+const userService = container.resolve('IUserService');
+const userRepository = container.resolve('IUserRepository');
 
-// Access todo module services
-const todoService = container.todoModule.ITodoService;
-const todoRepository = container.todoModule.ITodoRepository;
+const todoService = container.resolve('ITodoService');
+const todoRepository = container.resolve('ITodoRepository');
 
-// Use services
+// Create a user
+const user = await userService.createUser("John Doe", "john@example.com");
+
+// Create a todo for the user (cross-module dependency in action!)
+const todo = await todoService.createTodo("Learn IoC Arise", user.id);
+
+// Get all users and their todos
 const users = await userService.getAllUsers();
-const userTodos = await todoService.getTodosByUser("1");
-```
+const userTodos = await todoService.getTodosByUser(user.id);
 
-### Method 2: Using inject() Function (Type-Safe)
-
-```typescript
-import { inject } from "./container.gen";
-
-// Access services with full type safety and module paths
-const userService = inject("userModule.IUserService");
-const todoService = inject("todoModule.ITodoService");
-
-// Create a new todo (with user validation)
-const newTodo = await todoService.createTodo("Learn IoC Arise", "1");
-
-// Get all users
-const users = await userService.getAllUsers();
+console.log("Users:", users);
+console.log("Todos for user:", userTodos);
 ```
 
 ## Example Workflow
 
 ```typescript
-// 1. Get all users
-const users = await userService.getAllUsers();
-console.log("Available users:", users);
+import { container } from "./container.gen";
 
-// 2. Create a todo for a specific user
-const newTodo = await todoService.createTodo("Complete project", "1");
-console.log("Created todo:", newTodo);
+// Get services
+const userService = container.resolve('IUserService');
+const todoService = container.resolve('ITodoService');
 
-// 3. Get todos for that user
-const userTodos = await todoService.getTodosByUser("1");
-console.log("User todos:", userTodos);
+// 1. Create users
+const alice = await userService.createUser("Alice", "alice@example.com");
+const bob = await userService.createUser("Bob", "bob@example.com");
+
+// 2. Create todos for users (cross-module validation!)
+const aliceTodo = await todoService.createTodo("Buy groceries", alice.id);
+const bobTodo = await todoService.createTodo("Walk the dog", bob.id);
+
+// 3. Get todos by user
+const aliceTodos = await todoService.getTodosByUser(alice.id);
+console.log("Alice's todos:", aliceTodos);
 
 // 4. Update todo status
-const updatedTodo = await todoService.updateTodo(newTodo.id, undefined, true);
-console.log("Updated todo:", updatedTodo);
+const updated = await todoService.updateTodo(aliceTodo.id, undefined, true);
+console.log("Updated todo:", updated);
 
 // 5. Try to create todo for non-existent user (will throw error)
 try {
-  await todoService.createTodo("Invalid todo", "non-existent-user");
+  await todoService.createTodo("Invalid", "invalid-user-id");
 } catch (error) {
   console.log("Expected error:", error.message);
+  // Output: "User with ID invalid-user-id not found"
 }
 ```
 
