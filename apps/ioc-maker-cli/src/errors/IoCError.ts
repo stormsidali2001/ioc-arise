@@ -242,3 +242,19 @@ export class FileSystemError extends IoCError {
     this.name = 'FileSystemError';
   }
 }
+
+/**
+ * Utility for error handling
+ */
+export class ErrorUtils {
+  static formatForConsole(error: IoCError | Error): string {
+    if (error instanceof IoCError) {
+      return error.getFormattedMessage();
+    }
+    return error.message;
+  }
+
+  static isIoCError(error: any): error is IoCError {
+    return error instanceof IoCError;
+  }
+}

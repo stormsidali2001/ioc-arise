@@ -2,10 +2,11 @@ import { Command } from 'commander';
 import { resolve } from 'path';
 import { existsSync } from 'fs';
 import { analyzeProject } from '../analyser';
-import { detectCircularDependencies } from '../generator';
+import { CircularDependencyDetector } from '../utils/circular-dependency-detector';
 import { ConfigManager } from '../utils/configManager';
 import { ConfigValidator } from '../utils/configValidator';
-import { ErrorFactory, ErrorUtils } from '../errors/index.js';
+import { ErrorFactory } from '../errors/errorFactory';
+import { ErrorUtils } from '../errors/IoCError';
 
 export const analyzeCommand = new Command('analyze')
   .description('Analyze project and show detected classes without generating')
@@ -17,7 +18,7 @@ export const analyzeCommand = new Command('analyze')
       // Initialize config manager with the source directory
       const initialSourceDir = resolve(options.source);
       const configManager = new ConfigManager(initialSourceDir);
-      
+
       // Validate config if present
       if (configManager.hasConfigFile()) {
         const config = configManager.getConfig();
@@ -25,10 +26,10 @@ export const analyzeCommand = new Command('analyze')
           process.exit(1);
         }
       }
-      
+
       // Merge CLI options with config file
       const mergedOptions = configManager.mergeWithCliOptions(options);
-      
+
       const sourceDir = resolve(mergedOptions.source!);
 
       if (!existsSync(sourceDir)) {
@@ -48,7 +49,7 @@ export const analyzeCommand = new Command('analyze')
         excludePatterns: mergedOptions.exclude
       });
       console.log("---------------------------------------")
-      console.dir(classes,{depth:100})
+      console.dir(classes, { depth: 100 })
 
       if (classes.length === 0) {
         const error = ErrorFactory.noClassesFound(
@@ -60,7 +61,7 @@ export const analyzeCommand = new Command('analyze')
       }
 
       console.log(`\n📋 Found ${classes.length} classes:\n`);
-      
+
       classes.forEach(cls => {
         console.log(`📦 ${cls.name}`);
         console.log(`   File: ${cls.filePath}`);
@@ -79,7 +80,7 @@ export const analyzeCommand = new Command('analyze')
       });
 
       // Check for circular dependencies
-      const cycles = detectCircularDependencies(classes);
+      const cycles = CircularDependencyDetector.detect(classes);
       if (cycles.length > 0) {
         console.log('⚠️  Circular dependencies detected:');
         cycles.forEach((cycle, index) => {

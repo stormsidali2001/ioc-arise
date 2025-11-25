@@ -8,7 +8,7 @@ import {
   GenerationError,
   ValidationError,
   FileSystemError
-} from './IoCError.js';
+} from './IoCError';
 
 /**
  * Factory functions for creating specific IoC errors

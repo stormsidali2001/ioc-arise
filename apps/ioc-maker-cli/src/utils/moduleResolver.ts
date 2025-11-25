@@ -1,7 +1,8 @@
 import { minimatch } from 'minimatch';
 import { relative, normalize } from 'path';
 import { ClassInfo } from '../types';
-import { ErrorFactory, IoCError } from '../errors/index.js';
+import { ErrorFactory } from '../errors/errorFactory';
+import { IoCError } from '../errors/IoCError';
 
 export class ModuleResolver {
   private moduleConfig: Record<string, string[]>;

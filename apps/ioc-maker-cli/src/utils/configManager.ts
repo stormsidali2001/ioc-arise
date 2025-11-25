@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'fs';
 import { resolve, dirname } from 'path';
-import { ErrorFactory, ErrorUtils } from '../errors/index.js';
+import { ErrorFactory } from '../errors/errorFactory';
+import { ErrorUtils } from '../errors/IoCError';
 
 export interface IoCConfig {
   source?: string;

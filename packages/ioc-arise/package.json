@@ -1,0 +1,65 @@
+{
+    "name": "@notjustcoders/di-container",
+    "version": "1.0.0",
+    "description": "A lightweight, type-safe dependency injection framework for TypeScript with zero decorators.",
+    "main": "dist/index.js",
+    "module": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js",
+            "require": "./dist/index.js"
+        }
+    },
+    "files": [
+        "dist",
+        "README.md",
+        "LICENSE"
+    ],
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsc --watch",
+        "prepublishOnly": "npm run build",
+        "prepack": "npm run build",
+        "lint": "eslint src/**/*.ts",
+        "test": "vitest"
+    },
+    "keywords": [
+        "ioc",
+        "di",
+        "dependency-injection",
+        "inversion-of-control",
+        "typescript",
+        "container",
+        "type-safe",
+        "zero-decorators",
+        "lightweight",
+        "clean-architecture"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/stormsidali2001/ioc-arise",
+        "directory": "packages/ioc-arise"
+    },
+    "homepage": "https://ioc-arise.notjustcoders.com",
+    "bugs": {
+        "url": "https://github.com/stormsidali2001/ioc-arise/issues"
+    },
+    "author": "Sid Ali Assoul <assoulsidali@gmail.com>",
+    "license": "MIT",
+    "engines": {
+        "node": ">=18.0.0",
+        "npm": ">=8.0.0"
+    },
+    "publishConfig": {
+        "access": "public",
+        "registry": "https://registry.npmjs.org/"
+    },
+    "devDependencies": {
+        "@repo/typescript-config": "workspace:*",
+        "@types/node": "^20.10.0",
+        "typescript": "^5.3.0",
+        "vitest": "^1.0.0"
+    }
+}

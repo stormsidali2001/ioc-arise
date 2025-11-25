@@ -4,8 +4,8 @@ async function runDemo() {
   console.log('🚀 IoC Arise Simple Modules Demo\n');
 
   // Get services from different modules
-  const userService = container.userModule.IUserService;
-  const todoService = container.todoModule.ITodoService;
+  const userService = container.resolve('IUserService');
+  const todoService = container.resolve('ITodoService');
 
   console.log('📋 Getting all users:');
   const users = await userService.getAllUsers();

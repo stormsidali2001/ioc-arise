@@ -65,7 +65,8 @@
     "@notjustcoders/one-logger-client-sdk": "^1.0.10",
     "commander": "^11.1.0",
     "glob": "^10.3.10",
-    "minimatch": "^10.0.1"
+    "minimatch": "^10.0.1",
+    "ioc-arise": "workspace:*"
   },
   "devDependencies": {
     "@types/minimatch": "^5.1.2",

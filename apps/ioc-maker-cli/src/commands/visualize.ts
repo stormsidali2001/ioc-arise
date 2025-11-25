@@ -2,12 +2,13 @@ import { Command } from 'commander';
 import { resolve } from 'path';
 import { existsSync } from 'fs';
 import { analyzeProject } from '../analyser';
-import { detectCircularDependencies } from '../generator';
+import { CircularDependencyDetector } from '../utils/circular-dependency-detector';
 import { ConsoleAnalysisRenderer } from '../renderer/console-analysis-renderer';
 import type { RenderAnalysis, AnalysisResults } from '../renderer/render-analysis.interface';
 import { ConfigManager } from '../utils/configManager';
 import { ConfigValidator } from '../utils/configValidator';
-import { ErrorFactory, ErrorUtils } from '../errors/index.js';
+import { ErrorFactory } from '../errors/errorFactory';
+import { ErrorUtils } from '../errors/IoCError';
 
 export const visualizeCommand = new Command('visualize')
   .description('Visualize project dependencies and analysis results')
@@ -20,7 +21,7 @@ export const visualizeCommand = new Command('visualize')
       // Initialize config manager with the source directory
       const initialSourceDir = resolve(options.source);
       const configManager = new ConfigManager(initialSourceDir);
-      
+
       // Validate config if present
       if (configManager.hasConfigFile()) {
         const config = configManager.getConfig();
@@ -28,10 +29,10 @@ export const visualizeCommand = new Command('visualize')
           process.exit(1);
         }
       }
-      
+
       // Merge CLI options with config file
       const mergedOptions = configManager.mergeWithCliOptions(options);
-      
+
       const sourceDir = resolve(mergedOptions.source!);
 
       if (!existsSync(sourceDir)) {
@@ -58,7 +59,7 @@ export const visualizeCommand = new Command('visualize')
       }
 
       // Detect circular dependencies
-      const circularDependencies = detectCircularDependencies(classes);
+      const circularDependencies = CircularDependencyDetector.detect(classes);
 
       // Prepare analysis results
       const analysisResults: AnalysisResults = {
@@ -68,7 +69,7 @@ export const visualizeCommand = new Command('visualize')
 
       // Create renderer based on options
       const renderer = createRenderer(options.renderer);
-      
+
       // Render the analysis results
       renderer.render(analysisResults);
 

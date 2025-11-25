@@ -1,6 +1,7 @@
 import { IoCConfig } from './configManager';
 import { ModuleResolver } from './moduleResolver';
-import { ErrorFactory, ErrorUtils, ValidationError, ConfigError, IoCError } from '../errors/index.js';
+import { ErrorFactory } from '../errors/errorFactory';
+import { ErrorUtils, ValidationError, ConfigError, IoCError } from '../errors/IoCError';
 
 export interface ValidationResult {
   isValid: boolean;

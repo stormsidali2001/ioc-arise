@@ -1,7 +1,8 @@
 import { AnalyzerOptions, ClassInfo } from '../types';
 import { ClassAnalyzer } from './class-analyzer';
 import { FileDiscovery } from './file-discovery';
-import { ErrorFactory, ErrorUtils } from '../errors/index.js';
+import { ErrorFactory } from '../errors/errorFactory';
+import { ErrorUtils } from '../errors/IoCError';
 
 
 export class ProjectAnalyzer {

@@ -4,10 +4,10 @@
  */
 import { Container } from 'ioc-arise';
 import type { ContainerRegistry } from './container.gen.d';
-import { userModule } from './modules/userModule.module';
-import { productModule } from './modules/productModule.module';
+import { moduleB } from './modules/moduleB.module';
+import { moduleA } from './modules/moduleA.module';
 
 export const container = new Container<ContainerRegistry>();
 
-container.registerModule(userModule);
-container.registerModule(productModule);
+container.registerModule(moduleB);
+container.registerModule(moduleA);

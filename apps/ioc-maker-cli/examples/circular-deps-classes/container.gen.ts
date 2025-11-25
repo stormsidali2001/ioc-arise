@@ -4,18 +4,19 @@
  */
 import { Container, Lifecycle } from 'ioc-arise';
 import type { ContainerRegistry } from './container.gen.d';
-import { TodoService } from './services/TodoService';
-import { InMemoryTodoRepository } from './repositories/InMemoryTodoRepository';
+import { ClassB } from './services/ClassB';
+import { ClassA } from './services/ClassA';
 
 export const container = new Container<ContainerRegistry>();
 
-container.register('ITodoService', {
-  useClass: TodoService,
-  dependencies: ['ITodoRepository'],
+container.register('IClassB', {
+  useClass: ClassB,
+  dependencies: ['IClassA'],
   lifecycle: Lifecycle.Singleton,
 });
 
-container.register('ITodoRepository', {
-  useClass: InMemoryTodoRepository,
+container.register('IClassA', {
+  useClass: ClassA,
+  dependencies: ['IClassB'],
   lifecycle: Lifecycle.Singleton,
 });
