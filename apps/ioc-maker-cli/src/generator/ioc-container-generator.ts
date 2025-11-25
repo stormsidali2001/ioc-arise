@@ -324,7 +324,7 @@ ${registrations};`);
      */
     private static checkForNameCollisions(classes: ClassInfo[]): void {
         const nameToClasses = new Map<string, ClassInfo[]>();
-        
+
         classes.forEach(cls => {
             if (!nameToClasses.has(cls.name)) {
                 nameToClasses.set(cls.name, []);

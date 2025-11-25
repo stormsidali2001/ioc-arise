@@ -8,7 +8,7 @@ export class TypeDeclarationGenerator {
     static generate(classes: ClassInfo[], outputPath: string): void {
         // Check for name collisions before generating
         this.checkForNameCollisions(classes);
-        
+
         // outputPath already has .d.ts extension from the generator
         const typeDeclarations = this.generateTypeDeclarations(classes, outputPath);
         mkdirSync(dirname(outputPath), { recursive: true });
@@ -179,7 +179,7 @@ ${registrations}
      */
     private static checkForNameCollisions(classes: ClassInfo[]): void {
         const nameToClasses = new Map<string, ClassInfo[]>();
-        
+
         classes.forEach(cls => {
             if (!nameToClasses.has(cls.name)) {
                 nameToClasses.set(cls.name, []);

@@ -7,12 +7,12 @@ export enum IoCErrorCode {
   CONFIG_FILE_NOT_FOUND = 'IOC_1001',
   CONFIG_PARSE_ERROR = 'IOC_1002',
   CONFIG_VALIDATION_ERROR = 'IOC_1003',
-  
+
   // Source directory errors (1100-1199)
   SOURCE_DIR_NOT_FOUND = 'IOC_1100',
   SOURCE_DIR_NOT_ACCESSIBLE = 'IOC_1101',
   SOURCE_DIR_EMPTY = 'IOC_1102',
-  
+
   // Analysis errors (1200-1299)
   ANALYSIS_FAILED = 'IOC_1200',
   NO_CLASSES_FOUND = 'IOC_1201',
@@ -21,33 +21,33 @@ export enum IoCErrorCode {
   DUPLICATE_ABSTRACT_CLASS_EXTENSION = 'IOC_1204',
   INVALID_INTERFACE_PATTERN = 'IOC_1205',
   CLASS_NAME_COLLISION = 'IOC_1206',
-  
+
   // Generation errors (1300-1399)
   GENERATION_FAILED = 'IOC_1300',
   OUTPUT_FILE_ERROR = 'IOC_1301',
   TEMPLATE_ERROR = 'IOC_1302',
-  
+
   // Module errors (1400-1499)
   MODULE_CONFIG_INVALID = 'IOC_1400',
   MODULE_PATTERN_INVALID = 'IOC_1401',
   MODULE_DUPLICATE_PATTERN = 'IOC_1402',
-  
+
   // File system errors (1500-1599)
   FILE_NOT_FOUND = 'IOC_1500',
   FILE_READ_ERROR = 'IOC_1501',
   FILE_WRITE_ERROR = 'IOC_1502',
   PERMISSION_DENIED = 'IOC_1503',
-  
+
   // Validation errors (1600-1699)
   VALIDATION_ERROR = 'IOC_1600',
   SCHEMA_VALIDATION_ERROR = 'IOC_1601',
   TYPE_VALIDATION_ERROR = 'IOC_1602',
-  
+
   // Runtime errors (1700-1799)
   RUNTIME_ERROR = 'IOC_1700',
   UNEXPECTED_ERROR = 'IOC_1701',
   INITIALIZATION_ERROR = 'IOC_1702',
-  
+
   // Renderer errors (1800-1899)
   RENDERER_NOT_FOUND = 'IOC_1800',
   RENDERER_ERROR = 'IOC_1801'
@@ -113,42 +113,42 @@ export class IoCError extends Error {
    */
   public getFormattedMessage(): string {
     let message = `[${this.code}] ${this.message}`;
-    
+
     if (this.context) {
       const contextParts: string[] = [];
-      
+
       if (this.context.filePath) {
         contextParts.push(`File: ${this.context.filePath}`);
       }
-      
+
       if (this.context.lineNumber) {
         contextParts.push(`Line: ${this.context.lineNumber}`);
       }
-      
+
       if (this.context.className) {
         contextParts.push(`Class: ${this.context.className}`);
       }
-      
+
       if (this.context.interfaceName) {
         contextParts.push(`Interface: ${this.context.interfaceName}`);
       }
-      
+
       if (this.context.moduleName) {
         contextParts.push(`Module: ${this.context.moduleName}`);
       }
-      
+
       if (contextParts.length > 0) {
         message += `\n   Context: ${contextParts.join(', ')}`;
       }
     }
-    
+
     if (this.suggestions && this.suggestions.length > 0) {
       message += `\n   Suggestions:`;
       this.suggestions.forEach(suggestion => {
         message += `\n     • ${suggestion}`;
       });
     }
-    
+
     return message;
   }
 
