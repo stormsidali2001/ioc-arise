@@ -2,10 +2,9 @@ import { relative } from 'path';
 import { ClassInfo, ConstructorParameter, InjectionScope, DependencyInfo } from '../types';
 import { ASTParser } from './ast-parser';
 import { container } from '../container';
-import { logger } from "@notjustcoders/one-logger-client-sdk"
 import { ErrorFactory } from '../errors/errorFactory';
 import { IoCErrorCode } from '../errors/IoCError';
-
+import { Logger } from '../utils/logger';
 export class ClassAnalyzer {
   private astParser: ASTParser;
   private sourceDir: string;
@@ -36,22 +35,18 @@ export class ClassAnalyzer {
 
         // Collect class names and abstract classes
         const classNodes = this.astParser.findAllClasses(root);
-        console.log(`DEBUG: Found ${classNodes.length} class nodes in ${filePath}`);
         for (const classNode of classNodes) {
-
           const className = this.astParser.extractClassName(classNode);
           if (className) {
             allClassNames.add(className);
             const isAbstract = this.astParser.isAbstractClass(classNode);
-            console.log(`DEBUG: Class ${className} - isAbstract: ${isAbstract}`);
-            console.log(`DEBUG: Class node text:`, classNode.text().substring(0, 100));
             if (isAbstract) {
               allAbstractClasses.add(className);
             }
           }
         }
       } catch (error) {
-        logger.warn(`Warning: Could not parse ${filePath}:`, { error });
+        Logger.warn(`Warning: Could not parse ${filePath}:`, { error });
       }
     }
 
@@ -68,7 +63,7 @@ export class ClassAnalyzer {
     // 1. Duplicate interface detection
     // 2. User might want to register services that aren't used yet
     // 3. Entry points (controllers, etc.) might not be referenced
-    
+
     return allClasses;
   }
 
@@ -77,7 +72,7 @@ export class ClassAnalyzer {
       const root = this.astParser.parseFile(filePath);
       return await this.analyzeFileFromAST(filePath, root, allInterfaces, allClassNames, allAbstractClasses);
     } catch (error) {
-      logger.warn(`Warning: Could not parse ${filePath}:`, { error });
+      Logger.warn(`Warning: Could not parse ${filePath}:`, { error });
 
       return [];
     }
@@ -95,7 +90,7 @@ export class ClassAnalyzer {
 
       // Extract JSDoc scope annotations at file level for this specific file
       const jsDocScopes = this.astParser.extractJSDocComments(root);
-      logger.log('JSDoc scopes for file', { filePath, jsDocScopes })
+      Logger.debug('JSDoc scopes for file', { filePath, jsDocScopes })
 
       // Find all classes once and process them efficiently
       const allClassNodes = this.astParser.findAllClasses(root);
@@ -124,17 +119,17 @@ export class ClassAnalyzer {
 
         processedClassNames.add(className);
 
-        logger.log(`Processing class with interface: ${className}`);
-        logger.log(`Interface for ${className}:`, { interfaceName });
-        logger.log(`Constructor params for ${className}:`, { constructorParams });
-        logger.log(`Type aliases found:`, { count: Array.from(typeAliases.entries()) });
-        logger.log(`Dependencies for ${className}:`, { dependencies });
-        logger.log(`Scope for ${className}:`, { scope });
-        logger.log(`Is abstract: ${isAbstract}`);
+        Logger.debug(`Processing class with interface: ${className}`);
+        Logger.debug(`Interface for ${className}:`, { interfaceName });
+        Logger.debug(`Constructor params for ${className}:`, { constructorParams });
+        Logger.debug(`Type aliases found:`, { count: Array.from(typeAliases.entries()) });
+        Logger.debug(`Dependencies for ${className}:`, { dependencies });
+        Logger.debug(`Scope for ${className}:`, { scope });
+        Logger.debug(`Is abstract: ${isAbstract}`);
 
         // Skip abstract classes - they cannot be instantiated
         if (isAbstract) {
-          logger.log(`Skipping abstract class: ${className} (abstract classes cannot be instantiated)`);
+          Logger.debug(`Skipping abstract class: ${className} (abstract classes cannot be instantiated)`);
           continue;
         }
 
@@ -160,9 +155,6 @@ export class ClassAnalyzer {
         // Check if the parent class is abstract using the global abstract classes set
         const isParentAbstract = allAbstractClasses.has(parentClassName);
 
-        console.log(`DEBUG: Class ${className} extends ${parentClassName}. Is parent abstract? ${isParentAbstract}`);
-        console.log(`DEBUG: All abstract classes:`, Array.from(allAbstractClasses));
-
         // Only process if parent is abstract
         if (isParentAbstract) {
           const constructorParams = this.astParser.extractConstructorParameters(classNode);
@@ -173,15 +165,15 @@ export class ClassAnalyzer {
 
           processedClassNames.add(className);
 
-          logger.log(`Processing class extending ${isParentAbstract ? 'abstract ' : ''}class: ${className} extends ${parentClassName}`);
-          logger.log(`Constructor params for ${className}:`, { constructorParams });
-          logger.log(`Dependencies for ${className}:`, { dependencies });
-          logger.log(`Scope for ${className}:`, { scope });
-          logger.log(`Is abstract: ${isAbstract}`);
+          Logger.debug(`Processing class extending ${isParentAbstract ? 'abstract ' : ''}class: ${className} extends ${parentClassName}`);
+          Logger.debug(`Constructor params for ${className}:`, { constructorParams });
+          Logger.debug(`Dependencies for ${className}:`, { dependencies });
+          Logger.debug(`Scope for ${className}:`, { scope });
+          Logger.debug(`Is abstract: ${isAbstract}`);
 
           // Skip abstract classes - they cannot be instantiated
           if (isAbstract) {
-            logger.log(`Skipping abstract class: ${className} (abstract classes cannot be instantiated)`);
+            Logger.debug(`Skipping abstract class: ${className} (abstract classes cannot be instantiated)`);
             continue;
           }
 
@@ -196,7 +188,7 @@ export class ClassAnalyzer {
             scope
           });
 
-          logger.log(`Added class ${className} extending abstract class: ${parentClassName}`);
+          Logger.debug(`Added class ${className} extending abstract class: ${parentClassName}`);
         }
       }
 
@@ -216,15 +208,15 @@ export class ClassAnalyzer {
         const scope = this.astParser.extractScopeFromJSDoc(className, jsDocScopes);
         const isAbstract = this.astParser.isAbstractClass(classNode);
 
-        logger.log(`Processing class without interface: ${className}`);
-        logger.log(`Constructor params for ${className}:`, { constructorParams });
-        logger.log(`Dependencies for ${className}:`, { dependencies });
-        logger.log(`Scope for ${className}:`, { scope });
-        logger.log(`Is abstract: ${isAbstract}`);
+        Logger.debug(`Processing class without interface: ${className}`);
+        Logger.debug(`Constructor params for ${className}:`, { constructorParams });
+        Logger.debug(`Dependencies for ${className}:`, { dependencies });
+        Logger.debug(`Scope for ${className}:`, { scope });
+        Logger.debug(`Is abstract: ${isAbstract}`);
 
         // Skip abstract classes - they cannot be instantiated
         if (isAbstract) {
-          logger.log(`Skipping abstract class: ${className} (abstract classes cannot be instantiated)`);
+          Logger.debug(`Skipping abstract class: ${className} (abstract classes cannot be instantiated)`);
           continue;
         }
 
@@ -269,11 +261,6 @@ export class ClassAnalyzer {
         };
       })
       .filter(typeInfo => {
-
-        console.log("all interfaces", allInterfaces)
-        console.log("all classes", allClassNames)
-        console.log("all abstract classes", allAbstractClasses)
-
         const isValidInterface = allInterfaces.has(typeInfo.resolvedType);
         const isValidClass = allClassNames.has(typeInfo.resolvedType);
         const isValidAbstractClass = allAbstractClasses?.has(typeInfo.resolvedType) || false;
@@ -323,13 +310,13 @@ export class ClassAnalyzer {
       // Debug logging removed for cleaner output
 
       if (!shouldKeep) {
-        logger.log(`Filtering out unused class: ${classInfo.name} (no dependencies and not referenced by others)`);
+        Logger.debug(`Filtering out unused class: ${classInfo.name} (no dependencies and not referenced by others)`);
       }
 
       return shouldKeep;
     });
 
-    logger.log(`Filtered classes: ${classes.length} -> ${filteredClasses.length}`);
+    Logger.debug(`Filtered classes: ${classes.length} -> ${filteredClasses.length}`);
 
     return filteredClasses;
   }

@@ -1,8 +1,8 @@
 import { readFileSync } from 'fs';
 import { ts } from '@ast-grep/napi';
 import { ConstructorParameter, InjectionScope } from '../types';
-import { logger } from "@notjustcoders/one-logger-client-sdk"
 import { ErrorFactory } from '../errors/errorFactory';
+import { Logger } from '../utils/logger';
 
 
 
@@ -62,12 +62,12 @@ export class ASTParser {
   }
 
   extractClassName(classNode: any): string | undefined {
-    logger.log('Extracting class name from node:', { result: classNode.text().substring(0, 100) + '...' });
+    Logger.debug('Extracting class name from node:', { result: classNode.text().substring(0, 100) + '...' });
 
     // Try different approaches to extract class name
     let className = classNode.getMatch('CLASS')?.text();
     if (className) {
-      logger.log('Found class name using CLASS match:', { className });
+      Logger.debug('Found class name using CLASS match:', { className });
       return className;
     }
 
@@ -76,11 +76,11 @@ export class ASTParser {
     const classMatch = classText.match(/class\s+([A-Za-z_][A-Za-z0-9_]*)/);
     if (classMatch) {
       className = classMatch[1];
-      logger.log('Found class name using regex:', { className });
+      Logger.debug('Found class name using regex:', { className });
       return className;
     }
 
-    logger.log('Failed to extract class name');
+    Logger.debug('Failed to extract class name');
     return undefined;
   }
 
@@ -94,9 +94,7 @@ export class ASTParser {
 
   isAbstractClass(classNode: any): boolean {
     const classText = classNode.text();
-    console.log(`DEBUG: isAbstractClass - classText: ${classText}`);
     const isAbstract = classText.includes('abstract class');
-    console.log(`DEBUG: isAbstractClass - result: ${isAbstract}`);
     return isAbstract;
   }
 
@@ -113,7 +111,7 @@ export class ASTParser {
         }
       });
 
-      logger.log(`Found ${constructorNodes.length} constructor nodes`);
+      Logger.debug(`Found ${constructorNodes.length} constructor nodes`);
 
       if (constructorNodes.length === 0) {
         return parameters;
@@ -149,11 +147,11 @@ export class ASTParser {
 
       const paramNodes = [...requiredParamNodes, ...optionalParamNodes];
 
-      logger.log(`Found ${paramNodes.length} parameter nodes`);
+      Logger.debug(`Found ${paramNodes.length} parameter nodes`);
 
       for (const paramNode of paramNodes) {
         const paramText = paramNode.text();
-        logger.log('Parameter text:', paramText);
+        Logger.debug('Parameter text:', paramText);
 
         // Parse parameter using regex to extract details
         const paramMatch = paramText.match(/(?:(private|public|protected)\s+)?(\w+)(\?)?\s*:\s*(\w+)/);
@@ -168,14 +166,14 @@ export class ASTParser {
             accessModifier: accessModifier as 'private' | 'public' | 'protected' | undefined
           });
 
-          logger.log(`Extracted parameter: ${name}: ${type}${optional ? '?' : ''} (${accessModifier || 'none'})`);
+          Logger.debug(`Extracted parameter: ${name}: ${type}${optional ? '?' : ''} (${accessModifier || 'none'})`);
         }
       }
     } catch (error) {
-      logger.warn('Warning: Could not extract constructor parameters:', { error });
+      Logger.warn('Warning: Could not extract constructor parameters:', { error });
     }
 
-    logger.log('Final parameters:', { parameters });
+    Logger.debug('Final parameters:', { parameters });
     return parameters;
   }
 
@@ -190,7 +188,7 @@ export class ASTParser {
         }
       });
 
-      logger.log(`Found ${comments.length} comments in file`);
+      Logger.debug(`Found ${comments.length} comments in file`);
 
       // Find all class declarations
       const classDeclarations = root.findAll({
@@ -199,36 +197,36 @@ export class ASTParser {
         }
       });
 
-      logger.log(`Found ${classDeclarations.length} class declarations in file`);
+      Logger.debug(`Found ${classDeclarations.length} class declarations in file`);
 
       for (const comment of comments) {
         const commentText = comment.text();
-        logger.log(`Comment text: ${commentText}`);
+        Logger.debug(`Comment text: ${commentText}`);
 
         if (commentText.includes('/**') && commentText.includes('@scope')) {
-          logger.log(`Found @scope comment: ${commentText}`);
+          Logger.debug(`Found @scope comment: ${commentText}`);
           const scopeMatch = commentText.match(/@scope\s+(singleton|transient)/);
           if (scopeMatch) {
             const scope = scopeMatch[1] as InjectionScope;
             const commentRange = comment.range();
-            logger.log(`Comment range: line ${commentRange.start.line} to ${commentRange.end.line}`);
+            Logger.debug(`Comment range: line ${commentRange.start.line} to ${commentRange.end.line}`);
 
             // Find the class declaration that comes immediately after this comment
             for (const classDecl of classDeclarations) {
               const classRange = classDecl.range();
-              logger.log(`Class range: line ${classRange.start.line} to ${classRange.end.line}`);
+              Logger.debug(`Class range: line ${classRange.start.line} to ${classRange.end.line}`);
 
               // Check if the class comes after the comment
               if (classRange.start.line > commentRange.end.line) {
                 const className = this.extractClassName(classDecl);
-                logger.log(`Attempting to extract class name from class at line ${classRange.start.line}`);
-                logger.log(`Extracted class name: ${className}`);
+                Logger.debug(`Attempting to extract class name from class at line ${classRange.start.line}`);
+                Logger.debug(`Extracted class name: ${className}`);
                 if (className) {
-                  logger.log(`Found JSDoc scope annotation: ${className} -> ${scope}`);
+                  Logger.debug(`Found JSDoc scope annotation: ${className} -> ${scope}`);
                   classScopes.set(className, scope);
                   break; // Take the first class after this comment
                 } else {
-                  logger.log(`Failed to extract class name from class declaration`);
+                  Logger.debug(`Failed to extract class name from class declaration`);
                 }
               }
             }
@@ -236,10 +234,10 @@ export class ASTParser {
         }
       }
     } catch (error) {
-      logger.warn('Warning: Could not extract JSDoc comments:', { error });
+      Logger.warn('Warning: Could not extract JSDoc comments:', { error });
     }
 
-    logger.log(`Final classScopes map:`, { classScopes });
+    Logger.debug(`Final classScopes map:`, { classScopes });
     return classScopes;
   }
 
@@ -258,22 +256,22 @@ export class ASTParser {
         }
       });
 
-      logger.log(`Found ${allImports.length} total import statements`);
+      Logger.debug(`Found ${allImports.length} total import statements`);
 
       for (const importNode of allImports) {
         const importText = importNode.text();
-        logger.log(`Import statement: ${importText}`);
+        Logger.debug(`Import statement: ${importText}`);
 
         // Manual regex parsing - handles variable whitespace
         const aliasMatch = importText.match(/import\s*{\s*([\w]+)\s+as\s+([\w]+)\s*}\s+from/);
         if (aliasMatch) {
           const [, original, alias] = aliasMatch;
           typeAliases.set(alias.trim(), original.trim());
-          logger.log(`Manual regex found type alias: ${alias.trim()} -> ${original.trim()}`);
+          Logger.debug(`Manual regex found type alias: ${alias.trim()} -> ${original.trim()}`);
         }
       }
     } catch (error) {
-      logger.warn('Warning: Could not extract type aliases:', { error });
+      Logger.warn('Warning: Could not extract type aliases:', { error });
     }
 
     return typeAliases;
@@ -290,11 +288,11 @@ export class ASTParser {
         }
       });
 
-      logger.log(`Found ${allImports.length} import statements for mapping`);
+      Logger.debug(`Found ${allImports.length} import statements for mapping`);
 
       for (const importNode of allImports) {
         const importText = importNode.text();
-        logger.log(`Processing import: ${importText}`);
+        Logger.debug(`Processing import: ${importText}`);
 
         // Extract import path
         const pathMatch = importText.match(/from\s+['"]([^'"]+)['"]/);
@@ -314,10 +312,10 @@ export class ASTParser {
             if (aliasMatch) {
               const [, original, alias] = aliasMatch;
               importMappings.set(alias.trim(), importPath);
-              logger.log(`Mapped alias ${alias.trim()} -> ${importPath}`);
+              Logger.debug(`Mapped alias ${alias.trim()} -> ${importPath}`);
             } else {
               importMappings.set(trimmed, importPath);
-              logger.log(`Mapped named import ${trimmed} -> ${importPath}`);
+              Logger.debug(`Mapped named import ${trimmed} -> ${importPath}`);
             }
           }
         }
@@ -327,14 +325,14 @@ export class ASTParser {
         if (defaultImportMatch && !namedImportsMatch) {
           const defaultImport = defaultImportMatch[1];
           importMappings.set(defaultImport, importPath);
-          logger.log(`Mapped default import ${defaultImport} -> ${importPath}`);
+          Logger.debug(`Mapped default import ${defaultImport} -> ${importPath}`);
         }
       }
     } catch (error) {
-      logger.warn('Warning: Could not extract import mappings:', { error });
+      Logger.warn('Warning: Could not extract import mappings:', { error });
     }
 
-    logger.log(`Final import mappings:`, { importMappings });
+    Logger.debug(`Final import mappings:`, { importMappings });
     return importMappings;
   }
 
@@ -349,11 +347,11 @@ export class ASTParser {
         }
       });
 
-      logger.log(`Found ${interfaceNodes.length} interface declarations`);
+      Logger.debug(`Found ${interfaceNodes.length} interface declarations`);
 
       for (const interfaceNode of interfaceNodes) {
         const interfaceText = interfaceNode.text();
-        logger.log(`Interface text: ${interfaceText}`);
+        Logger.debug(`Interface text: ${interfaceText}`);
 
         // Extract interface name using regex
         const interfaceMatch = interfaceText.match(/interface\s+([A-Za-z_][A-Za-z0-9_]*)/);
@@ -371,17 +369,17 @@ export class ASTParser {
           // Consider interface valid if it has at least one method 
           if (methodNodes.length > 0) {
             interfaces.push(interfaceName);
-            logger.log(`Found valid interface: ${interfaceName} with ${methodNodes.length} methods `);
+            Logger.debug(`Found valid interface: ${interfaceName} with ${methodNodes.length} methods `);
           } else {
-            logger.log(`Skipping empty interface: ${interfaceName}`);
+            Logger.debug(`Skipping empty interface: ${interfaceName}`);
           }
         }
       }
     } catch (error) {
-      logger.warn('Warning: Could not extract interfaces:', { error });
+      Logger.warn('Warning: Could not extract interfaces:', { error });
     }
 
-    logger.log(`Final interfaces:`, { interfaces });
+    Logger.debug(`Final interfaces:`, { interfaces });
     return interfaces;
   }
 }

@@ -1,5 +1,11 @@
 # @notjustcoders/di-container
 
+## 1.0.2
+
+### Patch Changes
+
+- cleaning debug console logs
+
 ## 1.0.1
 
 ### Patch Changes

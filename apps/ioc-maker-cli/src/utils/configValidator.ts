@@ -103,18 +103,20 @@ export class ConfigValidator {
     const result = this.validateConfig(config);
 
     if (result.warnings.length > 0) {
-      console.warn('⚠️  Configuration warnings:');
+      const { Logger } = require('./logger');
+      Logger.warn('Configuration warnings:');
       result.warnings.forEach(warning => {
-        console.warn(`   ${warning}`);
+        Logger.log(`   ${warning}`);
       });
     }
 
     if (!result.isValid) {
+      const { Logger } = require('./logger');
       const configSource = configPath ? ` in ${configPath}` : '';
-      console.error(`❌ Configuration validation failed${configSource}`);
-      console.error('\n   Validation errors:');
+      Logger.error(`Configuration validation failed${configSource}`);
+      Logger.log('\n   Validation errors:');
       result.errors.forEach(error => {
-        console.error(`   • ${ErrorUtils.formatForConsole(error)}`);
+        Logger.log(`   • ${ErrorUtils.formatForConsole(error)}`);
       });
       return false;
     }

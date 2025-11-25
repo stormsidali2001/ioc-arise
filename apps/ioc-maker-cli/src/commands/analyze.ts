@@ -7,14 +7,19 @@ import { ConfigManager } from '../utils/configManager';
 import { ConfigValidator } from '../utils/configValidator';
 import { ErrorFactory } from '../errors/errorFactory';
 import { ErrorUtils } from '../errors/IoCError';
+import { Logger } from '../utils/logger';
 
 export const analyzeCommand = new Command('analyze')
   .description('Analyze project and show detected classes without generating')
   .option('-s, --source <dir>', 'Source directory to scan', 'src')
   .option('-i, --interface <pattern>', 'Interface name pattern to match (regex)')
   .option('-e, --exclude <patterns...>', 'Exclude patterns for files')
+  .option('--verbose', 'Enable verbose logging')
   .action(async (options) => {
     try {
+      // Initialize logger
+      Logger.initialize({ verbose: options.verbose ?? false });
+
       // Initialize config manager with the source directory
       const initialSourceDir = resolve(options.source);
       const configManager = new ConfigManager(initialSourceDir);
@@ -34,68 +39,71 @@ export const analyzeCommand = new Command('analyze')
 
       if (!existsSync(sourceDir)) {
         const error = ErrorFactory.sourceDirectoryNotFound(sourceDir);
-        console.error(`❌ ${ErrorUtils.formatForConsole(error)}`);
+        Logger.error(ErrorUtils.formatForConsole(error));
         process.exit(1);
       }
 
       if (configManager.hasConfigFile()) {
-        console.log(`📋 Using config file: ${configManager.getConfigPath()}`);
+        Logger.info(`Using config file: ${configManager.getConfigPath()}`);
       }
-      console.log(`🔍 Analyzing directory: ${sourceDir}`);
+      Logger.custom('🔍', `Analyzing directory: ${sourceDir}`, Logger.getColors().cyan + Logger.getColors().bright);
 
       const classes = await analyzeProject(sourceDir, {
         sourceDir,
         interfacePattern: mergedOptions.interface,
         excludePatterns: mergedOptions.exclude
       });
-      console.log("---------------------------------------")
-      console.dir(classes, { depth: 100 })
 
       if (classes.length === 0) {
         const error = ErrorFactory.noClassesFound(
           mergedOptions.interface || 'interfaces with "implements" keyword'
         );
-        console.error(`❌ ${ErrorUtils.formatForConsole(error)}`);
+        Logger.error(ErrorUtils.formatForConsole(error));
         process.exit(1);
         return;
       }
 
-      console.log(`\n📋 Found ${classes.length} classes:\n`);
+      Logger.newline();
+      Logger.custom('📋', `Found ${classes.length} classes:`, Logger.getColors().blue + Logger.getColors().bright);
+      Logger.newline();
 
       classes.forEach(cls => {
-        console.log(`📦 ${cls.name}`);
-        console.log(`   File: ${cls.filePath}`);
+        Logger.custom('📦', cls.name, Logger.getColors().cyan + Logger.getColors().bright);
+        Logger.log(Logger.colorizeText(`   File: ${cls.filePath}`, Logger.getColors().gray));
         if (cls.interfaceName) {
-          console.log(`   Implements: ${cls.interfaceName}`);
+          Logger.log(Logger.colorizeText(`   Implements: ${cls.interfaceName}`, Logger.getColors().yellow));
         }
         if (cls.abstractClassName) {
-          console.log(`   Extends: ${cls.abstractClassName} (abstract)`);
+          Logger.log(Logger.colorizeText(`   Extends: ${cls.abstractClassName} (abstract)`, Logger.getColors().magenta));
         }
         if (cls.dependencies.length > 0) {
-          console.log(`   Dependencies: ${cls.dependencies.map(dep => dep.name).join(', ')}`);
+          const deps = cls.dependencies.map(dep => dep.name).join(', ');
+          Logger.log(Logger.colorizeText(`   Dependencies: ${deps}`, Logger.getColors().blue));
         } else {
-          console.log(`   Dependencies: none`);
+          Logger.log(Logger.colorizeText(`   Dependencies: none`, Logger.getColors().gray));
         }
-        console.log('');
+        Logger.newline();
       });
 
       // Check for circular dependencies
       const cycles = CircularDependencyDetector.detect(classes);
       if (cycles.length > 0) {
-        console.log('⚠️  Circular dependencies detected:');
+        Logger.warn('Circular dependencies detected:');
         cycles.forEach((cycle, index) => {
-          console.log(`   ${index + 1}. ${cycle.join(' → ')}`);
+          Logger.log(Logger.colorizeText(`   ${index + 1}. ${cycle.join(' → ')}`, Logger.getColors().red));
         });
       } else {
-        console.log('✅ No circular dependencies found.');
+        Logger.success('No circular dependencies found.');
       }
+
+      process.exit(0);
 
     } catch (error) {
       if (ErrorUtils.isIoCError(error)) {
-        console.error(`❌ ${ErrorUtils.formatForConsole(error)}`);
+        Logger.error(ErrorUtils.formatForConsole(error));
       } else {
         const wrappedError = ErrorFactory.unexpectedError(error as Error);
-        console.error(`❌ ${ErrorUtils.formatForConsole(wrappedError)}`);
+        Logger.error(ErrorUtils.formatForConsole(wrappedError));
       }
       process.exit(1);
     }

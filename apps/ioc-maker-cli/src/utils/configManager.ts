@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { ErrorFactory } from '../errors/errorFactory';
 import { ErrorUtils } from '../errors/IoCError';
+import { Logger } from './logger';
 
 export interface IoCConfig {
   source?: string;
@@ -35,15 +36,15 @@ export class ConfigManager {
             this.configPath,
             error.message
           );
-          console.warn(`⚠️  Warning: ${ErrorUtils.formatForConsole(parseError)}`);
+          Logger.warn(`Warning: ${ErrorUtils.formatForConsole(parseError)}`);
         } else {
           const readError = ErrorFactory.fileReadError(
             this.configPath,
             error instanceof Error ? error.message : String(error)
           );
-          console.warn(`⚠️  Warning: ${ErrorUtils.formatForConsole(readError)}`);
+          Logger.warn(`Warning: ${ErrorUtils.formatForConsole(readError)}`);
         }
-        console.warn('   Using default configuration.');
+        Logger.log('   Using default configuration.');
         this.config = {};
       }
     }

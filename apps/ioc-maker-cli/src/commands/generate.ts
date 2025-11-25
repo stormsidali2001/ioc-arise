@@ -9,8 +9,8 @@ import { ConfigValidator } from '../utils/configValidator';
 import { ErrorFactory } from '../errors/errorFactory';
 import { ErrorUtils } from '../errors/IoCError';
 import { ModuleResolver } from '../utils/moduleResolver';
-import { initializeOneLogger, logger } from '@notjustcoders/one-logger-client-sdk';
-import { DependencyInfo, ClassInfo } from '../types';
+import { Logger } from '../utils/logger';
+import { ClassInfo } from '../types';
 
 export const generateCommand = new Command('generate')
   .description('Generate IoC container from TypeScript classes')
@@ -22,21 +22,13 @@ export const generateCommand = new Command('generate')
   .option('--verbose', 'Enable verbose logging')
   .action(async (options) => {
     try {
+      // Initialize logger
+      Logger.initialize({ verbose: options.verbose ?? false });
 
-await initializeOneLogger({
-        name: "ioc-maker",
-        description: "ioc-maker",
-        tracer: {
-          batchSize: 1,
-  },
-        isDev: process.env.NODE_ENV === "development",
-
-
-})
       // Initialize config manager with the source directory
       const initialSourceDir = resolve(options.source);
       const configManager = new ConfigManager(initialSourceDir);
-      
+
       // Validate config if present
       if (configManager.hasConfigFile()) {
         const config = configManager.getConfig();
@@ -44,15 +36,15 @@ await initializeOneLogger({
           process.exit(1);
         }
       }
-      
+
       // Merge CLI options with config file
       const mergedOptions = configManager.mergeWithCliOptions(options);
-      
+
       const sourceDir = resolve(mergedOptions.source!);
       const outputPath = resolve(sourceDir, mergedOptions.output!);
-      
+
       if (configManager.hasConfigFile() && mergedOptions.verbose) {
-        console.log(`📋 Using config file: ${configManager.getConfigPath()}`);
+        Logger.info(`Using config file: ${configManager.getConfigPath()}`);
       }
 
       // Initialize module resolver if modules are configured
@@ -60,38 +52,37 @@ await initializeOneLogger({
       if (mergedOptions.modules && Object.keys(mergedOptions.modules).length > 0) {
         moduleResolver = new ModuleResolver(mergedOptions.modules, sourceDir);
         if (mergedOptions.verbose) {
-          console.log(`🏗️  Module support enabled with ${Object.keys(mergedOptions.modules).length} modules`);
+          Logger.info(`Module support enabled with ${Object.keys(mergedOptions.modules).length} modules`);
         }
       }
 
       if (!existsSync(sourceDir)) {
         const error = ErrorFactory.sourceDirectoryNotFound(sourceDir);
-        console.error(`❌ ${ErrorUtils.formatForConsole(error)}`);
+        Logger.error(ErrorUtils.formatForConsole(error));
         process.exit(1);
       }
 
       if (mergedOptions.verbose) {
-        console.log(`🔍 Scanning directory: ${sourceDir}`);
-        console.log(`📝 Output file: ${outputPath}`);
+        Logger.info(`Scanning directory: ${sourceDir}`);
+        Logger.info(`Output file: ${outputPath}`);
         if (mergedOptions.interface) {
-          console.log(`🎯 Interface pattern: ${mergedOptions.interface}`);
+          Logger.info(`Interface pattern: ${mergedOptions.interface}`);
         }
       }
 
-      console.log("🚀 Starting analysis...")
+      Logger.custom('🚀', 'Starting analysis...', Logger.getColors().cyan + Logger.getColors().bright);
       // Analyze the project
       const classes = await analyzeProject(sourceDir, {
         sourceDir,
         interfacePattern: mergedOptions.interface,
         excludePatterns: mergedOptions.exclude
       });
-      console.log("analysis results", classes)
 
       if (classes.length === 0) {
         const error = ErrorFactory.noClassesFound(
           mergedOptions.interface || 'interfaces with "implements" keyword'
         );
-        console.error(`❌ ${ErrorUtils.formatForConsole(error)}`);
+        Logger.error(ErrorUtils.formatForConsole(error));
         process.exit(1);
         return;
       }
@@ -100,15 +91,16 @@ await initializeOneLogger({
       let moduleGroupedClasses: Map<string, ClassInfo[]>;
       if (moduleResolver) {
         moduleGroupedClasses = moduleResolver.groupClassesByModule(classes);
-        
+
         if (mergedOptions.verbose) {
-          console.log(`\n📋 Found ${classes.length} classes organized into ${moduleGroupedClasses.size} modules:`);
+          Logger.newline();
+          Logger.custom('📋', `Found ${classes.length} classes organized into ${moduleGroupedClasses.size} modules:`);
           for (const [moduleName, moduleClasses] of moduleGroupedClasses) {
-            console.log(`\n   📦 ${moduleName} (${moduleClasses.length} classes):`);
+            Logger.log(`\n   📦 ${moduleName} (${moduleClasses.length} classes):`);
             moduleClasses.forEach(cls => {
-              console.log(`      • ${cls.name} (${cls.dependencies.length} dependencies)`);
+              Logger.log(`      • ${cls.name} (${cls.dependencies.length} dependencies)`);
               if (cls.dependencies.length > 0) {
-                console.log(`        Dependencies: ${cls.dependencies.map(dep => dep.name).join(', ')}`);
+                Logger.log(`        Dependencies: ${cls.dependencies.map(dep => dep.name).join(', ')}`);
               }
             });
           }
@@ -116,13 +108,14 @@ await initializeOneLogger({
       } else {
         // Backward compatibility: single default module
         moduleGroupedClasses = new Map([['CoreModule', classes]]);
-        
+
         if (mergedOptions.verbose) {
-          console.log(`\n📋 Found ${classes.length} classes:`);
+          Logger.newline();
+          Logger.custom('📋', `Found ${classes.length} classes:`);
           classes.forEach(cls => {
-            console.log(`   • ${cls.name} (${cls.dependencies.length} dependencies)`);
+            Logger.log(`   • ${cls.name} (${cls.dependencies.length} dependencies)`);
             if (cls.dependencies.length > 0) {
-              console.log(`     Dependencies: ${cls.dependencies.map(dep => dep.name).join(', ')}`);
+              Logger.log(`     Dependencies: ${cls.dependencies.map(dep => dep.name).join(', ')}`);
             }
           });
         }
@@ -135,16 +128,16 @@ await initializeOneLogger({
         if (firstCycle && firstCycle.length > 0) {
           const className = firstCycle[0] || 'unknown';
           const error = ErrorFactory.circularDependency(className, firstCycle);
-          console.error(`❌ ${ErrorUtils.formatForConsole(error)}`);
-          
+          Logger.error(ErrorUtils.formatForConsole(error));
+
           if (cycles.length > 1) {
-            console.error('\n   Additional cycles:');
+            Logger.log('\n   Additional cycles:');
             cycles.slice(1).forEach((cycle, index) => {
-              console.error(`   ${index + 2}. ${cycle.join(' → ')}`);
+              Logger.log(`   ${index + 2}. ${cycle.join(' → ')}`);
             });
           }
         } else {
-          console.error('❌ Circular dependencies detected but cycle information is incomplete');
+          Logger.error('Circular dependencies detected but cycle information is incomplete');
         }
         process.exit(1);
       }
@@ -153,49 +146,50 @@ await initializeOneLogger({
       if (moduleGroupedClasses && moduleGroupedClasses.size > 1) {
         const moduleCycles = CircularDependencyDetector.detectModuleCycles(moduleGroupedClasses);
         if (moduleCycles.length > 0) {
-          console.error(`❌ Circular dependencies detected between modules:`);
+          Logger.error('Circular dependencies detected between modules:');
           moduleCycles.forEach((cycle, index) => {
             if (cycle.length > 0) {
               // The cycle already includes the starting node at the end from TopologicalSorter
               const cycleDisplay = cycle.join(' → ');
-              console.error(`   ${index + 1}. ${cycleDisplay}`);
+              Logger.log(`   ${index + 1}. ${cycleDisplay}`);
             }
           });
-          console.error('\n   Module dependencies must form a directed acyclic graph (DAG).');
-          console.error('   Consider refactoring to break the circular dependency or merging the modules.');
+          Logger.log('\n   Module dependencies must form a directed acyclic graph (DAG).');
+          Logger.log('   Consider refactoring to break the circular dependency or merging the modules.');
           process.exit(1);
         }
       }
 
       if (mergedOptions.checkCycles) {
-        console.log('✅ No circular dependencies found (classes or modules).');
+        Logger.success('No circular dependencies found (classes or modules).');
+        process.exit(0);
         return;
       }
 
       // Generate container file
-      console.log(`🚀 Generating container using 'ioc-arise' runtime...`);
+      Logger.custom('🚀', 'Generating container...', Logger.getColors().cyan + Logger.getColors().bright);
       IoCContainerGenerator.generate(classes, outputPath, moduleGroupedClasses);
 
-      console.log(`✅ Container generated successfully!`);
-      console.log(`   File: ${outputPath}`);
-      console.log(`   Classes: ${classes.length}`);
-      
+      Logger.success('Container generated successfully!');
+      Logger.log(Logger.colorizeText(`   File: ${outputPath}`, Logger.getColors().gray));
+      Logger.log(Logger.colorizeText(`   Classes: ${classes.length}`, Logger.getColors().gray));
+
       if (mergedOptions.verbose) {
-        console.log('\n🎉 You can now import and use your container:');
-        console.log('   import { container } from "./container.gen";');
-        console.log('   // Usage examples:');
-        console.log('   // const userService = container.resolve(UserService);');
+        Logger.newline();
+        Logger.custom('🎉', 'You can now import and use your container:', Logger.getColors().green + Logger.getColors().bright);
+        Logger.log(Logger.colorizeText('   import { container } from "./container.gen";', Logger.getColors().gray));
+        Logger.log(Logger.colorizeText('   // Usage examples:', Logger.getColors().gray));
+        Logger.log(Logger.colorizeText('   // const userService = container.resolve(\'IUserService\');', Logger.getColors().gray));
       }
 
-      // Force process exit to prevent hanging due to one-logger SDK
       process.exit(0);
 
     } catch (error) {
       if (ErrorUtils.isIoCError(error)) {
-        console.error(`❌ ${ErrorUtils.formatForConsole(error)}`);
+        Logger.error(ErrorUtils.formatForConsole(error));
       } else {
         const wrappedError = ErrorFactory.unexpectedError(error as Error);
-        console.error(`❌ ${ErrorUtils.formatForConsole(wrappedError)}`);
+        Logger.error(ErrorUtils.formatForConsole(wrappedError));
       }
       process.exit(1);
     }

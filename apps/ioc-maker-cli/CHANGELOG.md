@@ -1,5 +1,13 @@
 # @notjustcoders/ioc-arise
 
+## 1.1.12
+
+### Patch Changes
+
+- cleaning debug console logs
+- Updated dependencies
+  - @notjustcoders/di-container@1.0.2
+
 ## 1.1.11
 
 ### Patch Changes

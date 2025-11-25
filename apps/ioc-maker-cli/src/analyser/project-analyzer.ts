@@ -16,7 +16,7 @@ export class ProjectAnalyzer {
 
   async analyzeProject(): Promise<ClassInfo[]> {
     const tsFiles = await this.fileDiscovery.findTypeScriptFiles();
-    
+
     // Analyze all files in a single batch operation for better performance
     const allClasses = await this.classAnalyzer.analyzeFiles(tsFiles);
 
@@ -33,7 +33,7 @@ export class ProjectAnalyzer {
 
   private validateUniqueInterfaceImplementations(classes: ClassInfo[]): void {
     const interfaceToClassMap = new Map<string, ClassInfo[]>();
-    
+
     // Group classes by their interface names
     for (const classInfo of classes) {
       if (classInfo.interfaceName) {
@@ -53,22 +53,23 @@ export class ProjectAnalyzer {
           interfaceName,
           implementingClasses.map(c => c.name)
         );
-        console.error(`❌ ${ErrorUtils.formatForConsole(error)}`);
+        const { Logger } = require('../utils/logger');
+        Logger.error(ErrorUtils.formatForConsole(error));
         for (const classInfo of implementingClasses) {
-          console.error(`   • ${classInfo.name} (${classInfo.filePath})`);
+          Logger.log(`   • ${classInfo.name} (${classInfo.filePath})`);
         }
       }
     }
 
     if (duplicateInterfaces.length > 0) {
       const allClassNames: string[] = [];
-      
+
       for (const [interfaceName, implementingClasses] of interfaceToClassMap) {
         if (implementingClasses.length > 1) {
           allClassNames.push(...implementingClasses.map(c => c.name));
         }
       }
-      
+
       throw ErrorFactory.duplicateInterfaceImplementation(
         duplicateInterfaces.join(', '),
         allClassNames
@@ -78,7 +79,7 @@ export class ProjectAnalyzer {
 
   private validateUniqueAbstractClassExtensions(classes: ClassInfo[]): void {
     const abstractClassToClassMap = new Map<string, ClassInfo[]>();
-    
+
     // Group classes by their abstract class names
     for (const classInfo of classes) {
       if (classInfo.abstractClassName) {
@@ -98,22 +99,23 @@ export class ProjectAnalyzer {
           abstractClassName,
           extendingClasses.map(c => c.name)
         );
-        console.error(`❌ Multiple classes extending abstract class: ${abstractClassName}`);
+        const { Logger } = require('../utils/logger');
+        Logger.error(`Multiple classes extending abstract class: ${abstractClassName}`);
         for (const classInfo of extendingClasses) {
-          console.error(`   • ${classInfo.name} (${classInfo.filePath})`);
+          Logger.log(`   • ${classInfo.name} (${classInfo.filePath})`);
         }
       }
     }
 
     if (duplicateAbstractClasses.length > 0) {
       const allClassNames: string[] = [];
-      
+
       for (const [abstractClassName, extendingClasses] of abstractClassToClassMap) {
         if (extendingClasses.length > 1) {
           allClassNames.push(...extendingClasses.map(c => c.name));
         }
       }
-      
+
       throw ErrorFactory.duplicateAbstractClassExtension(
         duplicateAbstractClasses.join(', '),
         allClassNames

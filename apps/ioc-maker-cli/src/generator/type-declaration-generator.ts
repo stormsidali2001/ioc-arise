@@ -127,7 +127,8 @@ ${registryEntries.join('\n')}
                 }
             } catch (error) {
                 // If we can't read the file or parse it, skip
-                console.warn(`Could not parse interface location for ${cls.interfaceName} in ${cls.filePath}`);
+                const { Logger } = require('../utils/logger');
+                Logger.debug(`Could not parse interface location for ${cls.interfaceName} in ${cls.filePath}`);
             }
         });
 
