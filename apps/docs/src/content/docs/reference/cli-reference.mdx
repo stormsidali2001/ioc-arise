@@ -5,9 +5,56 @@ sidebar:
   order: 1
 ---
 
+import { Card, CardGrid, Badge, Tabs, TabItem } from '@astrojs/starlight/components';
+
+<div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 1rem 0 2rem 0;">
+  <Badge text="CLI Tool" variant="note" />
+  <Badge text="Code Generation" variant="tip" />
+  <Badge text="Analysis" variant="success" />
+</div>
+
 # CLI Reference
 
+:::tip[🚀 Quick Start]
+Most projects just need: `npx @notjustcoders/ioc-arise`
+
+The CLI automatically detects your project structure and generates everything!
+:::
+
 ## Installation
+
+<Tabs>
+  <TabItem label="NPX (Recommended)">
+
+```bash
+# No installation needed! Run directly:
+npx @notjustcoders/ioc-arise
+```
+
+✅ Always uses latest version  
+✅ No global installation  
+✅ Perfect for CI/CD
+
+  </TabItem>
+  <TabItem label="Local (Dev Dependency)">
+
+```bash
+npm install -D @notjustcoders/ioc-arise
+# or
+pnpm add -D @notjustcoders/ioc-arise
+```
+
+Then add to `package.json`:
+```json
+{
+  "scripts": {
+    "generate:di": "ioc-arise"
+  }
+}
+```
+
+  </TabItem>
+  <TabItem label="Global">
 
 ```bash
 npm install -g @notjustcoders/ioc-arise
@@ -15,70 +62,130 @@ npm install -g @notjustcoders/ioc-arise
 pnpm add -g @notjustcoders/ioc-arise
 ```
 
-## Global Usage
-
+Then use anywhere:
 ```bash
-npx @notjustcoders/ioc-arise [command] [options]
-# or, if installed globally:
-ioc-arise [command] [options]
+ioc-arise
 ```
+
+  </TabItem>
+</Tabs>
 
 ## Commands
 
-### `generate`
+### `generate` (Default)
+
+:::note[✨ Main Command]
+Analyzes your TypeScript code and generates a complete DI container with type declarations.
+:::
 
 ```bash
-npx @notjustcoders/ioc-arise generate [options]
-# or, if installed globally:
-ioc-arise generate [options]
+npx @notjustcoders/ioc-arise [options]
+# "generate" is the default command, so you can omit it!
 ```
 
-#### Options
+#### Options Reference
 
-| Option                    | Short | Description                                             | Default            |
-| ------------------------- | ----- | ------------------------------------------------------- | ------------------ |
-| `--source <dir>`          | `-s`  | Source directory to scan                                | `src`              |
-| `--output <file>`         | `-o`  | Output file path                                        | `container.gen.ts` |
-| `--interface <pattern>`   | `-i`  | Interface name pattern to match (regex)                 | `I[A-Z].*`         |
-| `--exclude <patterns...>` | `-e`  | Exclude patterns for files                              | `[]`               |
-| `--check-cycles`          |       | Only check for circular dependencies without generating | `false`            |
-| `--verbose`               |       | Enable verbose logging                                  | `false`            |
+| Option | Short | Description | Default |
+|--------|-------|-------------|---------|
+| `--source <dir>` | `-s` | Source directory to scan | `src` |
+| `--output <file>` | `-o` | Output file path | `container.gen.ts` |
+| `--interface <pattern>` | `-i` | Interface name pattern (regex) | `I[A-Z].*` |
+| `--exclude <patterns...>` | `-e` | Exclude patterns for files | `[]` |
+| `--check-cycles` | | Check circular deps only (no generation) | `false` |
+| `--verbose` | | Enable verbose logging | `false` |
 
-#### Examples
+#### Common Examples
+
+<Tabs>
+  <TabItem label="Basic Usage">
 
 ```bash
-npx @notjustcoders/ioc-arise generate
-npx @notjustcoders/ioc-arise generate --source ./src --output ./generated/container.ts
-npx @notjustcoders/ioc-arise generate --interface "I[A-Z].*"
-npx @notjustcoders/ioc-arise generate --exclude "**/*.test.ts" "**/*.spec.ts"
-npx @notjustcoders/ioc-arise generate --check-cycles
-npx @notjustcoders/ioc-arise generate --verbose
-# or, if installed globally:
-ioc-arise generate
+# Simplest form - uses defaults
+npx @notjustcoders/ioc-arise
+
+# With custom source directory
+npx @notjustcoders/ioc-arise --source ./app
 ```
+
+  </TabItem>
+  <TabItem label="Custom Output">
+
+```bash
+# Custom output location
+npx @notjustcoders/ioc-arise \
+  --source ./src \
+  --output ./generated/di-container.ts
+```
+
+  </TabItem>
+  <TabItem label="Filtering">
+
+```bash
+# Exclude test files
+npx @notjustcoders/ioc-arise \
+  --exclude "**/*.test.ts" "**/*.spec.ts" "**/mocks/**"
+
+# Custom interface pattern
+npx @notjustcoders/ioc-arise \
+  --interface ".*Service$"
+```
+
+  </TabItem>
+  <TabItem label="Validation Only">
+
+```bash
+# Check for circular dependencies without generating
+npx @notjustcoders/ioc-arise --check-cycles
+
+# Perfect for CI/CD pipelines!
+```
+
+  </TabItem>
+</Tabs>
 
 ### `analyze`
 
+:::tip[🔍 Understand Your Architecture]
+Lists all discovered classes, their dependencies, and detects circular dependencies **without generating code**.
+:::
+
 ```bash
-ioc-arise analyze [options]
+npx @notjustcoders/ioc-arise analyze [options]
 ```
 
 #### Options
 
-| Option                    | Short | Description                             | Default    |
-| ------------------------- | ----- | --------------------------------------- | ---------- |
-| `--source <dir>`          | `-s`  | Source directory to scan                | `src`      |
-| `--interface <pattern>`   | `-i`  | Interface name pattern to match (regex) | `I[A-Z].*` |
-| `--exclude <patterns...>` | `-e`  | Exclude patterns for files              | `[]`       |
+| Option | Short | Description | Default |
+|--------|-------|-------------|---------|
+| `--source <dir>` | `-s` | Source directory to scan | `src` |
+| `--interface <pattern>` | `-i` | Interface name pattern (regex) | `I[A-Z].*` |
+| `--exclude <patterns...>` | `-e` | Exclude patterns for files | `[]` |
 
-#### Examples
+#### Example Output
 
 ```bash
-ioc-arise analyze
-ioc-arise analyze --source ./modules
-ioc-arise analyze --interface ".*Service$"
-ioc-arise analyze --exclude "**/*.test.ts"
+$ npx @notjustcoders/ioc-arise analyze
+
+📋 Found 15 classes:
+
+📦 UserService
+   File: /src/user/UserService.ts
+   Implements: IUserService
+   Dependencies: IUserRepository, ILogger
+
+📦 UserRepository
+   File: /src/user/UserRepository.ts
+   Implements: IUserRepository
+   Dependencies: none
+
+✅ No circular dependencies detected!
 ```
+
+**Use Cases:**
+- 📊 Review dependency graph
+- 🔍 Debug dependency issues
+- 📝 Generate documentation
+- ✅ Validate architecture
 
 ### `visualize`
 

@@ -93,11 +93,11 @@ export class Container<TRegistry = Record<string, any>> implements IContainer<TR
       const args = this.resolveDependencies(provider.dependencies || []);
       const instance = new provider.useClass(...args);
 
-      if (provider.lifecycle === Lifecycle.Singleton) {
-        provider.instance = instance;
-      }
+    if (provider.lifecycle === Lifecycle.Singleton) {
+      provider.instance = instance;
+    }
 
-      return instance;
+    return instance;
     } finally {
       this.resolutionStack.delete(token);
     }

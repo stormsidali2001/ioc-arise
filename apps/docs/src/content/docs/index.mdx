@@ -74,7 +74,7 @@ hero:
       variant: minimal
 ---
 
-import { Card, CardGrid, Badge, Tabs, TabItem,Steps,FileTree } from '@astrojs/starlight/components';
+import { Card, CardGrid, Badge, Tabs, TabItem, Steps, FileTree } from '@astrojs/starlight/components';
 
 <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; margin: 1rem 0 2rem 0;">
   <Badge text="TypeScript 5+" variant="tip" />
@@ -332,9 +332,9 @@ No configuration files required. No decorators to add. No manual registration. S
       async getUser(id: string) {
         return this.repo.findById(id);
       }
-    }
-    ```
-    
+   }
+   ```
+
     Your classes work independently of IoC Arise - ideal for Clean Architecture.
   </Card>
   
@@ -386,16 +386,16 @@ No configuration files required. No decorators to add. No manual registration. S
   
   <Card title="🏗️ Automated Modular Architecture" icon="puzzle">
     **Simplified organization.** Configure once, get module files automatically.
-    
-    ```json
-    {
-      "modules": {
+
+   ```json
+   {
+     "modules": {
         "UserModule": ["user/**"],
         "OrderModule": ["order/**"]
-      }
-    }
-    ```
-    
+     }
+   }
+   ```
+
     Generates `modules/userModule.module.ts` and `modules/orderModule.module.ts`.
   </Card>
   
@@ -418,8 +418,8 @@ No configuration files required. No decorators to add. No manual registration. S
   
   <Card title="⏱️ Smart Lifecycle Control" icon="seti:config">
     **Simple JSDoc annotations.** The CLI reads and generates the right code.
-    
-    ```typescript
+
+   ```typescript
     /** @scope singleton */
     class UserService {}  // One instance shared
     
@@ -623,7 +623,7 @@ Production-ready features you won't find anywhere else
   <Card title="🚨 Name Collision Detection" icon="warning">
     **Problem:** Two classes named `UpdateUserUseCase` in different modules?  
     **Solution:** IoC Arise auto-detects and generates aliased imports:
-    ```typescript
+   ```typescript
     import { UpdateUserUseCase as UserUpdateUserUseCase } from './user/...';
     import { UpdateUserUseCase as OrderUpdateUserUseCase } from './order/...';
     ```

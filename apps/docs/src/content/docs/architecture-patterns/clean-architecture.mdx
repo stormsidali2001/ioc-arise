@@ -5,7 +5,22 @@ sidebar:
   order: 3
 ---
 
-import { FileTree } from '@astrojs/starlight/components';
+import { FileTree, Card, CardGrid, Badge, Tabs, TabItem } from '@astrojs/starlight/components';
+
+<div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 1rem 0 2rem 0;">
+  <Badge text="Clean Architecture" variant="tip" />
+  <Badge text="Ports & Adapters" variant="success" />
+  <Badge text="Advanced" variant="caution" />
+</div>
+
+:::tip[🎯 What You'll Learn]
+This advanced example demonstrates **production-grade Clean Architecture** with IoC Arise:
+- **Hexagonal Architecture** - Ports and adapters pattern for complete decoupling
+- **Use Case Driven** - Business logic organized around user intentions
+- **DTO Pattern** - Clear data contracts between layers
+- **Presenter Pattern** - Separation of presentation logic from business logic
+- **Aggregate Roots** - User entity manages Todo entities as an aggregate
+:::
 
 ## Project Structure
 
@@ -52,12 +67,32 @@ import { FileTree } from '@astrojs/starlight/components';
   - container.gen.ts
 </FileTree>
 
-## Entities
+## Clean Architecture Layers
+
+<CardGrid>
+  <Card title="🏛️ Entities" icon="seti:config">
+    **Core business logic** - User and Todo aggregates with validation rules and business invariants.
+  </Card>
+  <Card title="🎯 Use Cases" icon="rocket">
+    **Application business rules** - Orchestrate flow of data between entities and output ports.
+  </Card>
+  <Card title="🔌 Ports" icon="puzzle">
+    **Interfaces for I/O** - Input ports (use cases) and output ports (presenters) define boundaries.
+  </Card>
+  <Card title="🔄 Adapters" icon="approve-check">
+    **Implementation details** - Repositories, presenters, and infrastructure adapters.
+  </Card>
+</CardGrid>
+
+## Entities (Domain Layer)
+
+<Tabs>
+  <TabItem label="User Aggregate">
+
+**User Aggregate Root** - manages Todo entities:
 
 ```typescript
 // entities/User.ts
-import { Todo, CreateTodoData, UpdateTodoData } from './Todo';
-
 export interface CreateUserData {
   email: string;
   name: string;
@@ -255,6 +290,17 @@ export class User {
 }
 ```
 
+**Key Features:**
+• Email & name validation  
+• Todo management (max 100, unique titles)  
+• Business rules enforcement  
+• Aggregate statistics
+
+  </TabItem>
+  <TabItem label="Todo Entity">
+
+**Todo Entity** - with business logic and validation:
+
 ```typescript
 // entities/Todo.ts
 export interface CreateTodoData {
@@ -437,16 +483,28 @@ export class Todo {
 }
 ```
 
-## Use Cases
+**Key Features:**
+• Title & description validation  
+• Completion status management  
+• Priority calculation (based on age)  
+• Belongs to user enforcement
+
+  </TabItem>
+</Tabs>
+
+## Use Cases (Application Layer)
+
+:::note[💡 Use Case Pattern]
+Each use case represents a single user intention and orchestrates the flow between entities, repositories, and output ports.
+:::
+
+<Tabs>
+  <TabItem label="Create Todo">
+
+**CreateTodoUseCase** - adds todo through user aggregate:
 
 ```typescript
 // use-cases/CreateTodoUseCase.ts
-import { ICreateTodoInputPort } from '../ports/ITodoInputPort';
-import { IUserRepository } from '../repositories/IUserRepository';
-import { CreateTodoData } from '../entities/Todo';
-import { CreateTodoRequestDTO, TodoResponseDTO } from '../dtos/TodoDTOs';
-import { ICreateTodoOutputPort } from '../ports/ITodoOutputPort';
-
 export class CreateTodoUseCase implements ICreateTodoInputPort {
   constructor(
     private userRepository: IUserRepository,
@@ -505,14 +563,13 @@ export class CreateTodoUseCase implements ICreateTodoInputPort {
 }
 ```
 
+  </TabItem>
+  <TabItem label="Create User">
+
+**CreateUserUseCase** - creates user with validation:
+
 ```typescript
 // use-cases/CreateUserUseCase.ts
-import { ICreateUserInputPort } from '../ports/IInputPort';
-import { IUserRepository } from '../repositories/IUserRepository';
-import { User, CreateUserData } from '../entities/User';
-import { CreateUserRequestDTO, UserResponseDTO } from '../dtos/UserDTOs';
-import { ICreateUserOutputPort as OutputPort  } from '../ports/IOutputPort';
-
 export class CreateUserUseCase implements ICreateUserInputPort {
   constructor(
     private userRepository: IUserRepository,
@@ -554,14 +611,13 @@ export class CreateUserUseCase implements ICreateUserInputPort {
 }
 ```
 
+  </TabItem>
+  <TabItem label="Update/Delete">
+
+**UpdateTodoUseCase** and **DeleteTodoUseCase** - modify todos through aggregate:
+
 ```typescript
 // use-cases/DeleteTodoUseCase.ts
-import { IDeleteTodoInputPort } from '../ports/ITodoInputPort';
-import { IUserRepository } from '../repositories/IUserRepository';
-import { ITodoRepository } from '../repositories/ITodoRepository';
-import { DeleteTodoRequestDTO } from '../dtos/TodoDTOs';
-import { IDeleteTodoOutputPort } from '../ports/ITodoOutputPort';
-
 export class DeleteTodoUseCase implements IDeleteTodoInputPort {
   constructor(
     private userRepository: IUserRepository,
@@ -607,88 +663,19 @@ export class DeleteTodoUseCase implements IDeleteTodoInputPort {
 }
 ```
 
-```typescript
-// use-cases/DeleteUserUseCase.ts
-import { IDeleteUserInputPort } from '../ports/IInputPort';
-import { IUserRepository } from '../repositories/IUserRepository';
-import { DeleteUserRequestDTO } from '../dtos/UserDTOs';
-import { IDeleteUserOutputPort } from '../ports/IOutputPort';
+**Key Pattern:**
+• Load aggregate from repository  
+• Execute business logic through aggregate  
+• Save aggregate back  
+• Present result via output port
 
-export class DeleteUserUseCase implements IDeleteUserInputPort {
-  constructor(
-    private userRepository: IUserRepository,
-    private outputPort: IDeleteUserOutputPort
-  ) {}
+  </TabItem>
+  <TabItem label="Query Use Cases">
 
-  async execute(request: DeleteUserRequestDTO): Promise<void> {
-    try {
-      const user = await this.userRepository.findById(request.id);
-      
-      if (!user) {
-        this.outputPort.presentNotFound();
-        return;
-      }
-
-      await this.userRepository.delete(request.id);
-      this.outputPort.presentSuccess();
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.outputPort.presentError(errorMessage);
-    }
-  }
-}
-```
-
-```typescript
-// use-cases/GetTodoUseCase.ts
-import { IGetTodoInputPort } from '../ports/ITodoInputPort';
-import { IUserRepository } from '../repositories/IUserRepository';
-import { ITodoRepository } from '../repositories/ITodoRepository';
-import { GetTodoRequestDTO, TodoResponseDTO } from '../dtos/TodoDTOs';
-import { IGetTodoOutputPort } from '../ports/ITodoOutputPort';
-
-export class GetTodoUseCase implements IGetTodoInputPort {
-  constructor(
-    private userRepository: IUserRepository,
-    private todoRepository: ITodoRepository,
-    private outputPort: IGetTodoOutputPort
-  ) {}
-
-  async execute(request: GetTodoRequestDTO): Promise<void> {
-    try {
-      // Directly fetch the todo by ID
-      const foundTodo = await this.todoRepository.findById(request.id);
-      
-      if (foundTodo) {
-        // Convert entity to DTO for presentation
-        const todoDTO: TodoResponseDTO = {
-          id: foundTodo.id,
-          title: foundTodo.title,
-          description: foundTodo.description,
-          completed: foundTodo.completed,
-          userId: foundTodo.userId,
-          createdAt: foundTodo.createdAt.toISOString(),
-          updatedAt: foundTodo.updatedAt.toISOString()
-        };
-        this.outputPort.presentTodo(todoDTO);
-      } else {
-        this.outputPort.presentNotFound();
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.outputPort.presentError(errorMessage);
-    }
-  }
-}
-```
+**GetTodoUseCase**, **GetUserUseCase**, etc. - query operations:
 
 ```typescript
 // use-cases/GetTodosByUserUseCase.ts
-import { IGetTodosByUserInputPort } from '../ports/ITodoInputPort';
-import { IUserRepository } from '../repositories/IUserRepository';
-import { GetTodosByUserRequestDTO, TodoResponseDTO } from '../dtos/TodoDTOs';
-import { IGetTodosByUserOutputPort } from '../ports/ITodoOutputPort';
-
 export class GetTodosByUserUseCase implements IGetTodosByUserInputPort {
   constructor(
     private userRepository: IUserRepository,
@@ -704,6 +691,7 @@ export class GetTodosByUserUseCase implements IGetTodosByUserInputPort {
         return;
       }
       
+      // Get todos from user aggregate
       const todos = user.todos;
       
       // Convert entities to DTOs for presentation
@@ -726,122 +714,28 @@ export class GetTodosByUserUseCase implements IGetTodosByUserInputPort {
 }
 ```
 
-```typescript
-// use-cases/GetUserUseCase.ts
-import { IGetUserInputPort } from '../ports/IInputPort';
-import { IUserRepository } from '../repositories/IUserRepository';
-import { User } from '../entities/User';
-import { GetUserRequestDTO, UserResponseDTO } from '../dtos/UserDTOs';
-import { IGetUserOutputPort } from '../ports/IOutputPort';
+**Key Pattern:**
+• Query from repository  
+• Convert entity to DTO  
+• Present via output port  
+• No business logic changes
 
-export class GetUserUseCase implements IGetUserInputPort {
-  constructor(
-    private userRepository: IUserRepository,
-    private outputPort: IGetUserOutputPort
-  ) {}
+  </TabItem>
+</Tabs>
 
-  async execute(request: GetUserRequestDTO): Promise<void> {
-    try {
-      const user = await this.userRepository.findById(request.id);
-      
-      if (user) {
-        // Convert entity to DTO for presentation
-        const userDTO: UserResponseDTO = {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          createdAt: user.createdAt.toISOString()
-        };
-        this.outputPort.presentUser(userDTO);
-      } else {
-        this.outputPort.presentNotFound();
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.outputPort.presentError(errorMessage);
-    }
-  }
-}
-```
+## Ports (Boundary Interfaces)
 
-```typescript
-// use-cases/UpdateTodoUseCase.ts
-import { IUpdateTodoInputPort } from '../ports/ITodoInputPort';
-import { IUserRepository } from '../repositories/IUserRepository';
-import { ITodoRepository } from '../repositories/ITodoRepository';
-import { UpdateTodoRequestDTO, TodoResponseDTO } from '../dtos/TodoDTOs';
-import { IUpdateTodoOutputPort } from '../ports/ITodoOutputPort';
+:::note[🔌 Ports Pattern]
+Input ports define use case boundaries. Output ports define presentation boundaries. This inverts dependencies toward the domain!
+:::
 
-export class UpdateTodoUseCase implements IUpdateTodoInputPort {
-  constructor(
-    private userRepository: IUserRepository,
-    private todoRepository: ITodoRepository,
-    private outputPort: IUpdateTodoOutputPort
-  ) {}
+<Tabs>
+  <TabItem label="Input Ports">
 
-  async execute(request: UpdateTodoRequestDTO): Promise<void> {
-    try {
-      // First, find the todo to get its owner's userId
-      const existingTodo = await this.todoRepository.findById(request.id);
-      
-      if (!existingTodo) {
-        this.outputPort.presentNotFound();
-        return;
-      }
-      
-      // Now fetch only the specific user who owns this todo
-      const ownerUser = await this.userRepository.findById(existingTodo.userId);
-      
-      if (!ownerUser) {
-        this.outputPort.presentNotFound();
-        return;
-      }
-
-      // Validate input if title is being updated
-      if (request.title !== undefined && !request.title.trim()) {
-        this.outputPort.presentError('Todo title cannot be empty');
-        return;
-      }
-
-      // Prepare update data
-      const updateData = {
-        ...(request.title !== undefined && { title: request.title.trim() }),
-        ...(request.description !== undefined && { description: request.description.trim() }),
-        ...(request.completed !== undefined && { completed: request.completed })
-      };
-
-      // Update todo through the user aggregate
-      const updatedTodo = ownerUser.updateTodo(request.id, updateData);
-      
-      // Save the user aggregate
-      await this.userRepository.save(ownerUser);
-      
-      // Convert entity to DTO for presentation
-      const todoDTO: TodoResponseDTO = {
-        id: updatedTodo.id,
-        title: updatedTodo.title,
-        description: updatedTodo.description,
-        completed: updatedTodo.completed,
-        userId: updatedTodo.userId,
-        createdAt: updatedTodo.createdAt.toISOString(),
-        updatedAt: updatedTodo.updatedAt.toISOString()
-      };
-      
-      this.outputPort.presentSuccess(todoDTO);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.outputPort.presentError(errorMessage);
-    }
-  }
-}
-```
-
-## Ports
+**Input Ports** - use case boundaries:
 
 ```typescript
 // ports/IInputPort.ts
-import { CreateUserRequestDTO, UserResponseDTO, GetUserRequestDTO, DeleteUserRequestDTO } from '../dtos/UserDTOs';
-
 export interface ICreateUserInputPort {
   execute(userData: CreateUserRequestDTO): Promise<void>;
 }
@@ -856,31 +750,7 @@ export interface IDeleteUserInputPort {
 ```
 
 ```typescript
-// ports/IOutputPort.ts
-import { UserResponseDTO } from '../dtos/UserDTOs';
-
-export interface ICreateUserOutputPort {
-  presentSuccess(user: UserResponseDTO): void;
-  presentError(error: string): void;
-}
-
-export interface IGetUserOutputPort {
-  presentUser(user: UserResponseDTO): void;
-  presentNotFound(): void;
-  presentError(error: string): void;
-}
-
-export interface IDeleteUserOutputPort {
-  presentSuccess(): void;
-  presentNotFound(): void;
-  presentError(error: string): void;
-}
-```
-
-```typescript
 // ports/ITodoInputPort.ts
-import { CreateTodoRequestDTO, UpdateTodoRequestDTO, GetTodoRequestDTO, GetTodosByUserRequestDTO, DeleteTodoRequestDTO } from '../dtos/TodoDTOs';
-
 export interface ICreateTodoInputPort {
   execute(todoData: CreateTodoRequestDTO): Promise<void>;
 }
@@ -900,12 +770,39 @@ export interface IUpdateTodoInputPort {
 export interface IDeleteTodoInputPort {
   execute(request: DeleteTodoRequestDTO): Promise<void>;
 }
+
+// ... and more input ports for each use case
+```
+
+One interface per use case - keeps boundaries clean!
+
+  </TabItem>
+  <TabItem label="Output Ports">
+
+**Output Ports** - presentation boundaries:
+
+```typescript
+// ports/IOutputPort.ts
+export interface ICreateUserOutputPort {
+  presentSuccess(user: UserResponseDTO): void;
+  presentError(error: string): void;
+}
+
+export interface IGetUserOutputPort {
+  presentUser(user: UserResponseDTO): void;
+  presentNotFound(): void;
+  presentError(error: string): void;
+}
+
+export interface IDeleteUserOutputPort {
+  presentSuccess(): void;
+  presentNotFound(): void;
+  presentError(error: string): void;
+}
 ```
 
 ```typescript
 // ports/ITodoOutputPort.ts
-import { TodoResponseDTO } from '../dtos/TodoDTOs';
-
 export interface ICreateTodoOutputPort {
   presentSuccess(todo: TodoResponseDTO): void;
   presentError(error: string): void;
@@ -917,34 +814,37 @@ export interface IGetTodoOutputPort {
   presentError(error: string): void;
 }
 
-export interface IGetTodosByUserOutputPort {
-  presentTodos(todos: TodoResponseDTO[]): void;
-  presentError(error: string): void;
-}
-
-export interface IUpdateTodoOutputPort {
-  presentSuccess(todo: TodoResponseDTO): void;
-  presentNotFound(): void;
-  presentError(error: string): void;
-}
-
-export interface IDeleteTodoOutputPort {
-  presentSuccess(): void;
-  presentNotFound(): void;
-  presentError(error: string): void;
-}
+// ... and more output ports
 ```
 
-## DTOs
+Each output port defines how results are presented!
+
+  </TabItem>
+</Tabs>
+
+## DTOs (Data Transfer Objects)
+
+<Tabs>
+  <TabItem label="Todo DTOs">
+
+**Todo DTOs** - decoupled from entities:
 
 ```typescript
-// dtos/TodoDTOs.ts
-// DTOs for Todo clean architecture - no entity dependencies
-
+// dtos/TodoDTOs.ts - No entity dependencies!
 export interface CreateTodoRequestDTO {
   title: string;
   description: string;
   userId: string;
+}
+
+export interface TodoResponseDTO {
+  id: string;
+  title: string;
+  description: string;
+  completed: boolean;
+  userId: string;
+  createdAt: string; // ISO string, not Date
+  updatedAt: string;
 }
 
 export interface UpdateTodoRequestDTO {
@@ -954,33 +854,18 @@ export interface UpdateTodoRequestDTO {
   completed?: boolean;
 }
 
-export interface TodoResponseDTO {
-  id: string;
-  title: string;
-  description: string;
-  completed: boolean;
-  userId: string;
-  createdAt: string; // ISO string instead of Date object
-  updatedAt: string; // ISO string instead of Date object
-}
-
-export interface GetTodoRequestDTO {
-  id: string;
-}
-
-export interface GetTodosByUserRequestDTO {
-  userId: string;
-}
-
-export interface DeleteTodoRequestDTO {
-  id: string;
-}
+// ... and more request/response DTOs
 ```
+
+**Key:** DTOs use primitives and serializable types only!
+
+  </TabItem>
+  <TabItem label="User DTOs">
+
+**User DTOs** - simple data contracts:
 
 ```typescript
 // dtos/UserDTOs.ts
-// DTOs for clean architecture - no entity dependencies
-
 export interface CreateUserRequestDTO {
   email: string;
   name: string;
@@ -990,7 +875,7 @@ export interface UserResponseDTO {
   id: string;
   email: string;
   name: string;
-  createdAt: string; // ISO string instead of Date object
+  createdAt: string; // ISO string, not Date
 }
 
 export interface GetUserRequestDTO {
@@ -1002,14 +887,28 @@ export interface DeleteUserRequestDTO {
 }
 ```
 
-## Presenters
+**Benefits:**
+• No entity coupling  
+• Easy serialization  
+• Clear API contracts  
+• Version-friendly
+
+  </TabItem>
+</Tabs>
+
+## Presenters (Output Adapters)
+
+:::note[📊 Presenter Pattern]
+Presenters implement output ports and transform DTOs into ViewModels. They're marked as `@scope transient` to handle per-request state!
+:::
+
+<Tabs>
+  <TabItem label="Create Presenter">
+
+**CreateTodoPresenter** - transforms results to view models:
 
 ```typescript
 // presenters/CreateTodoPresenter.ts
-import { TodoResponseDTO } from '../dtos/TodoDTOs';
-import { ICreateTodoOutputPort } from '../ports/ITodoOutputPort';
-import { CreateTodoViewModel } from '../view-models/TodoViewModels';
-
 /**
  * @scope transient
  */
@@ -1088,637 +987,59 @@ export class CreateTodoPresenter implements ICreateTodoOutputPort {
 }
 ```
 
-```typescript
-// presenters/CreateUserPresenter.ts
-import { UserResponseDTO } from '../dtos/UserDTOs';
-import { ICreateUserOutputPort } from '../ports/IOutputPort';
-import { CreateUserViewModel } from '../view-models/UserViewModels';
+**Key Features:**
+• Transient scope (per-request state)  
+• Transforms DTO → ViewModel  
+• Implements output port  
+• Manages loading/success/error states
 
+  </TabItem>
+  <TabItem label="Presenter Pattern">
+
+**All presenters follow the same pattern:**
+
+```typescript
 /**
- * @scope transient
+ * @scope transient  // ✅ Each request gets fresh instance
  */
-export class CreateUserPresenter implements ICreateUserOutputPort {
-  private viewModel: CreateUserViewModel = {
+export class [Operation]Presenter implements I[Operation]OutputPort {
+  private viewModel = {
     isLoading: false,
     isSuccess: false,
     isError: false,
     errorMessage: '',
-    successMessage: '',
-    user: null
+    // ... state fields
   };
 
-  // Getter for ViewModel (for UI consumption)
-  getViewModel(): CreateUserViewModel {
+  getViewModel() {
     return { ...this.viewModel };
   }
 
-  // View-related business logic methods
-  setLoading(isLoading: boolean): void {
-    this.viewModel.isLoading = isLoading;
-    if (isLoading) {
-      this.resetState();
-    }
-  }
-
-  private resetState(): void {
-    this.viewModel.isSuccess = false;
-    this.viewModel.isError = false;
-    this.viewModel.errorMessage = '';
-    this.viewModel.successMessage = '';
-    this.viewModel.user = null;
-  }
-
-  // Output port implementations
-  presentSuccess(user: UserResponseDTO): void {
-    this.viewModel.isLoading = false;
-    this.viewModel.isSuccess = true;
-    this.viewModel.isError = false;
-    this.viewModel.successMessage = `User '${user.name}' created successfully`;
-    this.viewModel.user = {
-      id: user.id,
-      name: user.name,
-      email: user.email
-    };
-    
-    // Console output for demo purposes
-    console.log('User created successfully:', user);
+  // Implement output port methods
+  presentSuccess(data: DTO): void {
+    // Transform DTO → ViewModel
+    // Update state flags
+    // Log for demo/debugging
   }
 
   presentError(error: string): void {
-    this.viewModel.isLoading = false;
-    this.viewModel.isSuccess = false;
-    this.viewModel.isError = true;
-    this.viewModel.errorMessage = error;
-    this.viewModel.user = null;
-    
-    // Console output for demo purposes
-    console.error('Error creating user:', error);
-  }
-
-  // Legacy methods for backward compatibility
-  getResult() {
-    return {
-      success: this.viewModel.isSuccess,
-      user: this.viewModel.user,
-      error: this.viewModel.errorMessage || undefined
-    };
-  }
-
-  clearResult(): void {
-    this.resetState();
+    // Update error state
+    // Clear data
+    // Log error
   }
 }
 ```
 
-```typescript
-// presenters/DeleteTodoPresenter.ts
-import { IDeleteTodoOutputPort } from '../ports/ITodoOutputPort';
-import { DeleteTodoViewModel } from '../view-models/TodoViewModels';
+**All presenters** (CreateUser, CreateTodo, GetUser, GetTodo, UpdateTodo, DeleteTodo, GetTodosByUser) **follow this exact pattern!**
 
-/**
- * @scope transient
- */
-export class DeleteTodoPresenter implements IDeleteTodoOutputPort {
-  private viewModel: DeleteTodoViewModel = {
-    isLoading: false,
-    isSuccess: false,
-    isError: false,
-    isNotFound: false,
-    errorMessage: '',
-    successMessage: ''
-  };
-
-  // Getter for ViewModel (for UI consumption)
-  getViewModel(): DeleteTodoViewModel {
-    return { ...this.viewModel };
-  }
-
-  // View-related business logic methods
-  setLoading(isLoading: boolean): void {
-    this.viewModel.isLoading = isLoading;
-    if (isLoading) {
-      this.resetState();
-    }
-  }
-
-  private resetState(): void {
-    this.viewModel.isSuccess = false;
-    this.viewModel.isError = false;
-    this.viewModel.isNotFound = false;
-    this.viewModel.errorMessage = '';
-    this.viewModel.successMessage = '';
-  }
-
-  // Output port implementations
-  presentSuccess(): void {
-    this.viewModel.isLoading = false;
-    this.viewModel.isSuccess = true;
-    this.viewModel.isError = false;
-    this.viewModel.isNotFound = false;
-    this.viewModel.successMessage = 'Todo deleted successfully';
-    
-    // Console output for demo purposes
-    console.log('Todo deleted successfully');
-  }
-
-  presentNotFound(): void {
-    this.viewModel.isLoading = false;
-    this.viewModel.isSuccess = false;
-    this.viewModel.isError = false;
-    this.viewModel.isNotFound = true;
-    
-    // Console output for demo purposes
-    console.log('Todo not found for deletion');
-  }
-
-  presentError(error: string): void {
-    this.viewModel.isLoading = false;
-    this.viewModel.isSuccess = false;
-    this.viewModel.isError = true;
-    this.viewModel.isNotFound = false;
-    this.viewModel.errorMessage = error;
-    
-    // Console output for demo purposes
-    console.error('Error deleting todo:', error);
-  }
-
-  // Legacy methods for backward compatibility
-  getResult() {
-    return {
-      success: this.viewModel.isSuccess,
-      notFound: this.viewModel.isNotFound || undefined,
-      error: this.viewModel.errorMessage || undefined
-    };
-  }
-
-  clearResult(): void {
-    this.resetState();
-  }
-}
-```
-
-```typescript
-// presenters/DeleteUserPresenter.ts
-import { IDeleteUserOutputPort } from '../ports/IOutputPort';
-import { DeleteUserViewModel } from '../view-models/UserViewModels';
-
-/**
- * @scope transient
- */
-export class DeleteUserPresenter implements IDeleteUserOutputPort {
-  private viewModel: DeleteUserViewModel = {
-    isLoading: false,
-    isSuccess: false,
-    isError: false,
-    isNotFound: false,
-    errorMessage: '',
-    successMessage: ''
-  };
-
-  // Getter for ViewModel (for UI consumption)
-  getViewModel(): DeleteUserViewModel {
-    return { ...this.viewModel };
-  }
-
-  // View-related business logic methods
-  setLoading(isLoading: boolean): void {
-    this.viewModel.isLoading = isLoading;
-    if (isLoading) {
-      this.resetState();
-    }
-  }
-
-  private resetState(): void {
-    this.viewModel.isSuccess = false;
-    this.viewModel.isError = false;
-    this.viewModel.isNotFound = false;
-    this.viewModel.errorMessage = '';
-    this.viewModel.successMessage = '';
-  }
-
-  // Output port implementations
-  presentSuccess(): void {
-    this.viewModel.isLoading = false;
-    this.viewModel.isSuccess = true;
-    this.viewModel.isError = false;
-    this.viewModel.isNotFound = false;
-    this.viewModel.successMessage = 'User deleted successfully';
-    
-    // Console output for demo purposes
-    console.log('User deleted successfully');
-  }
-
-  presentNotFound(): void {
-    this.viewModel.isLoading = false;
-    this.viewModel.isSuccess = false;
-    this.viewModel.isError = false;
-    this.viewModel.isNotFound = true;
-    this.viewModel.errorMessage = 'User not found for deletion';
-    
-    // Console output for demo purposes
-    console.log('User not found for deletion');
-  }
-
-  presentError(error: string): void {
-    this.viewModel.isLoading = false;
-    this.viewModel.isSuccess = false;
-    this.viewModel.isError = true;
-    this.viewModel.isNotFound = false;
-    this.viewModel.errorMessage = error;
-    
-    // Console output for demo purposes
-    console.error('Error deleting user:', error);
-  }
-
-  // Legacy methods for backward compatibility
-  getResult() {
-    return {
-      success: this.viewModel.isSuccess,
-      notFound: this.viewModel.isNotFound || undefined,
-      error: this.viewModel.errorMessage || undefined
-    };
-  }
-
-  clearResult(): void {
-    this.resetState();
-  }
-}
-```
-
-```typescript
-// presenters/GetTodoPresenter.ts
-import { TodoResponseDTO } from '../dtos/TodoDTOs';
-import { IGetTodoOutputPort } from '../ports/ITodoOutputPort';
-import { GetTodoViewModel } from '../view-models/TodoViewModels';
-
-/**
- * @scope transient
- */
-export class GetTodoPresenter implements IGetTodoOutputPort {
-  private viewModel: GetTodoViewModel = {
-    isLoading: false,
-    isSuccess: false,
-    isError: false,
-    isNotFound: false,
-    errorMessage: '',
-    todo: null
-  };
-
-  // Getter for ViewModel (for UI consumption)
-  getViewModel(): GetTodoViewModel {
-    return { ...this.viewModel };
-  }
-
-  // View-related business logic methods
-  setLoading(isLoading: boolean): void {
-    this.viewModel.isLoading = isLoading;
-    if (isLoading) {
-      this.resetState();
-    }
-  }
-
-  private resetState(): void {
-    this.viewModel.isSuccess = false;
-    this.viewModel.isError = false;
-    this.viewModel.isNotFound = false;
-    this.viewModel.errorMessage = '';
-    this.viewModel.todo = null;
-  }
-
-  // Output port implementations
-  presentTodo(todo: TodoResponseDTO): void {
-    this.viewModel.isLoading = false;
-    this.viewModel.isSuccess = true;
-    this.viewModel.isError = false;
-    this.viewModel.isNotFound = false;
-    this.viewModel.todo = {
-      id: todo.id,
-      title: todo.title,
-      description: todo.description,
-      completed: todo.completed,
-      userId: todo.userId
-    };
-    
-    // Console output for demo purposes
-    console.log('Todo found:', todo);
-  }
-
-  presentNotFound(): void {
-    this.viewModel.isLoading = false;
-    this.viewModel.isSuccess = false;
-    this.viewModel.isError = false;
-    this.viewModel.isNotFound = true;
-    this.viewModel.todo = null;
-    
-    // Console output for demo purposes
-    console.log('Todo not found');
-  }
-
-  presentError(error: string): void {
-    this.viewModel.isLoading = false;
-    this.viewModel.isSuccess = false;
-    this.viewModel.isError = true;
-    this.viewModel.isNotFound = false;
-    this.viewModel.errorMessage = error;
-    this.viewModel.todo = null;
-    
-    // Console output for demo purposes
-    console.error('Error getting todo:', error);
-  }
-
-  // Legacy methods for backward compatibility
-  getResult() {
-    return {
-      success: this.viewModel.isSuccess,
-      todo: this.viewModel.todo,
-      notFound: this.viewModel.isNotFound || undefined,
-      error: this.viewModel.errorMessage || undefined
-    };
-  }
-
-  clearResult(): void {
-    this.resetState();
-  }
-}
-```
-
-```typescript
-// presenters/GetTodosByUserPresenter.ts
-import { TodoResponseDTO } from '../dtos/TodoDTOs';
-import { IGetTodosByUserOutputPort } from '../ports/ITodoOutputPort';
-import { GetTodosByUserViewModel } from '../view-models/TodoViewModels';
-
-/**
- * @scope transient
- */
-export class GetTodosByUserPresenter implements IGetTodosByUserOutputPort {
-  private viewModel: GetTodosByUserViewModel = {
-    isLoading: false,
-    isSuccess: false,
-    isError: false,
-    errorMessage: '',
-    todos: []
-  };
-
-  // Getter for ViewModel (for UI consumption)
-  getViewModel(): GetTodosByUserViewModel {
-    return { ...this.viewModel };
-  }
-
-  // View-related business logic methods
-  setLoading(isLoading: boolean): void {
-    this.viewModel.isLoading = isLoading;
-    if (isLoading) {
-      this.resetState();
-    }
-  }
-
-  private resetState(): void {
-    this.viewModel.isSuccess = false;
-    this.viewModel.isError = false;
-    this.viewModel.errorMessage = '';
-    this.viewModel.todos = [];
-  }
-
-  // Output port implementations
-  presentTodos(todos: TodoResponseDTO[]): void {
-    this.viewModel.isLoading = false;
-    this.viewModel.isSuccess = true;
-    this.viewModel.isError = false;
-    this.viewModel.todos = todos.map(todo => ({
-      id: todo.id,
-      title: todo.title,
-      description: todo.description,
-      completed: todo.completed,
-      userId: todo.userId
-    }));
-    
-    // Console output for demo purposes
-    console.log(`Found ${todos.length} todos for user:`, todos);
-  }
-
-  presentError(error: string): void {
-    this.viewModel.isLoading = false;
-    this.viewModel.isSuccess = false;
-    this.viewModel.isError = true;
-    this.viewModel.errorMessage = error;
-    this.viewModel.todos = [];
-    
-    // Console output for demo purposes
-    console.error('Error getting todos by user:', error);
-  }
-
-  // Legacy methods for backward compatibility
-  getResult() {
-    return {
-      success: this.viewModel.isSuccess,
-      todos: this.viewModel.todos,
-      error: this.viewModel.errorMessage || undefined
-    };
-  }
-
-  clearResult(): void {
-    this.resetState();
-  }
-}
-```
-
-```typescript
-// presenters/GetUserPresenter.ts
-import { UserResponseDTO } from '../dtos/UserDTOs';
-import { IGetUserOutputPort } from '../ports/IOutputPort';
-import { GetUserViewModel } from '../view-models/UserViewModels';
-
-/**
- * @scope transient
- */
-export class GetUserPresenter implements IGetUserOutputPort {
-  private viewModel: GetUserViewModel = {
-    isLoading: false,
-    isSuccess: false,
-    isError: false,
-    isNotFound: false,
-    errorMessage: '',
-    user: null
-  };
-
-  // Getter for ViewModel (for UI consumption)
-  getViewModel(): GetUserViewModel {
-    return { ...this.viewModel };
-  }
-
-  // View-related business logic methods
-  setLoading(isLoading: boolean): void {
-    this.viewModel.isLoading = isLoading;
-    if (isLoading) {
-      this.resetState();
-    }
-  }
-
-  private resetState(): void {
-    this.viewModel.isSuccess = false;
-    this.viewModel.isError = false;
-    this.viewModel.isNotFound = false;
-    this.viewModel.errorMessage = '';
-    this.viewModel.user = null;
-  }
-
-  // Output port implementations
-  presentUser(user: UserResponseDTO): void {
-    this.viewModel.isLoading = false;
-    this.viewModel.isSuccess = true;
-    this.viewModel.isError = false;
-    this.viewModel.isNotFound = false;
-    this.viewModel.user = {
-      id: user.id,
-      name: user.name,
-      email: user.email
-    };
-    
-    // Console output for demo purposes
-    console.log('User found:', user);
-  }
-
-  presentNotFound(): void {
-    this.viewModel.isLoading = false;
-    this.viewModel.isSuccess = false;
-    this.viewModel.isError = false;
-    this.viewModel.isNotFound = true;
-    this.viewModel.user = null;
-    
-    // Console output for demo purposes
-    console.log('User not found');
-  }
-
-  presentError(error: string): void {
-    this.viewModel.isLoading = false;
-    this.viewModel.isSuccess = false;
-    this.viewModel.isError = true;
-    this.viewModel.isNotFound = false;
-    this.viewModel.errorMessage = error;
-    this.viewModel.user = null;
-    
-    // Console output for demo purposes
-    console.error('Error getting user:', error);
-  }
-
-  // Legacy methods for backward compatibility
-  getResult() {
-    return {
-      success: this.viewModel.isSuccess,
-      user: this.viewModel.user,
-      notFound: this.viewModel.isNotFound || undefined,
-      error: this.viewModel.errorMessage || undefined
-    };
-  }
-
-  clearResult(): void {
-    this.resetState();
-  }
-}
-```
-
-```typescript
-// presenters/UpdateTodoPresenter.ts
-import { TodoResponseDTO } from '../dtos/TodoDTOs';
-import { IUpdateTodoOutputPort } from '../ports/ITodoOutputPort';
-import { UpdateTodoViewModel } from '../view-models/TodoViewModels';
-
-/**
- * @scope transient
- */
-export class UpdateTodoPresenter implements IUpdateTodoOutputPort {
-  private viewModel: UpdateTodoViewModel = {
-    isLoading: false,
-    isSuccess: false,
-    isError: false,
-    isNotFound: false,
-    errorMessage: '',
-    successMessage: '',
-    todo: null
-  };
-
-  // Getter for ViewModel (for UI consumption)
-  getViewModel(): UpdateTodoViewModel {
-    return { ...this.viewModel };
-  }
-
-  // View-related business logic methods
-  setLoading(isLoading: boolean): void {
-    this.viewModel.isLoading = isLoading;
-    if (isLoading) {
-      this.resetState();
-    }
-  }
-
-  private resetState(): void {
-    this.viewModel.isSuccess = false;
-    this.viewModel.isError = false;
-    this.viewModel.isNotFound = false;
-    this.viewModel.errorMessage = '';
-    this.viewModel.successMessage = '';
-    this.viewModel.todo = null;
-  }
-
-  // Output port implementations
-  presentSuccess(todo: TodoResponseDTO): void {
-    this.viewModel.isLoading = false;
-    this.viewModel.isSuccess = true;
-    this.viewModel.isError = false;
-    this.viewModel.isNotFound = false;
-    this.viewModel.successMessage = `Todo '${todo.title}' updated successfully`;
-    this.viewModel.todo = {
-      id: todo.id,
-      title: todo.title,
-      description: todo.description,
-      completed: todo.completed,
-      userId: todo.userId
-    };
-    
-    // Console output for demo purposes
-    console.log('Todo updated successfully:', todo);
-  }
-
-  presentNotFound(): void {
-    this.viewModel.isLoading = false;
-    this.viewModel.isSuccess = false;
-    this.viewModel.isError = false;
-    this.viewModel.isNotFound = true;
-    this.viewModel.todo = null;
-    
-    // Console output for demo purposes
-    console.log('Todo not found for update');
-  }
-
-  presentError(error: string): void {
-    this.viewModel.isLoading = false;
-    this.viewModel.isSuccess = false;
-    this.viewModel.isError = true;
-    this.viewModel.isNotFound = false;
-    this.viewModel.errorMessage = error;
-    this.viewModel.todo = null;
-    
-    // Console output for demo purposes
-    console.error('Error updating todo:', error);
-  }
-
-  // Legacy methods for backward compatibility
-  getResult() {
-    return {
-      success: this.viewModel.isSuccess,
-      todo: this.viewModel.todo,
-      notFound: this.viewModel.isNotFound || undefined,
-      error: this.viewModel.errorMessage || undefined
-    };
-  }
-
-  clearResult(): void {
-    this.resetState();
-  }
-}
-```
+  </TabItem>
+</Tabs>
 
 ## Configuration
+
+:::note[⚙️ Module Configuration]
+Organize clean architecture by modules - group use cases, repositories, and presenters together!
+:::
 
 ```json
 {
@@ -1740,64 +1061,167 @@ export class UpdateTodoPresenter implements IUpdateTodoOutputPort {
 }
 ```
 
-## Usage with Container
+## Usage Example
+
+:::tip[🎯 Type-Safe Clean Architecture]
+Resolve use cases and presenters with full IntelliSense. The aggregate pattern ensures business rules are enforced!
+:::
+
+<Tabs>
+  <TabItem label="Basic Flow">
+
+**Standard clean architecture flow:**
 
 ```typescript
 import { container } from './container.gen';
 
-// Resolve services with full type safety
+// 1. Resolve use case and presenter
 const createUserUseCase = container.resolve('ICreateUserInputPort');
 const createUserPresenter = container.resolve('ICreateUserOutputPort');
 
+// 2. Execute use case (writes to presenter)
 await createUserUseCase.execute({
   name: 'John Doe',
   email: 'john@example.com'
 });
 
+// 3. Get view model from presenter
+const result = createUserPresenter.getViewModel();
+
+if (result.isSuccess) {
+  console.log('User created:', result.user);
+} else if (result.isError) {
+  console.error('Error:', result.errorMessage);
+}
+```
+
+  </TabItem>
+  <TabItem label="Complete Workflow">
+
+**Create user and add todos:**
+
+```typescript
+import { container } from './container.gen';
+
+// Create user
+const createUserUseCase = container.resolve('ICreateUserInputPort');
+const createUserPresenter = container.resolve('ICreateUserOutputPort');
+
+await createUserUseCase.execute({
+  name: 'Alice',
+  email: 'alice@example.com'
+});
+
 const userResult = createUserPresenter.getViewModel();
-if (userResult?.isSuccess) {
-  const createTodoUseCase = inject('todoModule.ICreateTodoInputPort');
-  const createTodoPresenter = inject('todoModule.ICreateTodoOutputPort');
+
+if (userResult.isSuccess) {
+  // Create todo for user (demonstrates aggregate pattern)
+  const createTodoUseCase = container.resolve('ICreateTodoInputPort');
+  const createTodoPresenter = container.resolve('ICreateTodoOutputPort');
   
   await createTodoUseCase.execute({
     title: 'Learn Clean Architecture',
-    description: 'Study the principles and patterns',
-    userId: userResult.user.id
+    description: 'Study the principles',
+    userId: userResult.user!.id
   });
   
   const todoResult = createTodoPresenter.getViewModel();
+  
+  if (todoResult.isSuccess) {
+    console.log('✅ Todo created:', todoResult.todo);
+  }
 }
 ```
 
-## onInit Method
+  </TabItem>
+  <TabItem label="Aggregate Benefits">
 
-The generated container includes an `onInit()` function that's automatically called when `inject()` is first used. You can customize it for post-construction logic:
+**Why use aggregates?**
 
 ```typescript
-// This function is exported from ./container.gen.ts
-// You can modify it there for custom initialization logic
-import { container } from './container.gen';
+// ❌ Without aggregates - business rules in use case
+// await todoRepository.save(new Todo(...));  
+// // No validation that user exists!
+// // No check for duplicate titles!
+// // No enforcement of max 100 todos!
 
-export function onInit(): void {
-  // Custom initialization logic added by user
-  console.log('🚀 IoC Container initialized!');
-
-  // Example: Accessing a service from the container
-  const userRepository = container.userModule.IUserRepository;
-  console.log('User repository accessed during initialization:', userRepository);
-
-  // Initialize global state or set up event listeners
-  console.log('✅ Container initialization complete!');
-}
+// ✅ With aggregates - business rules in entity
+const user = await userRepository.findById(userId);
+const todo = user.addTodo(todoData);  
+// ✅ Validates user exists
+// ✅ Checks for duplicate titles
+// ✅ Enforces max 100 todos limit
+// ✅ All business rules in one place!
+await userRepository.save(user);
 ```
 
-## Key Features Demonstrated
+**Benefits:**
+• Business rules stay in entities  
+• Use cases remain thin orchestrators  
+• Consistency enforced by aggregates  
+• Easy to test business logic
 
-1. **Type-Safe inject() Method** - Type-safe dependency resolution using the inject() method across modules
-2. **Post-Construction Initialization** - onInit method support for complex Clean Architecture setup
-3. **Clean Architecture layers** - Entities, Use Cases, Ports, Adapters, and Presenters
-4. **Port and Adapter pattern** - Input and Output ports with concrete adapters
-5. **DTO pattern** - Request and Response DTOs for data transfer
-6. **Presenter pattern** - Separation of presentation logic from business logic
-7. **Cross-module dependencies** - Use cases spanning multiple modules
-8. **Interface-based design** - All dependencies through interfaces for testability
+  </TabItem>
+</Tabs>
+
+## Key Takeaways
+
+<CardGrid>
+  <Card title="🏛️ Clean Layers" icon="seti:config">
+    **Entities → Use Cases → Ports → Adapters**. Dependencies point inward toward the domain!
+  </Card>
+  <Card title="🎯 Aggregate Roots" icon="star">
+    User aggregate manages Todo entities. Business rules enforced at the entity level.
+  </Card>
+  <Card title="🔌 Ports & Adapters" icon="puzzle">
+    Input ports (use cases) and output ports (presenters) define clear boundaries.
+  </Card>
+  <Card title="📦 DTOs Everywhere" icon="document">
+    DTOs decouple layers. No entity dependencies in ports or presenters.
+  </Card>
+  <Card title="📊 Presenter Pattern" icon="approve-check">
+    Presenters transform DTOs → ViewModels with loading/success/error states.
+  </Card>
+  <Card title="🛡️ Type Safety" icon="seti:typescript">
+    Full IntelliSense for all tokens. Compile-time checking across all layers.
+  </Card>
+  <Card title="⚡ Smart Scopes" icon="rocket">
+    Singletons for use cases/repositories (stateless). Transients for presenters (per-request state).
+  </Card>
+  <Card title="🔄 IoC Arise Magic" icon="magic">
+    Zero decorators. Zero manual wiring. Just run the CLI and get production-ready clean architecture!
+  </Card>
+</CardGrid>
+
+:::tip[🚀 Production Ready]
+This example demonstrates **enterprise-grade Clean Architecture** with:
+- **Testability** - Mock any layer independently
+- **Maintainability** - Business logic isolated in entities
+- **Scalability** - Add new use cases without touching existing code
+- **Flexibility** - Swap implementations without changing use cases
+
+Perfect for large teams and complex domains!
+:::
+
+## Generated Container Structure
+
+**What gets generated:**
+
+```
+src/
+├── container.gen.ts          # Main container
+├── container.gen.d.ts        # Type declarations
+└── modules/
+    ├── userModule.module.ts  # User use cases, repos, presenters
+    └── todoModule.module.ts  # Todo use cases, repos, presenters
+```
+
+**All wired automatically** with proper:
+• Dependency injection  
+• Lifecycle management  
+• Cross-module dependencies  
+• Type-safe resolution
+
+---
+
+**Want to try it?** Check out the `/examples/clean-architecture` directory in the IoC Arise repository!

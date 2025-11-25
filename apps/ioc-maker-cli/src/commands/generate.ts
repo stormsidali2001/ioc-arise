@@ -23,20 +23,20 @@ export const generateCommand = new Command('generate')
   .action(async (options) => {
     try {
 
-      await initializeOneLogger({
+await initializeOneLogger({
         name: "ioc-maker",
         description: "ioc-maker",
         tracer: {
           batchSize: 1,
-        },
+  },
         isDev: process.env.NODE_ENV === "development",
 
 
-      })
+})
       // Initialize config manager with the source directory
       const initialSourceDir = resolve(options.source);
       const configManager = new ConfigManager(initialSourceDir);
-
+      
       // Validate config if present
       if (configManager.hasConfigFile()) {
         const config = configManager.getConfig();
@@ -44,13 +44,13 @@ export const generateCommand = new Command('generate')
           process.exit(1);
         }
       }
-
+      
       // Merge CLI options with config file
       const mergedOptions = configManager.mergeWithCliOptions(options);
-
+      
       const sourceDir = resolve(mergedOptions.source!);
       const outputPath = resolve(sourceDir, mergedOptions.output!);
-
+      
       if (configManager.hasConfigFile() && mergedOptions.verbose) {
         console.log(`📋 Using config file: ${configManager.getConfigPath()}`);
       }
@@ -100,7 +100,7 @@ export const generateCommand = new Command('generate')
       let moduleGroupedClasses: Map<string, ClassInfo[]>;
       if (moduleResolver) {
         moduleGroupedClasses = moduleResolver.groupClassesByModule(classes);
-
+        
         if (mergedOptions.verbose) {
           console.log(`\n📋 Found ${classes.length} classes organized into ${moduleGroupedClasses.size} modules:`);
           for (const [moduleName, moduleClasses] of moduleGroupedClasses) {
@@ -116,7 +116,7 @@ export const generateCommand = new Command('generate')
       } else {
         // Backward compatibility: single default module
         moduleGroupedClasses = new Map([['CoreModule', classes]]);
-
+        
         if (mergedOptions.verbose) {
           console.log(`\n📋 Found ${classes.length} classes:`);
           classes.forEach(cls => {
@@ -136,7 +136,7 @@ export const generateCommand = new Command('generate')
           const className = firstCycle[0] || 'unknown';
           const error = ErrorFactory.circularDependency(className, firstCycle);
           console.error(`❌ ${ErrorUtils.formatForConsole(error)}`);
-
+          
           if (cycles.length > 1) {
             console.error('\n   Additional cycles:');
             cycles.slice(1).forEach((cycle, index) => {
@@ -179,7 +179,7 @@ export const generateCommand = new Command('generate')
       console.log(`✅ Container generated successfully!`);
       console.log(`   File: ${outputPath}`);
       console.log(`   Classes: ${classes.length}`);
-
+      
       if (mergedOptions.verbose) {
         console.log('\n🎉 You can now import and use your container:');
         console.log('   import { container } from "./container.gen";');

@@ -5,10 +5,21 @@ sidebar:
   order: 10
 ---
 
-{/* Hook Section */}
-This example demonstrates a two-module architecture using abstract classes and dependency injection with cross-module dependencies, showcasing how IoC Arise automatically resolves dependencies between User and Product domains.
+import { FileTree, Card, CardGrid, Badge, Tabs, TabItem } from '@astrojs/starlight/components';
 
-import { FileTree } from '@astrojs/starlight/components';
+<div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 1rem 0 2rem 0;">
+  <Badge text="Abstract Classes" variant="tip" />
+  <Badge text="Cross-Module DI" variant="success" />
+  <Badge text="String Tokens" variant="note" />
+</div>
+
+:::tip[🎯 What You'll Learn]
+Master **abstract classes** with IoC Arise in a real-world multi-module architecture:
+- **Abstract Base Classes** - Define contracts without interfaces
+- **String Token Resolution** - Resolve abstract classes by name
+- **Cross-Module Dependencies** - ProductModule depends on UserModule
+- **Implementation Flexibility** - Swap implementations easily
+:::
 
 ## Project Structure
 
@@ -33,9 +44,36 @@ import { FileTree } from '@astrojs/starlight/components';
   - ioc.config.json
 </FileTree>
 
-{/* Body Section with Open Loops */}
+## Architecture Overview
+
+:::note[🏗️ Two-Module System]
+This example showcases a **User Module** and **Product Module** with cross-module dependencies. Products belong to users, so ProductModule needs access to UserModule's repository!
+:::
+
+<CardGrid>
+  <Card title="👥 User Module" icon="user">
+    **User Domain** - User management and authentication:
+    
+    • `AbstractUserRepository` (base class)  
+    • `UserRepository` (concrete implementation)  
+    • `UserUseCase` (business logic)  
+    • `User` entity
+  </Card>
+  
+  <Card title="📦 Product Module" icon="document">
+    **Product Domain** - Product catalog with user ownership:
+    
+    • `AbstractProductRepository` (base class)  
+    • `ProductRepository` (concrete implementation)  
+    • `ProductUseCase` **depends on UserModule!**  
+    • `Product` entity with `userId` reference
+  </Card>
+</CardGrid>
 
 ## Entity Definitions
+
+<Tabs>
+  <TabItem label="User Entity">
 
 ```typescript
 // entities/User.ts
@@ -47,6 +85,9 @@ export interface User {
   updatedAt: Date;
 }
 ```
+
+  </TabItem>
+  <TabItem label="Product Entity">
 
 ```typescript
 // entities/Product.ts
@@ -61,7 +102,21 @@ export interface Product {
 }
 ```
 
+**Note:** `userId` creates a relationship between products and users!
+
+  </TabItem>
+</Tabs>
+
 ## Abstract Base Classes
+
+:::tip[🎨 Abstract Classes as Contracts]
+Abstract classes provide **both interface contracts AND shared implementation**. Perfect for repositories with common logging, validation, or caching logic!
+:::
+
+<Tabs>
+  <TabItem label="User Repository">
+
+**AbstractUserRepository** - Base class for all user data access:
 
 ```typescript
 // abstracts/AbstractUserRepository.ts
@@ -70,16 +125,28 @@ import { User } from '../entities/User';
 export abstract class AbstractUserRepository {
   protected abstract tableName: string;
   
+  // Abstract methods (must be implemented)
   abstract findById(id: string): Promise<User | null>;
   abstract findByEmail(email: string): Promise<User | null>;
   abstract save(user: User): Promise<User>;
   abstract delete(id: string): Promise<boolean>;
   
+  // Shared implementation (inherited by all subclasses)
   protected log(message: string): void {
     console.log(`[${this.tableName}] ${message}`);
   }
 }
 ```
+
+**Benefits:**
+• Defines contract (like an interface)  
+• Provides shared `log()` method  
+• All implementations get logging for free
+
+  </TabItem>
+  <TabItem label="Product Repository">
+
+**AbstractProductRepository** - Base class for product data access:
 
 ```typescript
 // abstracts/AbstractProductRepository.ts
@@ -88,18 +155,28 @@ import { Product } from '../entities/Product';
 export abstract class AbstractProductRepository {
   protected abstract tableName: string;
   
+  // Abstract methods
   abstract findById(id: string): Promise<Product | null>;
   abstract findByUserId(userId: string): Promise<Product[]>;
   abstract save(product: Product): Promise<Product>;
   abstract delete(id: string): Promise<boolean>;
   
+  // Shared implementation
   protected log(message: string): void {
     console.log(`[${this.tableName}] ${message}`);
   }
 }
 ```
 
+**Note:** `findByUserId()` enables querying products by owner!
+
+  </TabItem>
+</Tabs>
+
 ## Concrete Implementations
+
+<Tabs>
+  <TabItem label="UserRepository">
 
 ```typescript
 // implementations/UserRepository.ts
@@ -111,7 +188,7 @@ export class UserRepository extends AbstractUserRepository {
   private users: User[] = [];
   
   async findById(id: string): Promise<User | null> {
-    this.log(`Finding user by ID: ${id}`);
+    this.log(`Finding user by ID: ${id}`); // ✅ Inherited log()
     return this.users.find(user => user.id === id) || null;
   }
   
@@ -143,6 +220,11 @@ export class UserRepository extends AbstractUserRepository {
 }
 ```
 
+**Extends** `AbstractUserRepository` and implements all abstract methods. Gets `log()` for free!
+
+  </TabItem>
+  <TabItem label="ProductRepository">
+
 ```typescript
 // implementations/ProductRepository.ts
 import { AbstractProductRepository } from '../abstracts/AbstractProductRepository';
@@ -153,7 +235,7 @@ export class ProductRepository extends AbstractProductRepository {
   private products: Product[] = [];
   
   async findById(id: string): Promise<Product | null> {
-    this.log(`Finding product by ID: ${id}`);
+    this.log(`Finding product by ID: ${id}`); // ✅ Inherited log()
     return this.products.find(product => product.id === id) || null;
   }
   
@@ -185,27 +267,30 @@ export class ProductRepository extends AbstractProductRepository {
 }
 ```
 
-## Cross-Module Use Cases
+**Extends** `AbstractProductRepository` and adds product-specific query logic.
 
-How does ProductUseCase validate users from another module? Here's where the magic happens:
+  </TabItem>
+</Tabs>
+
+## Use Cases with Cross-Module Dependencies
+
+:::note[🔗 ProductUseCase Depends on UserModule]
+**ProductUseCase** validates that users exist before creating products. This requires **AbstractUserRepository** from a different module!
+:::
 
 ```typescript
 // use-cases/ProductUseCase.ts
-import { AbstractProductRepository } from '../abstracts/AbstractProductRepository';
-import { AbstractUserRepository } from '../abstracts/AbstractUserRepository';
-import { Product } from '../entities/Product';
-import { User } from '../entities/User';
-import { InternalProductNestedUseCase } from './InternalProductNestedUseCase';
-
 export class ProductUseCase {
   constructor(
-    private productRepository: AbstractProductRepository,
-    private userRepository: AbstractUserRepository, // Cross-module dependency!
+    private productRepository: AbstractProductRepository, // Same module
+    private userRepository: AbstractUserRepository,       // Different module!
     private internalNestedUseCase: InternalProductNestedUseCase
   ) {}
 
-  async createProduct(productData: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>): Promise<Product> {
-    // Validate that the user exists before creating the product
+  async createProduct(
+    productData: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>
+  ): Promise<Product> {
+    // ✅ Validate user exists (cross-module validation!)
     const user = await this.userRepository.findById(productData.userId);
     if (!user) {
       throw new Error(`User with ID ${productData.userId} not found`);
@@ -221,20 +306,11 @@ export class ProductUseCase {
     return await this.productRepository.save(product);
   }
 
-  async getProductById(id: string): Promise<Product | null> {
-    return await this.productRepository.findById(id);
-  }
-
-  async getProductsByUserId(userId: string): Promise<Product[]> {
-    return await this.productRepository.findByUserId(userId);
-  }
-
-  async getProductWithUser(productId: string): Promise<{ product: Product; user: User } | null> {
+  async getProductWithUser(productId: string) {
     const product = await this.productRepository.findById(productId);
-    if (!product) {
-      return null;
-    }
+    if (!product) return null;
 
+    // ✅ Fetch user from different module
     const user = await this.userRepository.findById(product.userId);
     if (!user) {
       throw new Error(`User with ID ${product.userId} not found`);
@@ -242,50 +318,40 @@ export class ProductUseCase {
 
     return { product, user };
   }
-
-  async updateProduct(product: Product): Promise<Product> {
-    // Validate that the user exists
-    const user = await this.userRepository.findById(product.userId);
-    if (!user) {
-      throw new Error(`User with ID ${product.userId} not found`);
-    }
-
-    return await this.productRepository.save(product);
-  }
-
-  async deleteProduct(id: string): Promise<boolean> {
-    return await this.productRepository.delete(id);
-  }
+  
+  // ... other methods
 }
 ```
 
+**The Key:** ProductUseCase needs `AbstractUserRepository` which is registered in UserModule, but ProductUseCase is in ProductModule. IoC Arise resolves this automatically!
+
 ## Configuration
+
+:::note[⚙️ Module Configuration]
+Define which files belong to which module using glob patterns:
+:::
 
 ```json
 {
   "sourceDir": ".",
   "outputPath": "container.gen.ts",
-  "interface": "I*.ts",
-  "exclude": [
-    "node_modules",
-    "dist",
-    "**/*.test.ts",
-    "**/*.spec.ts"
-  ],
   "modules": {
-    "UserModule": [
-      "**/**/*User*"
-    ],
-    "ProductModule": [
-      "**/**/*Product*"
-    ]
+    "UserModule": ["**/**/*User*"],      // All files with "User" in name
+    "ProductModule": ["**/**/*Product*"]  // All files with "Product" in name
   }
 }
 ```
 
+This groups files into logical modules that can depend on each other!
+
 ## Generated Container
 
-After running `npx @notjustcoders/ioc-arise generate`:
+:::tip[✨ One Command, Complete Setup]
+Run `npx @notjustcoders/ioc-arise` and get modular DI with abstract class support:
+:::
+
+<Tabs>
+  <TabItem label="Main Container">
 
 ```typescript
 // container.gen.ts
@@ -296,11 +362,15 @@ import { productModule } from './modules/productModule.module';
 
 export const container = new Container<ContainerRegistry>();
 
+// ✅ Modules registered in correct order
 container.registerModule(userModule);
 container.registerModule(productModule);
 ```
 
-### Module Files (Generated)
+Clean aggregation of all modules!
+
+  </TabItem>
+  <TabItem label="User Module">
 
 ```typescript
 // modules/userModule.module.ts
@@ -311,14 +381,19 @@ import { UserRepository } from '../implementations/UserRepository';
 export const userModule = new ContainerModule()
   .register(UserUseCase, { 
     useClass: UserUseCase, 
-    dependencies: ['AbstractUserRepository'], 
+    dependencies: ['AbstractUserRepository'], // String token!
     lifecycle: Lifecycle.Singleton 
   })
   .register('AbstractUserRepository', { 
-    useClass: UserRepository, 
+    useClass: UserRepository, // Concrete implementation
     lifecycle: Lifecycle.Singleton 
   });
 ```
+
+**Key Point:** `'AbstractUserRepository'` is a **string token** that maps to `UserRepository`
+
+  </TabItem>
+  <TabItem label="Product Module">
 
 ```typescript
 // modules/productModule.module.ts
@@ -330,7 +405,12 @@ import { ProductRepository } from '../implementations/ProductRepository';
 export const productModule = new ContainerModule()
   .register(ProductUseCase, { 
     useClass: ProductUseCase, 
-    dependencies: ['AbstractProductRepository', 'AbstractUserRepository', InternalProductNestedUseCase], 
+    // ✅ Cross-module dependency detected!
+    dependencies: [
+      'AbstractProductRepository',  // Same module
+      'AbstractUserRepository',     // Different module!
+      InternalProductNestedUseCase  // Direct class
+    ], 
     lifecycle: Lifecycle.Singleton 
   })
   .register(InternalProductNestedUseCase, { 
@@ -344,54 +424,185 @@ export const productModule = new ContainerModule()
   });
 ```
 
-## Usage
+**Cross-Module Magic:** ProductModule accesses `'AbstractUserRepository'` from UserModule seamlessly!
 
-### Type-Safe Resolution
+  </TabItem>
+</Tabs>
+
+## Usage in Your Application
+
+<Tabs>
+  <TabItem label="Basic Usage">
 
 ```typescript
 import { container } from './container.gen';
 
-// Resolve services with full type safety
+// ✅ Resolve by class constructor
 const userUseCase = container.resolve(UserUseCase);
 const productUseCase = container.resolve(ProductUseCase);
 
 // Create a user
-const newUser = await userUseCase.createUser({
+const user = await userUseCase.createUser({
   name: 'John Doe',
   email: 'john@example.com'
 });
 
-// Create a product for this user (cross-module validation!)
-const newProduct = await productUseCase.createProduct({
+// Create product (validates user exists!)
+const product = await productUseCase.createProduct({
   name: 'Awesome Product',
   description: 'A really great product',
   price: 99.99,
-  userId: newUser.id
+  userId: user.id  // ✅ Cross-module validation
 });
-
-// Get product with user details (cross-module operation)
-const productWithUser = await productUseCase.getProductWithUser(newProduct.id);
-console.log('Product with user:', productWithUser);
 ```
 
-### Abstract Class String Tokens
+  </TabItem>
+  <TabItem label="String Token Resolution">
 
-You can also resolve by abstract class string token:
+**Resolve abstract classes by string token:**
 
 ```typescript
-const userRepo = container.resolve('AbstractUserRepository');
-const productRepo = container.resolve('AbstractProductRepository');
+import { container } from './container.gen';
 
-// Both return the concrete implementations
+// ✅ Resolve by abstract class name (string token)
+const userRepo = container.resolve('AbstractUserRepository');
+//    ^? UserRepository (concrete implementation)
+
+const productRepo = container.resolve('AbstractProductRepository');
+//    ^? ProductRepository (concrete implementation)
+
+// Use repositories directly
+const user = await userRepo.findById('user-123');
+const products = await productRepo.findByUserId(user.id);
 ```
 
-{/* Conclusion Section */}
+**Both return concrete implementations with full type safety!**
 
-## Key Benefits
+  </TabItem>
+  <TabItem label="Complete Workflow">
 
-- **Abstract Class Support**: IoC Arise automatically resolves abstract class dependencies across modules
-- **Modular Architecture**: Clean separation between UserModule and ProductModule
-- **Cross-Module Dependencies**: ProductUseCase safely depends on UserRepository from another module
-- **Type-Safe Injection**: Both direct container access and `inject()` function provide full type safety
-- **Zero Configuration Overhead**: Just organize files and IoC Arise handles the rest
-- **Implementation Flexibility**: Easy to swap repository implementations without changing use cases
+```typescript
+import { container } from './container.gen';
+
+const userUseCase = container.resolve(UserUseCase);
+const productUseCase = container.resolve(ProductUseCase);
+
+// Step 1: Create users
+const alice = await userUseCase.createUser({
+  name: 'Alice Smith',
+  email: 'alice@example.com'
+});
+
+const bob = await userUseCase.createUser({
+  name: 'Bob Johnson',
+  email: 'bob@example.com'
+});
+
+// Step 2: Create products for users
+const product1 = await productUseCase.createProduct({
+  name: 'Laptop',
+  description: 'High-performance laptop',
+  price: 1299.99,
+  userId: alice.id
+});
+
+const product2 = await productUseCase.createProduct({
+  name: 'Mouse',
+  description: 'Wireless mouse',
+  price: 29.99,
+  userId: bob.id
+});
+
+// Step 3: Get product with user details (cross-module!)
+const productWithUser = await productUseCase.getProductWithUser(product1.id);
+console.log('Product:', productWithUser.product.name);
+console.log('Owner:', productWithUser.user.name);
+
+// Step 4: Get all products by user
+const aliceProducts = await productUseCase.getProductsByUserId(alice.id);
+console.log(`Alice has ${aliceProducts.length} products`);
+```
+
+  </TabItem>
+</Tabs>
+
+## Key Takeaways
+
+<CardGrid>
+  <Card title="🎨 Abstract Classes" icon="star">
+    Use abstract classes for **both contracts AND shared implementation**. Perfect for repositories with common logic!
+  </Card>
+  <Card title="🔤 String Tokens" icon="document">
+    Resolve abstract classes by name: `container.resolve('AbstractUserRepository')` - fully type-safe!
+  </Card>
+  <Card title="🔗 Cross-Module DI" icon="puzzle">
+    ProductModule depends on UserModule seamlessly. IoC Arise handles all the wiring automatically.
+  </Card>
+  <Card title="🛡️ Type Safety" icon="seti:typescript">
+    Full IntelliSense for both string tokens and direct class resolution. Compile-time validation!
+  </Card>
+  <Card title="🔄 Easy Swapping" icon="rocket">
+    Change `UserRepository` to `SqlUserRepository` without touching use cases. True dependency inversion!
+  </Card>
+  <Card title="📦 Modular" icon="approve-check">
+    Clean separation between domains. Each module is independently testable and maintainable.
+  </Card>
+</CardGrid>
+
+## Abstract Classes vs Interfaces
+
+<Tabs>
+  <TabItem label="When to Use Abstract Classes">
+
+**Use abstract classes when you need:**
+
+```typescript
+abstract class AbstractRepository<T> {
+  // ✅ Shared implementation
+  protected log(msg: string) {
+    console.log(`[${this.tableName}] ${msg}`);
+  }
+  
+  // ✅ Abstract methods (contract)
+  abstract findById(id: string): Promise<T | null>;
+  
+  // ✅ Protected properties
+  protected abstract tableName: string;
+}
+```
+
+**Benefits:**
+• Share common logic across implementations  
+• Provide default behavior  
+• Enforce property requirements  
+• Use protected members
+
+  </TabItem>
+  <TabItem label="When to Use Interfaces">
+
+**Use interfaces when you only need:**
+
+```typescript
+interface IRepository<T> {
+  // ✅ Just the contract
+  findById(id: string): Promise<T | null>;
+  save(item: T): Promise<T>;
+  delete(id: string): Promise<boolean>;
+}
+```
+
+**Benefits:**
+• Lighter weight (no implementation)  
+• Multiple interface implementation  
+• Simpler for pure contracts  
+• Standard TypeScript pattern
+
+  </TabItem>
+</Tabs>
+
+:::tip[🎯 Best Practice]
+Use **abstract classes** when you have shared logic (logging, caching, validation).  
+Use **interfaces** when you only need a contract.
+
+IoC Arise supports both seamlessly with string token resolution!
+:::

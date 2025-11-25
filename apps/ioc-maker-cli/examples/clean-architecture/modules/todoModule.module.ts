@@ -4,7 +4,7 @@
  * 
  * Module: TodoModule
  */
-import { ContainerModule, Lifecycle } from 'ioc-arise';
+import { ContainerModule, Lifecycle } from '@notjustcoders/di-container';
 import { UpdateTodoUseCase } from '../use-cases/UpdateTodoUseCase';
 import { GetTodoUseCase } from '../use-cases/GetTodoUseCase';
 import { DeleteTodoUseCase } from '../use-cases/DeleteTodoUseCase';

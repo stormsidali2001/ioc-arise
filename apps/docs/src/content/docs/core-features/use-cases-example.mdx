@@ -5,10 +5,21 @@ sidebar:
   order: 4
 ---
 
-{/* Hook Section */}
-This example demonstrates how IoC Arise handles classes that **do not implement interfaces** but are used as dependencies (like use cases in clean architecture). You'll learn how the container automatically includes these classes to support proper dependency injection.
+import { FileTree, Card, CardGrid, Badge, Tabs, TabItem } from '@astrojs/starlight/components';
 
-import { FileTree } from '@astrojs/starlight/components';
+<div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 1rem 0 2rem 0;">
+  <Badge text="Clean Architecture" variant="tip" />
+  <Badge text="Direct Class DI" variant="success" />
+  <Badge text="No Interface Required" variant="note" />
+</div>
+
+:::tip[🎯 What You'll Learn]
+Discover how IoC Arise handles **classes without interfaces** - perfect for Clean Architecture patterns:
+- **Use Cases Without Interfaces** - Not every class needs an interface
+- **Automatic Detection** - CLI includes classes used as dependencies
+- **Dual Resolution** - Mix interface tokens and direct class resolution
+- **Clean Architecture Support** - Controllers, Use Cases, and Services work seamlessly
+:::
 
 ## Project Structure
 
@@ -30,74 +41,88 @@ import { FileTree } from '@astrojs/starlight/components';
     - UserController.ts
 </FileTree>
 
-## Key Points
+## The Problem IoC Arise Solves
 
-1. **Interface-based classes**: Repository and service classes implement interfaces (`IUserRepository`, `IEmailService`, `IApplicationService`)
-2. **Non-interface classes**: Use case classes (`CreateUserUseCase`, `GetUserUseCase`, `UserController`) do NOT implement interfaces
-3. **Dependency inclusion**: IoC Arise includes non-interface classes because they are used as dependencies by other classes
-4. **Automatic detection**: The tool automatically detects and includes all classes that participate in dependency injection
+:::note[🤔 Real-World Scenario]
+In Clean Architecture, **use cases and controllers often don't need interfaces**. They're concrete implementations that orchestrate business logic. But how do you use them with dependency injection?
 
-{/* Body Section with Open Loops */}
+**IoC Arise automatically detects and includes these classes** - no extra configuration needed!
+:::
 
-## Generated Container Structure
-
-The generated container has a `coreModule` structure:
-
-```typescript
-export const container = {
-  coreModule: {
-    // Interface-based access (recommended)
-    IUserRepository: UserRepository,
-    IEmailService: EmailService, 
-    IApplicationService: ApplicationService,
+<CardGrid>
+  <Card title="✅ Interface-Based" icon="seti:typescript">
+    **Repositories & Services** implement interfaces:
     
-    // Direct class access
-    CreateUserUseCase: CreateUserUseCase,
-    GetUserUseCase: GetUserUseCase,
-    UserController: UserController
-  }
-};
-```
+    • `IUserRepository` → `UserRepository`  
+    • `IEmailService` → `EmailService`  
+    • `IApplicationService` → `ApplicationService`
+    
+    Used via string tokens for flexibility
+  </Card>
+  
+  <Card title="🎯 Direct Classes" icon="star">
+    **Use Cases & Controllers** WITHOUT interfaces:
+    
+    • `CreateUserUseCase` (no interface)  
+    • `GetUserUseCase` (no interface)  
+    • `UserController` (no interface)
+    
+    Resolved directly by class constructor
+  </Card>
+</CardGrid>
 
-## Usage Examples
+## How It Works
 
-### Using Direct Container Access
+:::tip[🔍 Intelligent Detection]
+IoC Arise scans your codebase and automatically includes **any class that's used as a dependency** - even if it doesn't implement an interface!
+:::
 
+<Tabs>
+  <TabItem label="What Gets Included">
+
+**Classes WITH interfaces:**
 ```typescript
-import { container } from './container.gen';
-
-// Access services via interfaces
-const userRepo = container.coreModule.IUserRepository;
-const emailService = container.coreModule.IEmailService;
-const appService = container.coreModule.IApplicationService;
-
-// Access use cases directly
-const createUserUseCase = container.coreModule.CreateUserUseCase;
-const getUserUseCase = container.coreModule.GetUserUseCase;
-const userController = container.coreModule.UserController;
-
-// Run the application
-await appService.runUserOperations();
+class UserRepository implements IUserRepository {}
+// ✅ Included - implements interface
+// ✅ Accessible via: container.resolve('IUserRepository')
 ```
 
-### Using the inject() Function
-
+**Classes WITHOUT interfaces (but used as dependencies):**
 ```typescript
-import { inject } from './container.gen';
-
-// Inject services by interface
-const userRepo = inject('coreModule.IUserRepository');
-const emailService = inject('coreModule.IEmailService');
-const appService = inject('coreModule.IApplicationService');
-
-// Inject use cases by class name
-const createUserUseCase = inject('coreModule.CreateUserUseCase');
-const userController = inject('coreModule.UserController');
-
-// Example usage
-await userController.createUser('Alice Johnson', 'alice@example.com');
-await userController.getUser('1');
+class CreateUserUseCase {
+  constructor(private repo: IUserRepository) {}
+}
+// ✅ Included - used by UserController
+// ✅ Accessible via: container.resolve(CreateUserUseCase)
 ```
+
+**Classes NOT used anywhere:**
+```typescript
+class UnusedUtility {}
+// ❌ Not included - never used as dependency
+```
+
+  </TabItem>
+  <TabItem label="Resolution Methods">
+
+**Method 1: String Tokens (for interfaces)**
+```typescript
+// Works for classes implementing interfaces
+const repo = container.resolve('IUserRepository');
+const service = container.resolve('IEmailService');
+```
+
+**Method 2: Class Constructors (for direct classes)**
+```typescript
+// Works for classes without interfaces
+const useCase = container.resolve(CreateUserUseCase);
+const controller = container.resolve(UserController);
+```
+
+**Both are type-safe with full IntelliSense!**
+
+  </TabItem>
+</Tabs>
 
 ## Service Definitions
 
@@ -126,17 +151,18 @@ export interface IEmailService {
 }
 ```
 
-## Use Case WITHOUT Interface
+## Code Examples
 
-This is a key feature - IoC Arise can include classes that don't implement interfaces but are used as dependencies:
+<Tabs>
+  <TabItem label="Use Case (No Interface)">
+
+**CreateUserUseCase** - Pure business logic, no interface needed:
 
 ```typescript
 import { IUserRepository } from '../repositories/IUserRepository';
 import { IEmailService } from '../services/IEmailService';
 
-// This is a use case class that does NOT implement an interface
-// It should be included in the container because it's used as a dependency
-
+// ✅ No interface - this is a concrete use case
 export class CreateUserUseCase {
   constructor(
     private userRepository: IUserRepository,
@@ -158,7 +184,12 @@ export class CreateUserUseCase {
 }
 ```
 
-## Another Use Case WITHOUT Interface
+**Why no interface?** Use cases are specific business operations. They don't need abstraction - they ARE the implementation!
+
+  </TabItem>
+  <TabItem label="Another Use Case">
+
+**GetUserUseCase** - Another concrete use case:
 
 ```typescript
 import { IUserRepository } from '../repositories/IUserRepository';
@@ -177,14 +208,18 @@ export class GetUserUseCase {
 }
 ```
 
-## Controller Using Use Cases
+**Dependencies:** Uses `IUserRepository` (interface token) but doesn't implement an interface itself.
+
+  </TabItem>
+  <TabItem label="Controller">
+
+**UserController** - Orchestrates use cases:
 
 ```typescript
 import { CreateUserUseCase } from './CreateUserUseCase';
 import { GetUserUseCase } from './GetUserUseCase';
 
-// This controller uses use cases as dependencies
-// It does NOT implement an interface but should be included because it's used as a dependency
+// ✅ Controller uses use cases as direct dependencies
 export class UserController {
   constructor(
     private createUserUseCase: CreateUserUseCase,
@@ -202,6 +237,14 @@ export class UserController {
   }
 }
 ```
+
+**The Chain:**  
+Controller → Use Cases → Services → Repositories
+
+All wired automatically by IoC Arise!
+
+  </TabItem>
+</Tabs>
 
 ## Generated Container
 
@@ -247,24 +290,55 @@ container.register(UserController, {
 });
 ```
 
-## Usage
+## Usage in Your Application
+
+<Tabs>
+  <TabItem label="Basic Usage">
 
 ```typescript
 import { container } from './container.gen';
 
-// Resolve by interface (string token)
+// ✅ Resolve by interface (string token)
 const userRepo = container.resolve('IUserRepository');
-const userService = container.resolve('IUserService');
+//    ^? IUserRepository
 
-// Resolve by class constructor (use cases & controllers)
-const createUserUseCase = container.resolve(CreateUserUseCase);
-const getUserUseCase = container.resolve(GetUserUseCase);
-const userController = container.resolve(UserController);
+// ✅ Resolve by class constructor (direct)
+const controller = container.resolve(UserController);
+//    ^? UserController
 
-// Use the services
-await userController.createUser('John Doe', 'john@example.com');
-await userController.getUser('user-123');
+// Use the controller
+await controller.createUser('John Doe', 'john@example.com');
+await controller.getUser('user-123');
 ```
+
+  </TabItem>
+  <TabItem label="Complete Example">
+
+```typescript
+import { container } from './container.gen';
+
+// Resolve all services
+const userRepo = container.resolve('IUserRepository');
+const emailService = container.resolve('IEmailService');
+const createUseCase = container.resolve(CreateUserUseCase);
+const getUserCase = container.resolve(GetUserUseCase);
+const controller = container.resolve(UserController);
+
+// Create multiple users
+await controller.createUser('Alice Smith', 'alice@example.com');
+await controller.createUser('Bob Johnson', 'bob@example.com');
+
+// Retrieve users
+await controller.getUser('1');
+await controller.getUser('2');
+
+// Direct use case usage
+await createUseCase.execute('Charlie Brown', 'charlie@example.com');
+await getUserCase.execute('3');
+```
+
+  </TabItem>
+</Tabs>
 
 ## Configuration
 
@@ -282,29 +356,74 @@ await userController.getUser('user-123');
 }
 ```
 
-## Running the Example
+## Key Takeaways
 
-1. Generate the container:
-   ```bash
-   npx @notjustcoders/ioc-arise generate
-   ```
+<CardGrid>
+  <Card title="🏗️ Clean Architecture" icon="star">
+    Perfect for **use cases and controllers** that don't need interface abstraction. Keep your domain pure!
+  </Card>
+  <Card title="🔍 Smart Detection" icon="magnifier">
+    CLI automatically includes **any class used as a dependency** - no manual registration needed.
+  </Card>
+  <Card title="🎯 Dual Resolution" icon="puzzle">
+    Mix **string tokens** (for interfaces) and **class constructors** (for direct classes) seamlessly.
+  </Card>
+  <Card title="🛡️ Type Safety" icon="seti:typescript">
+    Full IntelliSense for both resolution methods. Compile-time safety guaranteed!
+  </Card>
+  <Card title="⚡ Zero Config" icon="rocket">
+    No decorators, no manual registration, no config. Just write TypeScript classes!
+  </Card>
+  <Card title="✅ Validation" icon="approve-check">
+    All dependencies validated at compile-time. Missing classes caught before runtime.
+  </Card>
+</CardGrid>
 
-2. The generated container includes all classes that are either:
-   - Implementing interfaces (repositories and services), OR
-   - Used as dependencies by other classes (use cases and controllers)
+## When to Use Each Approach
 
-3. Use `container.resolve()` to retrieve dependencies with full type safety
+<Tabs>
+  <TabItem label="✅ Use Interfaces">
 
-4. The container handles all dependency injection automatically with proper lifecycle management
+**Good for:**
+- **Repositories** - Multiple implementations (InMemory, SQL, MongoDB)
+- **Services** - Swap implementations (MockEmailService, RealEmailService)
+- **External APIs** - Test with mocks
+- **Infrastructure** - Database, logging, caching
 
-{/* Conclusion Section */}
+```typescript
+// ✅ Interface - allows multiple implementations
+interface IUserRepository {
+  findById(id: string): Promise<User>;
+}
 
-## Benefits of Non-Interface Class Support
+class InMemoryUserRepository implements IUserRepository {}
+class MongoUserRepository implements IUserRepository {}
+```
 
-1. **Clean Architecture Support**: Perfect for use cases that don't need interfaces
-2. **Automatic Detection**: IoC Arise automatically includes classes used as dependencies
-3. **Type Safety**: Full TypeScript support for both interface-based and direct class injection
-4. **Flexibility**: No forced interface implementation for simple classes
-5. **Dependency Validation**: Ensures all participating classes are properly registered
+  </TabItem>
+  <TabItem label="✅ Skip Interfaces">
 
-This example shows how IoC Arise intelligently handles both interface-based and direct class dependencies, making it perfect for clean architecture patterns where use cases and controllers don't always need interface contracts!
+**Good for:**
+- **Use Cases** - Specific business operations
+- **Controllers** - Request handlers
+- **Command Handlers** - CQRS commands
+- **Concrete Logic** - Only one implementation exists
+
+```typescript
+// ✅ No interface - this IS the implementation
+class CreateUserUseCase {
+  async execute(name: string) {
+    // Specific business logic
+  }
+}
+```
+
+  </TabItem>
+</Tabs>
+
+:::tip[🚀 Best Practice]
+Use interfaces where **flexibility is needed** (repositories, external services).  
+Skip interfaces where **only one implementation exists** (use cases, controllers).
+
+IoC Arise supports both seamlessly!
+:::

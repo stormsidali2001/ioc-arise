@@ -21,7 +21,7 @@ export const visualizeCommand = new Command('visualize')
       // Initialize config manager with the source directory
       const initialSourceDir = resolve(options.source);
       const configManager = new ConfigManager(initialSourceDir);
-
+      
       // Validate config if present
       if (configManager.hasConfigFile()) {
         const config = configManager.getConfig();
@@ -29,10 +29,10 @@ export const visualizeCommand = new Command('visualize')
           process.exit(1);
         }
       }
-
+      
       // Merge CLI options with config file
       const mergedOptions = configManager.mergeWithCliOptions(options);
-
+      
       const sourceDir = resolve(mergedOptions.source!);
 
       if (!existsSync(sourceDir)) {
@@ -69,7 +69,7 @@ export const visualizeCommand = new Command('visualize')
 
       // Create renderer based on options
       const renderer = createRenderer(options.renderer);
-
+      
       // Render the analysis results
       renderer.render(analysisResults);
 

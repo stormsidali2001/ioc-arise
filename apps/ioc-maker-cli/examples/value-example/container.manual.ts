@@ -2,7 +2,7 @@
  * Manual container setup demonstrating value registration
  * This is what you would write manually to use values with ioc-arise
  */
-import { Container, Lifecycle } from 'ioc-arise';
+import { Container, Lifecycle } from '@notjustcoders/di-container';
 import { appConfig, AppConfig } from './config/AppConfig';
 import { API_VERSION, APP_NAME, databaseConfig, DatabaseConfig } from './config/constants';
 import { Logger } from './services/Logger';

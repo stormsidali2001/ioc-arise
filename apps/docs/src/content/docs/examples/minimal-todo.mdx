@@ -5,10 +5,21 @@ sidebar:
   order: 1
 ---
 
-import { FileTree } from '@astrojs/starlight/components';
+import { FileTree, Card, CardGrid, Badge, Tabs, TabItem } from '@astrojs/starlight/components';
 
-{/* Hook Section */}
-This example demonstrates the simplest possible IoC Arise setup with a todo list application, showing how to use interface-based dependency injection with repository and service patterns in just a few files.
+<div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 1rem 0 2rem 0;">
+  <Badge text="Beginner Friendly" variant="success" />
+  <Badge text="Full Example" variant="tip" />
+  <Badge text="Repository Pattern" variant="note" />
+</div>
+
+:::tip[🎯 What You'll Learn]
+This example demonstrates the simplest possible IoC Arise setup with a todo list application. You'll see:
+- **Interface-based DI** - Decoupling interfaces from implementations
+- **Repository Pattern** - Data access abstraction
+- **Service Layer** - Business logic organization
+- **Auto-generated Container** - Zero manual wiring
+:::
 
 ## Project Structure
 
@@ -212,16 +223,27 @@ export class TodoService implements ITodoService {
 
 ## Configuration
 
+:::note[⚙️ Simple Config]
+Just two lines! The CLI handles everything else automatically.
+:::
+
 ```json
 {
-  "source": ".",
-  "output": "container.gen.ts"
+  "sourceDir": ".",
+  "outputPath": "container.gen.ts"
 }
 ```
 
 ## Generated Container
 
-After running `npx @notjustcoders/ioc-arise generate`, you'll get:
+:::tip[✨ One Command, Complete Setup]
+Run `npx @notjustcoders/ioc-arise` and get production-ready code:
+:::
+
+<Tabs>
+  <TabItem label="Main Container">
+  
+After generation, you'll get a fully-configured container:
 
 ```typescript
 // container.gen.ts
@@ -232,11 +254,13 @@ import { InMemoryTodoRepository } from './repositories/InMemoryTodoRepository';
 
 export const container = new Container<ContainerRegistry>();
 
+// ✅ Dependencies auto-detected
 container.register('ITodoRepository', {
   useClass: InMemoryTodoRepository,
   lifecycle: Lifecycle.Singleton,
 });
 
+// ✅ Knows ITodoService needs ITodoRepository
 container.register('ITodoService', {
   useClass: TodoService,
   dependencies: ['ITodoRepository'],
@@ -244,18 +268,64 @@ container.register('ITodoService', {
 });
 ```
 
+**What happened:**
+
+CLI analyzed your TypeScript files → Detected `TodoService` depends on `ITodoRepository` → Generated all wiring code automatically → Created type-safe resolution
+
+  </TabItem>
+  <TabItem label="Type Declarations">
+  
+**`container.gen.d.ts`** - Full IntelliSense:
+
+```typescript
+import type { ITodoService } from './services/ITodoService';
+import type { ITodoRepository } from './repositories/ITodoRepository';
+
+export interface ContainerRegistry {
+  'ITodoService': ITodoService;
+  'ITodoRepository': ITodoRepository;
+}
+```
+
+**Benefits:**
+
+✅ Autocomplete for all services • ✅ Type errors at compile-time • ✅ IDE refactoring support
+
+  </TabItem>
+</Tabs>
+
 ## Usage
 
-### Type-Safe Resolution
+:::tip[🎯 Type-Safe Resolution]
+Get full IntelliSense and compile-time type checking when resolving services!
+:::
+
+<Tabs>
+  <TabItem label="Basic Usage">
 
 ```typescript
 import { container } from './container.gen';
 
-// Resolve services with full type safety
+// Resolve with full type safety
 const todoService = container.resolve('ITodoService');
-const todoRepository = container.resolve('ITodoRepository');
+//    ^? ITodoService - Full autocomplete!
 
 // Create todos
+await todoService.createTodo({
+  title: 'Learn IoC Arise',
+  description: 'Study dependency injection'
+});
+```
+
+  </TabItem>
+  <TabItem label="Complete Example">
+
+```typescript
+import { container } from './container.gen';
+
+const todoService = container.resolve('ITodoService');
+
+// Create multiple todos
 await todoService.createTodo({
   title: 'Learn IoC Arise',
   description: 'Study dependency injection'
@@ -285,13 +355,35 @@ const pendingTodos = await todoService.getPendingTodos();
 console.log(`Completed: ${completedTodos.length}, Pending: ${pendingTodos.length}`);
 ```
 
-{/* Conclusion Section */}
+  </TabItem>
+</Tabs>
 
-## Key Benefits
+## Key Takeaways
 
-- **Simplicity**: Easy to understand and extend with minimal configuration
-- **Interface-Based Design**: Clean separation between contracts and implementations  
-- **Type Safety**: Full TypeScript support with interface-driven service keys
-- **Repository Pattern**: Clean data access abstraction for easy testing and swapping
-- **Service Layer**: Centralized business logic with dependency injection
-- **Zero Configuration**: Just organize files and IoC Arise handles dependency resolution
+<CardGrid>
+  <Card title="✅ Zero Decorators" icon="approve-check">
+    Pure TypeScript code with no framework coupling. Your domain logic stays clean!
+  </Card>
+  <Card title="🎯 Interface-Based" icon="star">
+    Clean separation between contracts and implementations. Easy to mock and test.
+  </Card>
+  <Card title="🛡️ Type Safety" icon="seti:typescript">
+    Full IntelliSense support with compile-time type checking. No runtime surprises!
+  </Card>
+  <Card title="🔄 Repository Pattern" icon="document">
+    Clean data access abstraction. Swap in-memory for database with zero business logic changes.
+  </Card>
+  <Card title="⚡ Auto-Wiring" icon="rocket">
+    Dependencies detected and wired automatically. No manual registration needed!
+  </Card>
+  <Card title="📦 Modular" icon="puzzle">
+    Service layer organizes business logic. Easy to extend and maintain.
+  </Card>
+</CardGrid>
+
+:::tip[🚀 Next Steps]
+This example shows the basics. Ready for more?
+- Add [modules](/core-features/simple-modules/) for larger projects
+- Explore [lifecycle scopes](/core-features/scope-example/) (singleton vs transient)
+- See [Clean Architecture](/architecture-patterns/clean-architecture/) for production patterns
+:::

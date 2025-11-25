@@ -4,7 +4,7 @@
  * 
  * Module: CoreModule
  */
-import { ContainerModule, Lifecycle } from 'ioc-arise';
+import { ContainerModule, Lifecycle } from '@notjustcoders/di-container';
 import { User } from '../entities/User';
 import { Todo } from '../entities/Todo';
 

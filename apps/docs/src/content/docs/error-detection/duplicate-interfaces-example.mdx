@@ -5,10 +5,17 @@ sidebar:
   order: 6
 ---
 
-{/* Hook Section */}
-This example demonstrates how IoC Arise handles the **error case** where multiple classes implement the same interface. You'll learn why this creates ambiguity for dependency injection and how IoC Arise provides clear error messages to help you resolve these conflicts.
+import { FileTree, Card, CardGrid, Badge, Tabs, TabItem } from '@astrojs/starlight/components';
 
-import { FileTree } from '@astrojs/starlight/components';
+<div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 1rem 0 2rem 0;">
+  <Badge text="Error Detection" variant="caution" />
+  <Badge text="Compile-Time" variant="success" />
+  <Badge text="Ambiguity Prevention" variant="tip" />
+</div>
+
+:::danger[⚠️ Duplicate Interface Implementations]
+This example demonstrates how IoC Arise handles the **error case** where multiple classes implement the same interface. You'll learn why this creates ambiguity for dependency injection and how IoC Arise provides clear error messages to help you resolve these conflicts.
+:::
 
 ## Project Structure
 
@@ -24,14 +31,27 @@ import { FileTree } from '@astrojs/starlight/components';
 
 ## The Problem
 
-1. **Single Interface**: `INotificationService` defines the contract for notification services
-2. **Multiple Implementations**: Three different classes implement the same interface
-3. **Ambiguity Problem**: This creates ambiguity for dependency injection - which implementation should be used?
-4. **Error Detection**: IoC Arise detects this and throws a clear error to prevent runtime issues
+<CardGrid>
+  <Card title="📋 Single Interface" icon="document">
+    `INotificationService` defines the contract for notification services
+  </Card>
+  <Card title="🔀 Multiple Implementations" icon="puzzle">
+    Three different classes implement the same interface
+  </Card>
+  <Card title="❓ Ambiguity Problem" icon="warning">
+    Which implementation should be injected? Container can't decide!
+  </Card>
+  <Card title="✅ Error Detection" icon="approve-check">
+    IoC Arise detects this and throws a clear error to prevent runtime issues
+  </Card>
+</CardGrid>
 
-{/* Body Section with Open Loops */}
+## Code Examples
 
-## Interface Definition
+<Tabs>
+  <TabItem label="Interface">
+
+**Single interface, multiple implementations:**
 
 ```typescript
 // services/INotificationService.ts
@@ -41,10 +61,13 @@ export interface INotificationService {
 }
 ```
 
-## Multiple Implementations
+  </TabItem>
+  <TabItem label="Email Service">
 
-### EmailNotificationService
+**EmailNotificationService** - email implementation:
+
 ```typescript
+// services/EmailNotificationService.ts
 import { INotificationService } from './INotificationService';
 
 export class EmailNotificationService implements INotificationService {
@@ -59,8 +82,13 @@ export class EmailNotificationService implements INotificationService {
 }
 ```
 
-### SmsNotificationService
+  </TabItem>
+  <TabItem label="SMS Service">
+
+**SmsNotificationService** - SMS implementation:
+
 ```typescript
+// services/SmsNotificationService.ts
 import { INotificationService } from './INotificationService';
 
 export class SmsNotificationService implements INotificationService {
@@ -75,8 +103,13 @@ export class SmsNotificationService implements INotificationService {
 }
 ```
 
-### PushNotificationService
+  </TabItem>
+  <TabItem label="Push Service">
+
+**PushNotificationService** - push notification implementation:
+
 ```typescript
+// services/PushNotificationService.ts
 import { INotificationService } from './INotificationService';
 
 export class PushNotificationService implements INotificationService {
@@ -91,36 +124,94 @@ export class PushNotificationService implements INotificationService {
 }
 ```
 
-## Expected Behavior
+  </TabItem>
+</Tabs>
 
-When running `npx @notjustcoders/ioc-arise generate`, the tool should:
-- Scan all classes and detect interface implementations
-- Identify that `INotificationService` is implemented by multiple classes
-- Log detailed error information showing which classes implement the duplicate interface
-- Throw an error with a clear message about the duplicate implementations
-- Stop the generation process to prevent ambiguous dependency injection
+## IoC Arise Detection
 
-## Expected Error Message
+:::tip[🔍 Automatic Detection]
+When you run `npx @notjustcoders/ioc-arise`, the CLI detects duplicate interface implementations immediately:
+:::
 
-```
-Error: Interface 'INotificationService' is implemented by multiple classes:
+```bash
+❌ Error: Interface 'INotificationService' is implemented by multiple classes:
   - EmailNotificationService (/path/to/services/EmailNotificationService.ts)
   - SmsNotificationService (/path/to/services/SmsNotificationService.ts)
   - PushNotificationService (/path/to/services/PushNotificationService.ts)
 
-Multiple classes implement the same interface(s): INotificationService. Each interface should only be implemented by one class for proper dependency injection.
+Multiple classes implement the same interface(s): INotificationService. 
+Each interface should only be implemented by one class for proper dependency injection.
 ```
+
+**Why this matters:**
+- ✅ **Caught at compile-time** - prevents ambiguous dependency injection
+- ✅ **Clear error message** - shows all duplicate implementations with file paths
+- ✅ **Prevents deployment** - won't generate container with ambiguous dependencies
+- ✅ **Architectural guidance** - helps identify design issues early
 
 ## Why This Happens
 
-IoC Arise follows the principle that each interface should have exactly one implementation for dependency injection to work correctly. When multiple classes implement the same interface, the container doesn't know which one to inject.
+:::note[💡 Single Implementation Principle]
+IoC Arise follows the principle that each interface should have **exactly one implementation** for dependency injection to work correctly. When multiple classes implement the same interface, the container doesn't know which one to inject.
+:::
 
-## Resolution Strategies
+## How to Fix
 
-To fix this issue, you have several options:
+<CardGrid>
+  <Card title="1️⃣ Specific Interfaces" icon="star">
+    Create specific interfaces for each implementation (recommended).
+  </Card>
+  <Card title="2️⃣ Factory Pattern" icon="puzzle">
+    Use a factory class that decides which implementation to use.
+  </Card>
+  <Card title="3️⃣ Module Separation" icon="folder">
+    Organize implementations into different modules with different names.
+  </Card>
+</CardGrid>
 
-### Option 1: Use Factory Pattern
-Create a factory class that decides which implementation to use:
+### Solution Examples
+
+<Tabs>
+  <TabItem label="✅ Specific Interfaces (Recommended)">
+
+**Create specific interfaces for each implementation:**
+
+```typescript
+// Base interface
+export interface INotificationService {
+  sendNotification(message: string, recipient: string): Promise<void>;
+  getServiceName(): string;
+}
+
+// Specific interfaces
+export interface IEmailNotificationService extends INotificationService {}
+export interface ISmsNotificationService extends INotificationService {}
+export interface IPushNotificationService extends INotificationService {}
+
+// Implementations
+export class EmailNotificationService implements IEmailNotificationService {
+  // ... implementation
+}
+
+export class SmsNotificationService implements ISmsNotificationService {
+  // ... implementation
+}
+
+export class PushNotificationService implements IPushNotificationService {
+  // ... implementation
+}
+```
+
+**Benefits:**
+• Each interface has one implementation  
+• Clear separation of concerns  
+• Type-safe resolution  
+• Easy to extend
+
+  </TabItem>
+  <TabItem label="🏭 Factory Pattern">
+
+**Use a factory to create the right implementation:**
 
 ```typescript
 export interface INotificationFactory {
@@ -128,74 +219,69 @@ export interface INotificationFactory {
   createSmsService(): INotificationService;
   createPushService(): INotificationService;
 }
+
+export class NotificationFactory implements INotificationFactory {
+  createEmailService(): INotificationService {
+    return new EmailNotificationService();
+  }
+  
+  createSmsService(): INotificationService {
+    return new SmsNotificationService();
+  }
+  
+  createPushService(): INotificationService {
+    return new PushNotificationService();
+  }
+}
 ```
 
-### Option 2: Use Specific Interfaces
-Create specific interfaces for each implementation:
+**Benefits:**
+• Centralized creation logic  
+• Can add selection logic  
+• Easy to test
 
-```typescript
-export interface IEmailNotificationService extends INotificationService {}
-export interface ISmsNotificationService extends INotificationService {}
-export interface IPushNotificationService extends INotificationService {}
-```
-
-### Option 3: Use Modules with Different Names
-Organize implementations into different modules or use different naming patterns to avoid conflicts.
+  </TabItem>
+</Tabs>
 
 ## Configuration
+
+:::note[⚙️ Standard Configuration]
+No special configuration needed - duplicate detection works automatically!
+:::
 
 ```json
 {
   "sourceDir": ".",
   "outputPath": "container.gen.ts",
-  "interface": "I*.ts",
-  "exclude": [
-    "**/*.test.ts",
-    "**/*.spec.ts"
-  ],
-  "verbose": true,
-  "modules": {
-    "DuplicateModule": [
-      "services/**"
-    ]
-  }
+  "interface": "I*.ts"
 }
 ```
 
-## Running the Example
+**What happens:**
+• Scans all classes and detects interface implementations  
+• Identifies duplicate implementations  
+• Throws clear error with file paths  
+• Stops generation to prevent ambiguous DI
 
-1. Try to generate the container (this should fail):
-   ```bash
-   npx @notjustcoders/ioc-arise generate
-   ```
+## Usage After Fix
 
-2. The command should exit with an error and detailed information about the duplicate implementations
-
-## Post-Construction Initialization
-
-The `onInit()` function is **exported from the generated container.gen.ts file**, not a method in your classes:
+**Once you've fixed the duplicates (using specific interfaces):**
 
 ```typescript
-import { onInit } from './container.gen';
+import { container } from './container.gen';
 
-// The onInit function is called automatically when inject() is first used
-// You can modify it in the generated container.gen.ts file for custom initialization
-```
+// ✅ Each interface has one implementation - no ambiguity!
+const emailService = container.resolve('IEmailNotificationService');
+const smsService = container.resolve('ISmsNotificationService');
+const pushService = container.resolve('IPushNotificationService');
 
-If the interfaces were properly separated, here's how you would use post-construction dependency injection:
-
-```typescript
+// Use all services together
 export class NotificationManager {
-  private emailService!: IEmailNotificationService;
-  private smsService!: ISmsNotificationService;
-  private pushService!: IPushNotificationService;
-  
-  initializeServices() {
-    this.emailService = inject('duplicateModule.IEmailNotificationService');
-    this.smsService = inject('duplicateModule.ISmsNotificationService');
-    this.pushService = inject('duplicateModule.IPushNotificationService');
-    console.log('NotificationManager initialized with all notification services');
-  }
+  constructor(
+    private emailService: IEmailNotificationService,
+    private smsService: ISmsNotificationService,
+    private pushService: IPushNotificationService
+  ) {}
   
   async sendToAll(message: string, recipient: string) {
     await Promise.all([
@@ -207,14 +293,31 @@ export class NotificationManager {
 }
 ```
 
-{/* Conclusion Section */}
+**Full type safety and no ambiguity!**
 
-## Benefits of Duplicate Detection
+## Key Takeaways
 
-1. **Error Prevention**: Catches ambiguous dependency injection at build time
-2. **Clear Error Messages**: Detailed reporting of which classes cause conflicts
-3. **Architecture Validation**: Ensures clean dependency injection patterns
-4. **Type Safety**: Maintains full TypeScript support with proper interface contracts
-5. **Development Guidance**: Provides clear paths to resolve conflicts
+<CardGrid>
+  <Card title="🛡️ Error Prevention" icon="approve-check">
+    Catches ambiguous dependency injection at build time, not runtime!
+  </Card>
+  <Card title="📊 Clear Error Messages" icon="document">
+    Detailed reporting of which classes cause conflicts with file paths.
+  </Card>
+  <Card title="🏗️ Architecture Validation" icon="seti:config">
+    Ensures clean dependency injection patterns from the start.
+  </Card>
+  <Card title="🛡️ Type Safety" icon="seti:typescript">
+    Maintains full TypeScript support with proper interface contracts.
+  </Card>
+  <Card title="💡 Development Guidance" icon="star">
+    Provides clear paths to resolve conflicts (specific interfaces, factories, etc.).
+  </Card>
+  <Card title="✅ Best Practices" icon="rocket">
+    Guides you toward better architectural decisions early in development!
+  </Card>
+</CardGrid>
 
-This example demonstrates how IoC Arise's strict validation prevents runtime ambiguity and guides you toward better architectural decisions by catching interface conflicts early in the development process!
+:::tip[🚀 Early Detection Saves Time]
+IoC Arise's strict validation prevents runtime ambiguity and guides you toward better architectural decisions by catching interface conflicts early in the development process!
+:::

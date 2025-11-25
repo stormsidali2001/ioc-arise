@@ -6,20 +6,20 @@ import logoDark from "../assets/logoDark.svg";
 
 <a href="/" class="site-title-wrapper flex flex-row items-center no-underline text-inherit group">
 	<div class="logo-container relative">
-		<picture>
-			<source srcset={logoDark.src} media="(prefers-color-scheme: dark)" />
-			<source srcset={logoLight.src} media="(prefers-color-scheme: light)" />
+	<picture>
+		<source srcset={logoDark.src} media="(prefers-color-scheme: dark)" />
+		<source srcset={logoLight.src} media="(prefers-color-scheme: light)" />
 			<img 
 				src={logoLight.src} 
 				alt="IoC Arise Logo" 
 				class="w-12 h-12 rounded-lg transition-all duration-300 group-hover:scale-105 group-hover:rotate-3" 
 			/>
-		</picture>
+	</picture>
 		<!-- Glow effect on hover -->
 		<div class="absolute inset-0 rounded-lg bg-gradient-to-br from-purple-500/0 to-purple-600/0 group-hover:from-purple-500/20 group-hover:to-purple-600/20 transition-all duration-300 -z-10 blur-sm"></div>
 	</div>
 	<div class="flex items-center ml-3 gap-2">
-		<span 
+		<span
 			class="text-xl font-bold bg-gradient-to-r from-purple-400 to-purple-600 bg-clip-text text-transparent group-hover:from-purple-300 group-hover:to-purple-500 transition-all duration-300" 
 		>
 			IoC Arise

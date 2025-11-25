@@ -1,11 +1,39 @@
 ---
-title: Circular Dependencies (Classes) Example
+title: Circular Dependencies (Classes)
 description: Demonstrates how IoC Arise detects and handles circular dependencies between classes
 sidebar:
   order: 7
 ---
 
-import { FileTree } from '@astrojs/starlight/components';
+import { FileTree, Card, CardGrid, Badge, Tabs, TabItem } from '@astrojs/starlight/components';
+
+<div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 1rem 0 2rem 0;">
+  <Badge text="Error Detection" variant="caution" />
+  <Badge text="Compile-Time" variant="success" />
+  <Badge text="Best Practices" variant="tip" />
+</div>
+
+:::danger[⚠️ Critical Architecture Issue]
+Circular dependencies are a common anti-pattern that can lead to:
+- **Infinite loops** during instantiation
+- **Stack overflow** errors at runtime
+- **Difficult to maintain** code with tight coupling
+- **Impossible to test** components in isolation
+
+IoC Arise **detects these at compile-time** before they become runtime disasters!
+:::
+
+## The Problem
+
+When two classes depend on each other, it creates an unsolvable dependency cycle:
+
+```mermaid
+graph LR
+    A[ClassA] -->|depends on| B[ClassB]
+    B -->|depends on| A
+    style A fill:#ff6b6b
+    style B fill:#ff6b6b
+```
 
 ## Project Structure
 
@@ -21,7 +49,46 @@ import { FileTree } from '@astrojs/starlight/components';
   - README.md
 </FileTree>
 
-## Interface Definitions
+## The Circular Dependency
+
+<Tabs>
+  <TabItem label="❌ ClassA (depends on B)">
+
+```typescript
+import { IClassB } from '../interfaces/IClassB';
+
+export class ClassA implements IClassA {
+  constructor(private classB: IClassB) {}
+  //                          ^^^^^^^^
+  //                     ClassA needs ClassB
+  
+  methodA(): string {
+    return 'ClassA calling: ' + this.classB.methodB();
+  }
+}
+```
+
+  </TabItem>
+  <TabItem label="❌ ClassB (depends on A)">
+
+```typescript
+import { IClassA } from '../interfaces/IClassA';
+
+export class ClassB implements IClassB {
+  constructor(private classA: IClassA) {}
+  //                          ^^^^^^^^
+  //                     ClassB needs ClassA
+  
+  methodB(): string {
+    return 'ClassB calling: ' + this.classA.methodA();
+  }
+}
+```
+
+**The Problem:** ClassA can't be created without ClassB • ClassB can't be created without ClassA • **Impossible to instantiate either!**
+
+  </TabItem>
+  <TabItem label="Interfaces">
 
 ```typescript
 export interface IClassA {
@@ -33,104 +100,94 @@ export interface IClassB {
 }
 ```
 
-## ClassA depends on ClassB
+  </TabItem>
+</Tabs>
 
-```typescript
-import { IClassB } from '../interfaces/IClassB';
+## IoC Arise Detection
 
-export class ClassA implements IClassA {
-  constructor(private classB: IClassB) {}
-  
-  methodA(): string {
-    return 'ClassA calling: ' + this.classB.methodB();
-  }
-}
-```
+:::tip[🔍 Automatic Detection]
+When you run `npx @notjustcoders/ioc-arise`, the CLI analyzes your entire dependency graph and catches this immediately:
+:::
 
-## ClassB depends on ClassA
-
-```typescript
-import { IClassA } from '../interfaces/IClassA';
-
-export class ClassB implements IClassB {
-  constructor(private classA: IClassA) {}
-  
-  methodB(): string {
-    return 'ClassB calling: ' + this.classA.methodA();
-  }
-}
-```
-
-## Configuration
-
-```json
-{
-  "sourceDir": ".",
-  "outputPath": "container.gen.ts",
-  "interface": "I*.ts",
-  "exclude": [
-    "**/*.test.ts",
-    "**/*.spec.ts"
-  ],
-  "verbose": true,
-  "modules": {
-    "CircularModule": [
-      "services/*.ts",
-      "interfaces/*.ts"
-    ]
-  }
-}
-```
-
-## Expected Error
-
-```
-Error: Circular dependency detected in the dependency graph.
+```bash
+❌ Error: Circular dependency detected in the dependency graph.
 
 Circular dependency chain:
-  ClassA -> IClassB (ClassB) -> IClassA (ClassA)
+  ClassA → IClassB (ClassB) → IClassA (ClassA)
 
-Classes involved in circular dependencies:
+Classes involved:
   - ClassA (/path/to/services/ClassA.ts)
   - ClassB (/path/to/services/ClassB.ts)
+
+⚠️  Fix: Refactor your code to break the circular dependency.
+   Consider using events, callbacks, or dependency inversion.
 ```
 
-## Key Features Demonstrated
+**Why this matters:**
+- ✅ **Caught at compile-time** - not at runtime when customers are using your app
+- ✅ **Clear error message** - shows exact dependency chain
+- ✅ **File locations** - know exactly which files to fix
+- ✅ **Prevents deployment** - won't generate container with broken dependencies
 
-1. **Type-Safe Resolution** - Type-safe dependency resolution that prevents circular dependencies
-2. **Compile-Time Detection** - Circular dependencies are detected during code generation
-3. **Circular Dependency Detection** - Comprehensive error reporting for circular dependencies
-4. **Dependency Graph Analysis** - Visual representation of dependency chains
+## How to Fix Circular Dependencies
 
-## onInit Method for Breaking Circular Dependencies
+<CardGrid>
+  <Card title="1️⃣ Extract Common Logic" icon="star">
+    Create a third service/class that both can depend on without circular reference.
+  </Card>
+  <Card title="2️⃣ Use Events/Callbacks" icon="forward">
+    Replace direct dependency with event-driven communication or callback pattern.
+  </Card>
+  <Card title="3️⃣ Dependency Inversion" icon="puzzle">
+    Introduce an abstraction layer (interface) to break the direct coupling.
+  </Card>
+  <Card title="4️⃣ Lazy Resolution" icon="seti:config">
+    Use lazy initialization or factory pattern to defer instantiation.
+  </Card>
+</CardGrid>
 
-If you need to break circular dependencies, the onInit method can help:
+### Example Fix: Extract Common Service
+
+<Tabs>
+  <TabItem label="✅ Before (Circular)">
 
 ```typescript
-import { inject } from './container.gen';
-
-// Break the circular dependency by using onInit
-export class ClassA implements IClassA {
-  private classB!: IClassB;
-  
-  initialize(classB: IClassB) {
-    // Initialize dependency after construction to break circular dependency
-    this.classB = classB;
-    console.log('ClassA initialized with delayed ClassB dependency');
-  }
-  
-  methodA(): string {
-    return 'ClassA calling: ' + this.classB.methodB();
-  }
+// ❌ ClassA → ClassB → ClassA (circular!)
+class ClassA {
+  constructor(private classB: IClassB) {}
 }
 
-// ClassB can use constructor injection since it's no longer circular
-export class ClassB implements IClassB {
-  // ClassB no longer depends on ClassA - circular dependency broken
-  methodB(): string {
-    return 'ClassB method called';
-  }
+class ClassB {
+  constructor(private classA: IClassA) {}
 }
 ```
 
-**Note**: The above solution works by removing the circular dependency entirely. If you truly need bidirectional communication, consider using the Observer pattern, event emitters, or dependency injection through a mediator service.
+  </TabItem>
+  <TabItem label="✅ After (Fixed)">
+
+```typescript
+// ✅ Both depend on SharedService (no cycle!)
+class SharedService {
+  doSomething(): string {
+    return 'shared logic';
+  }
+}
+
+class ClassA {
+  constructor(private shared: SharedService) {}
+}
+
+class ClassB {
+  constructor(private shared: SharedService) {}
+}
+```
+
+**Dependency Graph:**
+```
+ClassA → SharedService
+ClassB → SharedService
+(No circular dependency!)
+```
+
+  </TabItem>
+</Tabs>

@@ -4,7 +4,7 @@
  * 
  * Module: UserModule
  */
-import { ContainerModule, Lifecycle } from 'ioc-arise';
+import { ContainerModule, Lifecycle } from '@notjustcoders/di-container';
 import { UserUseCase } from '../use-cases/UserUseCase';
 import { UserRepository } from '../implementations/UserRepository';
 

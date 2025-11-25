@@ -3,14 +3,32 @@ title: Getting Started
 description: Quick start guide for IOC-Arise
 ---
 
-import { Tabs, TabItem, Steps } from '@astrojs/starlight/components';
+import { Tabs, TabItem, Steps, Card, CardGrid, Badge } from '@astrojs/starlight/components';
+
+<div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 1rem 0 2rem 0;">
+  <Badge text="Zero Decorators" variant="success" />
+  <Badge text="Type-Safe" variant="tip" />
+  <Badge text="Auto-Generated" variant="note" />
+</div>
 
 ## Overview
 
-IOC-Arise is a complete dependency injection solution for TypeScript consisting of two packages:
+:::tip[🎯 Two-Package System]
+IoC Arise provides maximum flexibility through a clean separation of concerns:
+- **CLI Tool** (`@notjustcoders/ioc-arise`) - Analyzes and generates code
+- **Runtime Container** (`@notjustcoders/di-container`) - Executes dependency injection
+:::
 
-1. **`@notjustcoders/ioc-arise`** - CLI tool for analyzing code and generating containers
-2. **`@notjustcoders/di-container`** - Lightweight runtime DI container (zero decorators)
+**IoC-Arise is a complete dependency injection solution for TypeScript:**
+
+<CardGrid>
+  <Card title="📦 @notjustcoders/ioc-arise" icon="seti:npm">
+    CLI tool for analyzing code and generating containers. AST-powered analysis detects dependencies automatically.
+  </Card>
+  <Card title="⚡ @notjustcoders/di-container" icon="rocket">
+    Lightweight runtime DI container (~4KB, zero decorators). Use standalone or with generated code.
+  </Card>
+</CardGrid>
 
 ## Installation
 
@@ -83,10 +101,15 @@ IOC-Arise is a complete dependency injection solution for TypeScript consisting 
 
 ## Generated Code
 
-The CLI generates two main files:
+:::note[✨ What Gets Generated]
+The CLI automatically creates production-ready code with full TypeScript support:
+:::
 
-### `container.gen.ts` - Main Container
-
+<Tabs>
+  <TabItem label="Main Container">
+  
+  **`container.gen.ts`** - Ready-to-use container instance
+  
 ```typescript
 import { Container } from '@notjustcoders/di-container';
 import type { ContainerRegistry } from './container.gen.d';
@@ -97,31 +120,76 @@ export const container = new Container<ContainerRegistry>();
 container.registerModule(userModule);
 ```
 
-### `container.gen.d.ts` - Type Declarations
+**Benefits:** ✅ All imports auto-generated • ✅ Modules automatically registered • ✅ Type-safe by default
 
+  </TabItem>
+  <TabItem label="Type Declarations">
+  
+  **`container.gen.d.ts`** - Full IntelliSense support
+  
 ```typescript
+import type { IUserService } from './services/IUserService';
+
 export interface ContainerRegistry {
   'IUserService': IUserService;
-  // ... other registrations
+  // ... all your interfaces mapped
 }
 ```
 
+**Benefits:** ✅ Autocomplete for all tokens • ✅ Compile-time type checking • ✅ IDE refactoring support
+
+  </TabItem>
+  <TabItem label="Module Files">
+  
+  **`modules/userModule.module.ts`** - Organized registrations
+  
+```typescript
+import { ContainerModule, Lifecycle } from '@notjustcoders/di-container';
+import { UserService } from '../services/UserService';
+
+export const userModule = new ContainerModule()
+  .register('IUserService', {
+    useClass: UserService,
+    dependencies: ['IUserRepository'],
+    lifecycle: Lifecycle.Singleton
+  });
+```
+
+**Benefits:** ✅ Dependencies auto-detected • ✅ Lifecycle scopes respected • ✅ Clean module separation
+
+  </TabItem>
+</Tabs>
+
 ## Manual Usage (Without CLI)
 
-You can also use `@notjustcoders/di-container` directly without the CLI:
+:::caution[⚙️ Advanced Usage]
+You can use `@notjustcoders/di-container` standalone if you prefer manual configuration:
+:::
 
 ```typescript
 import { Container, Lifecycle } from '@notjustcoders/di-container';
 
 const container = new Container();
 
+// Manual registration (no code generation)
 container.register('IUserService', {
   useClass: UserService,
+  dependencies: ['IUserRepository'],
   lifecycle: Lifecycle.Singleton
 });
 
 const service = container.resolve('IUserService');
 ```
+
+**When to use manual setup:**
+- ✅ Small projects with few dependencies
+- ✅ Dynamic service registration at runtime
+- ✅ Full control over container configuration
+
+**When to use CLI (recommended):**
+- ✅ Medium to large projects
+- ✅ Static dependency graphs
+- ✅ Want compile-time validation
 
 See the [`@notjustcoders/di-container` documentation](https://www.npmjs.com/package/@notjustcoders/di-container) for more details.
 
@@ -161,33 +229,63 @@ const todoService = container.resolve('ITodoService');
 
 ## Lifecycle Scopes
 
-Control instance creation with lifecycle scopes using JSDoc comments:
+:::tip[🔄 Smart Lifecycle Management]
+Control instance creation with simple JSDoc annotations. The CLI detects these automatically!
+:::
 
-### Singleton (Default)
-
-One shared instance across the entire application:
+<Tabs>
+  <TabItem label="Singleton (Default)">
+  
+  **One shared instance** across the entire application:
 
 ```typescript
 /**
  * @scope singleton
  */
 export class UserRepository implements IUserRepository {
-  // Same instance reused
+  // ✅ Same instance reused everywhere
+  // ✅ Good for: Databases, configs, caches
+  // ✅ Better performance (one instantiation)
 }
 ```
 
-### Transient
+**Use Cases:** Database connections • Configuration services • Caching layers • Stateful services
 
-New instance created every time:
+  </TabItem>
+  <TabItem label="Transient">
+  
+  **New instance** created every time:
 
 ```typescript
 /**
  * @scope transient
  */
 export class RequestLogger implements ILogger {
-  // New instance per resolve
+  // ✅ New instance per resolve
+  // ✅ Good for: Request handlers, loggers
+  // ✅ Isolated state per call
 }
 ```
+
+**Use Cases:** HTTP request handlers • Command processors • Per-request loggers • Stateless operations
+
+  </TabItem>
+  <TabItem label="No Annotation">
+  
+  **Defaults to Singleton** if no annotation:
+
+```typescript
+export class UserService implements IUserService {
+  // Automatically treated as singleton
+  // Same as adding @scope singleton
+}
+```
+
+**Best Practice:**
+Always be explicit with `@scope` annotations for clarity!
+
+  </TabItem>
+</Tabs>
 
 ## Configuration Options
 
@@ -213,7 +311,23 @@ Create an `ioc.config.json` file in your project root:
 
 ## Next Steps
 
-- Explore [Examples](/examples/minimal-todo/) for real-world usage patterns
-- Learn about [Abstract Classes](/core-features/abstract-classes-example/)
-- Understand [Error Detection](/error-detection/circular-deps-classes/)
-- Check the [CLI Reference](/reference/cli-reference/) for all commands
+<CardGrid stagger>
+  <Card title="📚 Examples" icon="open-book">
+    Explore [real-world examples](/examples/minimal-todo/) including Clean Architecture, modules, and use cases.
+  </Card>
+  <Card title="🎯 Core Features" icon="star">
+    Learn about [abstract classes](/core-features/abstract-classes-example/), [scopes](/core-features/scope-example/), and [modules](/core-features/simple-modules/).
+  </Card>
+  <Card title="⚠️ Error Detection" icon="warning">
+    Understand how IoC Arise catches [circular dependencies](/error-detection/circular-deps-classes/) and [other issues](/error-detection/duplicate-interfaces-example/).
+  </Card>
+  <Card title="📖 Reference" icon="document">
+    Check the [CLI Reference](/reference/cli-reference/) and [Configuration](/reference/configuration/) for complete documentation.
+  </Card>
+</CardGrid>
+
+:::note[💡 Need Help?]
+- Join our [Discord community](https://discord.gg/your-discord-invite)
+- Report issues on [GitHub](https://github.com/stormsidali2001/ioc-arise/issues)
+- Check the [npm package](https://www.npmjs.com/package/@notjustcoders/di-container)
+:::

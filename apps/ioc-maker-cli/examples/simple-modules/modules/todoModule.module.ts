@@ -4,7 +4,7 @@
  * 
  * Module: TodoModule
  */
-import { ContainerModule, Lifecycle } from 'ioc-arise';
+import { ContainerModule, Lifecycle } from '@notjustcoders/di-container';
 import { TodoService } from '../todo/TodoService';
 import { TodoRepository } from '../todo/TodoRepository';
 import { Todo } from '../todo/Todo';

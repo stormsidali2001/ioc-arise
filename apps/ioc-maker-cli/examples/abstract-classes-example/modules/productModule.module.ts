@@ -4,7 +4,7 @@
  * 
  * Module: ProductModule
  */
-import { ContainerModule, Lifecycle } from 'ioc-arise';
+import { ContainerModule, Lifecycle } from '@notjustcoders/di-container';
 import { ProductUseCase } from '../use-cases/ProductUseCase';
 import { InternalProductNestedUseCase } from '../use-cases/InternalProductNestedUseCase';
 import { ProductRepository } from '../implementations/ProductRepository';

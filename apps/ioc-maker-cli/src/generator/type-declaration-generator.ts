@@ -146,7 +146,7 @@ ${registrations}
     }
 
     private static generateModuleAugmentation(): string {
-        return `declare module 'ioc-arise' {
+        return `declare module '@notjustcoders/di-container' {
   interface Container {
     /**
      * Type-safe resolve for registered string tokens.
@@ -157,7 +157,7 @@ ${registrations}
     /**
      * Generic resolve for class constructors or other token types.
      */
-    resolve<T>(token: import('ioc-arise').Token<T>): T;
+    resolve<T>(token: import('@notjustcoders/di-container').Token<T>): T;
   }
 }`;
     }
