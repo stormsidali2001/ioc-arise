@@ -39,20 +39,20 @@ export default defineConfig({
         description: 'Code-generation powered Dependency Injection for TypeScript. Zero decorators, compile-time safety, auto-generated containers.',
         social: [
             { icon: 'github', label: 'GitHub', href: 'https://github.com/stormsidali2001/ioc-arise' },
-            { 
-                icon: 'external', 
-                label: 'npm', 
-                href: 'https://www.npmjs.com/package/@notjustcoders/ioc-arise' 
+            {
+                icon: 'external',
+                label: 'npm',
+                href: 'https://www.npmjs.com/package/@notjustcoders/ioc-arise'
             },
-            { 
-                icon: 'discord', 
-                label: 'Discord', 
-                href: 'https://discord.gg/notjustcoders' 
+            {
+                icon: 'discord',
+                label: 'Discord',
+                href: 'https://discord.gg/notjustcoders'
             },
-            { 
-                icon: 'twitter', 
-                label: 'Twitter', 
-                href: 'https://twitter.com/notjustcoders' 
+            {
+                icon: 'twitter',
+                label: 'Twitter',
+                href: 'https://twitter.com/notjustcoders'
             }
         ],
         customCss: [
