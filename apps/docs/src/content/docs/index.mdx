@@ -79,7 +79,7 @@ import { Card, CardGrid, Badge, Tabs, TabItem,Steps,FileTree } from '@astrojs/st
 <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; margin: 1rem 0 2rem 0;">
   <Badge text="TypeScript 5+" variant="tip" />
   <Badge text="Zero Decorators" variant="success" />
-  <Badge text="5KB Runtime" variant="note" />
+  <Badge text="~4KB Runtime" variant="note" />
   <Badge text="AST-Powered" variant="caution" />
   <Badge text="100% Type-Safe" variant="tip" />
 </div>
@@ -267,12 +267,12 @@ const user = await userService.getUser('123');
 - Created TypeScript declarations for autocomplete
 - Organized into clean module structure
 
-**Analysis time:** ~0.5 seconds
+**Analysis:** Fast AST-powered parsing
 
 </TabItem>
 </Tabs>
 
-## Get Started in 30 Seconds
+## Quick Start
 
 <Steps>
 
@@ -309,7 +309,7 @@ const user = await userService.getUser('123');
    import { container } from './container.gen';
    
    const userService = container.resolve('IUserService');
-   //    ^? UserService - Full IntelliSense!
+   //    ^? IUserService - Full IntelliSense!
    ```
 
 </Steps>
@@ -339,14 +339,14 @@ No configuration files required. No decorators to add. No manual registration. S
   </Card>
   
   <Card title="⚡ Blazing Fast Analysis" icon="forward">
-    **AST-powered by Rust** (ast-grep). Analyzes 1000+ files in milliseconds.
+    **AST-powered by Rust** (ast-grep). Fast analysis for projects of any size.
     
     ```bash
     $ npx @notjustcoders/ioc-arise
     
     🔍 Scanning files... Found 1247 classes
     🔗 Analyzing dependencies... Graph validated
-    ✨ Generated in 0.5s
+    ✨ Container generated successfully!
     ```
     
     Generated code has zero reflection overhead - just direct class instantiation.
@@ -361,7 +361,7 @@ No configuration files required. No decorators to add. No manual registration. S
     //    ^? UserService
     
     const user = await service.getUser('123');
-    //                         ^? string
+    //                         ^? UserService.getUser(id:string)
     ```
     
     Missing dependencies and circular references are caught at compile-time.
@@ -441,7 +441,7 @@ No configuration files required. No decorators to add. No manual registration. S
     // Works in: Node, Browser, Deno, Cloudflare
     ```
     
-    Only **5KB** with zero dependencies.
+    Only **~4KB** with zero dependencies.
   </Card>
 </CardGrid>
 
@@ -471,7 +471,7 @@ graph LR
    - Code generator
 
 2. **`@notjustcoders/di-container`** (Runtime)
-   - Lightweight DI container (~5KB)
+   - Lightweight DI container (~4KB)
    - Zero decorators, zero reflection
    - Can be used standalone without CLI
    - Framework-agnostic
@@ -605,10 +605,10 @@ How does IoC Arise stack up against other approaches?
 | **Circular Dep Detection** | ✅ CLI + Runtime (both levels) | ⚠️ Runtime only | ❌ No detection |
 | **Module Organization** | ✅ Auto-generated files | ⚠️ Manual setup | ⚠️ Manual setup |
 | **Name Collision Handling** | ✅ Auto-aliasing | ❌ Manual resolution | ❌ Manual resolution |
-| **Bundle Size** | ✅ 5KB runtime | ⚠️ 15-20KB | ✅ 0KB (but labor cost) |
+| **Bundle Size** | ✅ ~4KB runtime | ⚠️ 15-20KB | ✅ 0KB (but labor cost) |
 | **Framework Coupling** | ✅ Zero (pure TypeScript) | ❌ Tight coupling | ✅ Zero |
 | **Learning Curve** | ✅ Very low | ⚠️ Medium-High | ⚠️ High |
-| **Refactoring Safety** | ✅ IDE refactoring works | ⚠️ String tokens break | ⚠️ Manual updates |
+| **Refactoring Support** | ⚠️ Regenerate after refactor | ⚠️ String tokens break | ⚠️ Manual updates |
 | **Production Ready** | ✅ Day 1 | ✅ Day 1 | ⚠️ Weeks of work |
 
 :::tip[💡 Best of Both Worlds]
@@ -630,12 +630,12 @@ Production-ready features you won't find anywhere else
     No more "Cannot resolve constructor" errors!
   </Card>
   
-  <Card title="🔍 Dependency Graph Analysis" icon="star">
-    **Understand your architecture at a glance:**
+  <Card title="🔍 Dependency Analysis" icon="star">
+    **Understand your architecture:**
     ```bash
     npx @notjustcoders/ioc-arise analyze
     ```
-    Get a visual tree of all dependencies, detect bottlenecks, and understand coupling. Perfect for code reviews and refactoring.
+    Lists all classes, their interfaces, dependencies, and detects circular dependencies. Useful for understanding coupling and architecture validation.
   </Card>
   
   <Card title="📊 Module-Level Circular Deps" icon="document">
@@ -671,13 +671,6 @@ Production-ready features you won't find anywhere else
     That's it. The CLI does the rest.
   </Card>
   
-  <Card title="🔄 Watch Mode (Coming Soon)" icon="random">
-    **Development mode:**
-    ```bash
-    npx @notjustcoders/ioc-arise --watch
-    ```
-    Re-generates container on file changes. Hot module reload ready.
-  </Card>
 </CardGrid>
 
 ## Use Cases
@@ -701,20 +694,6 @@ IoC Arise is particularly well-suited for:
     **Educational environments** benefit from the focus on constructor injection patterns rather than framework-specific decorators. Emphasizes core DI principles.
   </Card>
 </CardGrid>
-
-## Developer Feedback
-
-:::note[💬 Clean Architecture Implementation]
-"Writing pure TypeScript while maintaining enterprise DI features has significantly improved our codebase maintainability. The compile-time error detection catches issues early in the development process." — **Senior Backend Engineer**
-:::
-
-:::note[💬 Type Safety Benefits]
-"The generated TypeScript declarations provide immediate feedback during refactoring. Interface renames are validated at compile-time, preventing runtime errors." — **Tech Lead**
-:::
-
-:::note[💬 Large-Scale Adoption]
-"Managing 250+ services with consistent DI patterns. The module-level circular dependency detection helps maintain architectural boundaries across the entire system." — **Platform Architect**
-:::
 
 ## Getting Started
 
@@ -740,7 +719,7 @@ Use the DI container standalone with manual registration. No decorators required
 
 <div style="text-align: center; margin: 3rem 0;">
   <a href="/guides/getting-started/" style="display: inline-block; background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%); color: white; padding: 1rem 2.5rem; border-radius: 0.5rem; text-decoration: none; font-weight: 600; font-size: 1.125rem; box-shadow: 0 4px 6px rgba(124, 58, 237, 0.3); transition: all 0.2s;">
-    🚀 Get Started in 30 Seconds
+    🚀 Get Started Now
   </a>
   <div style="margin-top: 1rem; color: #666;">
     <a href="/examples/minimal-todo/" style="margin: 0 1rem;">View Examples</a>
