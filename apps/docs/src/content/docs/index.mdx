@@ -449,20 +449,6 @@ No configuration files required. No decorators to add. No manual registration. S
 
 IoC Arise is a **two-package system** designed for maximum flexibility
 
-```mermaid
-graph LR
-    A[Your TypeScript Code] -->|Analyze| B[@notjustcoders/ioc-arise CLI]
-    B -->|Generates| C[container.gen.ts]
-    B -->|Generates| D[modules/*.module.ts]
-    B -->|Generates| E[container.gen.d.ts]
-    C -->|Uses| F[@notjustcoders/di-container]
-    D -->|Uses| F
-    F -->|Runtime DI| G[Your Application]
-    
-    style B fill:#7c3aed
-    style F fill:#10b981
-    style G fill:#3b82f6
-```
 
 1. **`@notjustcoders/ioc-arise`** (CLI Tool)
    - AST-powered code analyzer (Rust-backed)
