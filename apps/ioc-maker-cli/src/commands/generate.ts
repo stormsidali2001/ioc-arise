@@ -1,7 +1,7 @@
 import { Command } from 'commander';
 import { resolve } from 'path';
 import { existsSync } from 'fs';
-import { analyzeProject } from '../analyser';
+import { analyzeProject, analyzeProjectWithFactories } from '../analyser';
 import { IoCContainerGenerator } from '../generator';
 import { CircularDependencyDetector } from '../utils/circular-dependency-detector';
 import { ConfigManager } from '../utils/configManager';
@@ -71,8 +71,8 @@ export const generateCommand = new Command('generate')
       }
 
       Logger.custom('🚀', 'Starting analysis...', Logger.getColors().cyan + Logger.getColors().bright);
-      // Analyze the project
-      const classes = await analyzeProject(sourceDir, {
+      // Analyze the project (including factories)
+      const { classes, factories } = await analyzeProjectWithFactories(sourceDir, {
         sourceDir,
         interfacePattern: mergedOptions.interface,
         excludePatterns: mergedOptions.exclude
@@ -168,11 +168,14 @@ export const generateCommand = new Command('generate')
 
       // Generate container file
       Logger.custom('🚀', 'Generating container...', Logger.getColors().cyan + Logger.getColors().bright);
-      IoCContainerGenerator.generate(classes, outputPath, moduleGroupedClasses);
+      IoCContainerGenerator.generate(classes, outputPath, moduleGroupedClasses, factories);
 
       Logger.success('Container generated successfully!');
       Logger.log(Logger.colorizeText(`   File: ${outputPath}`, Logger.getColors().gray));
       Logger.log(Logger.colorizeText(`   Classes: ${classes.length}`, Logger.getColors().gray));
+      if (factories && factories.length > 0) {
+        Logger.log(Logger.colorizeText(`   Factories: ${factories.length}`, Logger.getColors().gray));
+      }
 
       if (mergedOptions.verbose) {
         Logger.newline();

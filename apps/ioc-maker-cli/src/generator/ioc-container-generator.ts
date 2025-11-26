@@ -1,4 +1,4 @@
-import { ClassInfo } from '../types';
+import { ClassInfo, FactoryInfo } from '../types';
 import { relative, dirname, join, basename } from 'path';
 import { writeFileSync, mkdirSync } from 'fs';
 import { TypeDeclarationGenerator } from './type-declaration-generator';
@@ -10,11 +10,13 @@ export class IoCContainerGenerator {
      * @param classes - Analyzed classes to be registered (can be flat or grouped)
      * @param outputPath - Path where the container file will be generated
      * @param moduleGroupedClasses - Optional: Classes grouped by modules
+     * @param factories - Optional: Factory functions to be registered
      */
     static generate(
         classes: ClassInfo[],
         outputPath: string,
-        moduleGroupedClasses?: Map<string, ClassInfo[]>
+        moduleGroupedClasses?: Map<string, ClassInfo[]>,
+        factories?: FactoryInfo[]
     ): void {
         // Check for name collisions before generating
         // If moduleGroupedClasses is provided, check all classes from all modules
@@ -29,10 +31,10 @@ export class IoCContainerGenerator {
 
         if (moduleGroupedClasses && moduleGroupedClasses.size > 1) {
             // Generate modular code with separate files for each module
-            this.generateModularFiles(moduleGroupedClasses, outputPath);
+            this.generateModularFiles(moduleGroupedClasses, outputPath, factories);
         } else {
             // Generate single flat file
-            const containerCode = this.generateFlatCode(classes, outputPath);
+            const containerCode = this.generateFlatCode(classes, outputPath, factories);
             writeFileSync(outputPath, containerCode);
         }
 
@@ -40,10 +42,10 @@ export class IoCContainerGenerator {
         const typesPath = outputPath.endsWith('.gen.ts')
             ? outputPath.replace(/\.gen\.ts$/, '.gen.d.ts')
             : outputPath.replace(/\.ts$/, '.d.ts');
-        TypeDeclarationGenerator.generate(classes, typesPath);
+        TypeDeclarationGenerator.generate(classes, typesPath, factories);
     }
 
-    private static generateFlatCode(classes: ClassInfo[], outputPath: string): string {
+    private static generateFlatCode(classes: ClassInfo[], outputPath: string, factories?: FactoryInfo[]): string {
         // Collect all interface names to identify which dependencies should use string tokens
         const interfaceNames = new Set<string>();
         classes.forEach(cls => {
@@ -64,8 +66,11 @@ export class IoCContainerGenerator {
             });
         });
 
-        const imports = this.generateImports(classes, outputPath);
-        const registrations = this.generateRegistrations(classes, interfaceNames, '', abstractClassNames);
+        const imports = this.generateImports(classes, outputPath, factories);
+        const classRegistrations = this.generateRegistrations(classes, interfaceNames, '', abstractClassNames);
+        const factoryRegistrations = factories && factories.length > 0
+            ? this.generateFactoryRegistrations(factories, interfaceNames, '', abstractClassNames)
+            : '';
 
         const filename = outputPath.split('/').pop()?.replace(/\.ts$/, '') || 'container.gen';
 
@@ -81,13 +86,14 @@ ${imports}
 
 export const container = new Container<ContainerRegistry>();
 
-${registrations}
+${classRegistrations}${factoryRegistrations ? '\n\n' + factoryRegistrations : ''}
 `;
     }
 
     private static generateModularFiles(
         moduleGroupedClasses: Map<string, ClassInfo[]>,
-        outputPath: string
+        outputPath: string,
+        factories?: FactoryInfo[]
     ): void {
         const outputDir = dirname(outputPath);
         const baseFilename = basename(outputPath, '.ts');
@@ -294,10 +300,12 @@ ${registrations};`);
         }).join('\n');
     }
 
-    private static generateImports(classes: ClassInfo[], outputPath: string): string {
+    private static generateImports(classes: ClassInfo[], outputPath: string, factories?: FactoryInfo[]): string {
         const outputDir = dirname(outputPath);
         const importStatements: string[] = [];
+        const importMap = new Map<string, Set<string>>();
 
+        // Collect class imports
         classes.forEach(cls => {
             // Calculate relative path from output file to class file
             let relativePath = relative(outputDir, cls.filePath);
@@ -313,8 +321,41 @@ ${registrations};`);
             // Use forward slashes for imports
             relativePath = relativePath.replace(/\\/g, '/');
 
-            importStatements.push(`import { ${cls.name} } from '${relativePath}';`);
+            if (!importMap.has(relativePath)) {
+                importMap.set(relativePath, new Set());
+            }
+            importMap.get(relativePath)!.add(cls.name);
         });
+
+        // Collect factory imports
+        if (factories) {
+            factories.forEach(factory => {
+                // Calculate relative path from output file to factory file
+                let relativePath = relative(outputDir, factory.filePath);
+
+                // Remove extension (.ts)
+                relativePath = relativePath.replace(/\.ts$/, '');
+
+                // Add ./ if it doesn't start with . or /
+                if (!relativePath.startsWith('.')) {
+                    relativePath = `./${relativePath}`;
+                }
+
+                // Use forward slashes for imports
+                relativePath = relativePath.replace(/\\/g, '/');
+
+                if (!importMap.has(relativePath)) {
+                    importMap.set(relativePath, new Set());
+                }
+                importMap.get(relativePath)!.add(factory.name);
+            });
+        }
+
+        // Generate import statements
+        for (const [importPath, names] of importMap.entries()) {
+            const namesArray = Array.from(names).sort();
+            importStatements.push(`import { ${namesArray.join(', ')} } from '${importPath}';`);
+        }
 
         return importStatements.join('\n');
     }
@@ -384,6 +425,48 @@ ${registrations};`);
 
             return `${indent}container.register(${token}, {
 ${indent}  useClass: ${cls.name},${dependencies}
+${indent}  lifecycle: ${lifecycle},
+${indent}});`;
+        }).join('\n\n');
+    }
+
+    private static generateFactoryRegistrations(
+        factories: FactoryInfo[],
+        interfaceNames: Set<string>,
+        indent: string = '',
+        abstractClassNames: Set<string> = new Set()
+    ): string {
+        return factories.map(factory => {
+            // Use token if provided, otherwise use function name directly
+            const token = factory.token
+                ? `'${factory.token}'`
+                : `'${factory.name}'`;
+
+            // Generate dependencies array
+            const dependencies = factory.dependencies.length > 0
+                ? `\n${indent}  dependencies: [${factory.dependencies.map(dep => {
+                    // If dependency is an interface, use string token
+                    if (interfaceNames.has(dep.name)) {
+                        return `'${dep.name}'`;
+                    }
+
+                    // If dependency is an abstract class, use string token
+                    if (abstractClassNames.has(dep.name)) {
+                        return `'${dep.name}'`;
+                    }
+
+                    // Use original class name
+                    return dep.name;
+                }).join(', ')}],`
+                : '';
+
+            // Determine lifecycle enum value
+            const lifecycle = factory.scope === 'singleton'
+                ? 'Lifecycle.Singleton'
+                : 'Lifecycle.Transient';
+
+            return `${indent}container.register(${token}, {
+${indent}  useFactory: ${factory.name},${dependencies}
 ${indent}  lifecycle: ${lifecycle},
 ${indent}});`;
         }).join('\n\n');

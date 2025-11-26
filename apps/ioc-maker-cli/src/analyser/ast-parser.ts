@@ -382,4 +382,265 @@ export class ASTParser {
     Logger.debug(`Final interfaces:`, { interfaces });
     return interfaces;
   }
+
+  findAllFunctions(root: any): any[] {
+    const functions: any[] = [];
+
+    try {
+      // Try multiple approaches to find functions
+      // Approach 1: Direct function_declaration kind
+      let functionDeclarations: any[] = [];
+      try {
+        functionDeclarations = root.findAll({
+          rule: {
+            kind: 'function_declaration'
+          }
+        });
+      } catch (e) {
+        Logger.debug('Could not find function_declaration by kind');
+      }
+
+      // Approach 2: Use pattern matching for exported functions
+      try {
+        const exportedFunctions = root.findAll({
+          rule: {
+            pattern: 'export function $NAME($$$PARAMS) $$$BODY'
+          }
+        });
+        Logger.debug(`Found ${exportedFunctions.length} exported functions via pattern`);
+        for (const func of exportedFunctions) {
+          // Check if we already have this function
+          const funcRange = func.range();
+          const alreadyExists = functionDeclarations.some((f: any) => {
+            const fRange = f.range();
+            return fRange.start.line === funcRange.start.line;
+          });
+          if (!alreadyExists) {
+            functionDeclarations.push(func);
+          }
+        }
+      } catch (e) {
+        Logger.debug('Could not find exported functions via pattern');
+      }
+
+      // Approach 3: Use pattern for non-exported functions
+      try {
+        const regularFunctions = root.findAll({
+          rule: {
+            pattern: 'function $NAME($$$PARAMS) $$$BODY'
+          }
+        });
+        Logger.debug(`Found ${regularFunctions.length} regular functions via pattern`);
+        for (const func of regularFunctions) {
+          const funcText = func.text();
+          // Skip if it's already exported (to avoid duplicates)
+          if (!funcText.includes('export')) {
+            const funcRange = func.range();
+            const alreadyExists = functionDeclarations.some((f: any) => {
+              const fRange = f.range();
+              return fRange.start.line === funcRange.start.line;
+            });
+            if (!alreadyExists) {
+              functionDeclarations.push(func);
+            }
+          }
+        }
+      } catch (e) {
+        Logger.debug('Could not find regular functions via pattern');
+      }
+
+      // Find variable declarations that might be arrow functions
+      const variableDeclarations = root.findAll({
+        rule: {
+          kind: 'variable_declaration'
+        }
+      });
+
+      // Filter variable declarations to find arrow functions
+      const arrowFunctions: any[] = [];
+      for (const varDecl of variableDeclarations) {
+        const varText = varDecl.text();
+        // Check if it's an arrow function assignment
+        if (varText.includes('=>') && (varText.includes('const') || varText.includes('export'))) {
+          arrowFunctions.push(varDecl);
+        }
+      }
+
+      Logger.debug(`Found ${functionDeclarations.length} function declarations and ${arrowFunctions.length} arrow functions`);
+      return [...functionDeclarations, ...arrowFunctions];
+    } catch (error) {
+      Logger.warn('Warning: Could not find functions:', { error });
+      return functions;
+    }
+  }
+
+  extractFunctionName(functionNode: any): string | undefined {
+    try {
+      // Try to get name from match
+      let functionName = functionNode.getMatch('NAME')?.text();
+      if (functionName) {
+        return functionName;
+      }
+
+      // Try to extract from function declaration
+      const functionText = functionNode.text();
+
+      // First, try to find identifier directly in the function node
+      const identifier = functionNode.find({
+        rule: {
+          kind: 'identifier'
+        }
+      });
+      if (identifier) {
+        const name = identifier.text();
+        // Make sure it's the function name, not a parameter
+        // Function name comes before parameters
+        const funcMatch = functionText.match(/function\s+([A-Za-z_][A-Za-z0-9_]*)/);
+        if (funcMatch && funcMatch[1] === name) {
+          return name;
+        }
+      }
+
+      // Try regex extraction from function declaration (works for both exported and non-exported)
+      const functionMatch = functionText.match(/(?:export\s+)?function\s+([A-Za-z_][A-Za-z0-9_]*)/);
+      if (functionMatch) {
+        return functionMatch[1];
+      }
+
+      // For variable declarations (arrow functions), find the variable name
+      const varDecl = functionNode.find({
+        rule: {
+          kind: 'variable_declaration'
+        }
+      });
+
+      if (varDecl) {
+        const declarators = varDecl.findAll({
+          rule: {
+            kind: 'variable_declarator'
+          }
+        });
+        if (declarators.length > 0) {
+          const varIdentifier = declarators[0].find({
+            rule: {
+              kind: 'identifier'
+            }
+          });
+          if (varIdentifier) {
+            return varIdentifier.text();
+          }
+        }
+      }
+
+      // Try to extract from arrow function using regex
+      const arrowMatch = functionText.match(/(?:export\s+)?const\s+([A-Za-z_][A-Za-z0-9_]*)\s*=/);
+      if (arrowMatch) {
+        return arrowMatch[1];
+      }
+
+      return undefined;
+    } catch (error) {
+      Logger.warn('Warning: Could not extract function name:', { error });
+      return undefined;
+    }
+  }
+
+  extractFunctionParameters(functionNode: any): ConstructorParameter[] {
+    const parameters: ConstructorParameter[] = [];
+
+    try {
+      // Find formal parameters
+      const parameterNodes = functionNode.findAll({
+        rule: {
+          kind: 'formal_parameters'
+        }
+      });
+
+      if (parameterNodes.length === 0) {
+        return parameters;
+      }
+
+      const formalParams = parameterNodes[0];
+
+      // Find individual parameters
+      const requiredParamNodes = formalParams.findAll({
+        rule: {
+          kind: 'required_parameter'
+        }
+      });
+
+      const optionalParamNodes = formalParams.findAll({
+        rule: {
+          kind: 'optional_parameter'
+        }
+      });
+
+      const paramNodes = [...requiredParamNodes, ...optionalParamNodes];
+
+      for (const paramNode of paramNodes) {
+        const paramText = paramNode.text();
+        Logger.debug('Function parameter text:', paramText);
+
+        // Parse parameter: name: type
+        const paramMatch = paramText.match(/(\w+)(\?)?\s*:\s*(\w+)/);
+
+        if (paramMatch) {
+          const [, name, optional, type] = paramMatch;
+
+          parameters.push({
+            name: name.trim(),
+            type: type.trim(),
+            isOptional: !!optional,
+          });
+        }
+      }
+    } catch (error) {
+      Logger.warn('Warning: Could not extract function parameters:', { error });
+    }
+
+    return parameters;
+  }
+
+  extractFunctionReturnType(functionNode: any): string | undefined {
+    try {
+      const functionText = functionNode.text();
+
+      // Try to extract return type annotation
+      const returnTypeMatch = functionText.match(/:\s*([A-Za-z_][A-Za-z0-9_<>[\],\s]*)/);
+      if (returnTypeMatch) {
+        return returnTypeMatch[1].trim();
+      }
+
+      return undefined;
+    } catch (error) {
+      Logger.warn('Warning: Could not extract function return type:', { error });
+      return undefined;
+    }
+  }
+
+  isExportedFunction(functionNode: any): boolean {
+    try {
+      const functionText = functionNode.text();
+      // Check if the function text itself includes export
+      if (functionText.includes('export')) {
+        return true;
+      }
+
+      // Check parent nodes - exported functions might be wrapped
+      let parent = functionNode.parent();
+      let depth = 0;
+      while (parent && depth < 5) {
+        const parentText = parent.text();
+        if (parentText.includes('export')) {
+          return true;
+        }
+        parent = parent.parent();
+        depth++;
+      }
+
+      return false;
+    } catch (error) {
+      return false;
+    }
+  }
 }

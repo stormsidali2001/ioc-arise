@@ -1,5 +1,6 @@
-import { AnalyzerOptions, ClassInfo } from '../types';
+import { AnalyzerOptions, ClassInfo, FactoryInfo } from '../types';
 import { ClassAnalyzer } from './class-analyzer';
+import { FactoryAnalyzer } from './factory-analyzer';
 import { FileDiscovery } from './file-discovery';
 import { ErrorFactory } from '../errors/errorFactory';
 import { ErrorUtils } from '../errors/IoCError';
@@ -8,18 +9,20 @@ import { ErrorUtils } from '../errors/IoCError';
 export class ProjectAnalyzer {
   private fileDiscovery: FileDiscovery;
   private classAnalyzer: ClassAnalyzer;
+  private factoryAnalyzer: FactoryAnalyzer;
 
   constructor(options: AnalyzerOptions) {
     this.fileDiscovery = new FileDiscovery(options.sourceDir, options.excludePatterns);
     this.classAnalyzer = new ClassAnalyzer(options.sourceDir, options.interfacePattern);
+    this.factoryAnalyzer = new FactoryAnalyzer(options.sourceDir);
   }
 
-  async analyzeProject(): Promise<ClassInfo[]> {
+  async analyzeProject(): Promise<{ classes: ClassInfo[]; factories: FactoryInfo[] }> {
     const tsFiles = await this.fileDiscovery.findTypeScriptFiles();
 
     // Analyze all files in a single batch operation for better performance
     const allClasses = await this.classAnalyzer.analyzeFiles(tsFiles);
-
+    const allFactories = await this.factoryAnalyzer.analyzeFiles(tsFiles);
 
     // Validate that no interface is implemented by multiple classes
     this.validateUniqueInterfaceImplementations(allClasses);
@@ -27,7 +30,7 @@ export class ProjectAnalyzer {
     // Validate that no abstract class is extended by multiple classes
     this.validateUniqueAbstractClassExtensions(allClasses);
 
-    return allClasses;
+    return { classes: allClasses, factories: allFactories };
   }
 
 

@@ -23,6 +23,17 @@ export interface ClassInfo {
   scope: InjectionScope;
 }
 
+export interface FactoryInfo {
+  name: string;
+  filePath: string;
+  dependencies: DependencyInfo[];
+  parameters: ConstructorParameter[];
+  returnType?: string;
+  importPath: string;
+  scope: InjectionScope;
+  token?: string; // Optional token name for registration
+}
+
 export interface AnalyzerOptions {
   sourceDir: string;
   interfacePattern?: string;
