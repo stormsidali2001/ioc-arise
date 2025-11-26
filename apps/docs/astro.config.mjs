@@ -86,6 +86,8 @@ export default defineConfig({
                         { label: 'Abstract Classes Support', link: '/core-features/abstract-classes-example/' },
                         { label: 'Non-Interface Classes', link: '/core-features/use-cases-example/' },
                         { label: 'Scope Management', link: '/core-features/scope-example/' },
+                        { label: 'Factory Functions', link: '/core-features/factory-functions-example/' },
+                        { label: 'Plain Object Services (useValue)', link: '/core-features/use-value-example/' },
                     ],
                 },
                 {

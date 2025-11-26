@@ -1,0 +1,203 @@
+---
+title: Factory Functions
+description: Use factory functions for dependency injection with custom logic, context objects, and currying patterns
+sidebar:
+  order: 5
+---
+
+import { FileTree, Card, CardGrid, Badge, Tabs, TabItem } from '@astrojs/starlight/components';
+
+<div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 1rem 0 2rem 0;">
+  <Badge text="Factory Pattern" variant="tip" />
+  <Badge text="Functional Programming" variant="success" />
+  <Badge text="Context Objects" variant="note" />
+</div>
+
+Factory functions allow you to create instances with custom business logic, validation, or conditional setup that goes beyond simple constructor injection.
+
+## Project Structure
+
+<FileTree>
+- factory-functions-example/
+  - repositories/
+    - IUserRepository.ts
+    - UserRepository.ts
+    - ITodoRepository.ts
+    - TodoRepository.ts
+  - factories/
+    - todoUseCaseFactory.ts    # Context object pattern
+    - userUseCaseFactory.ts     # Separate parameters pattern
+  - container.gen.ts
+  - demo.ts
+</FileTree>
+
+## Patterns
+
+<CardGrid>
+  <Card title="📦 Context Object" icon="seti:typescript">
+    Dependencies as a single object parameter
+  </Card>
+  
+  <Card title="🔧 Separate Parameters" icon="rocket">
+    Traditional parameter-based injection
+  </Card>
+</CardGrid>
+
+## Examples
+
+<Tabs>
+  <TabItem label="Context Object Pattern">
+
+```typescript
+// factories/todoUseCaseFactory.ts
+export function createTodoUseCase(
+    context: { userRepo: IUserRepository, todoRepo: ITodoRepository }
+) {
+    return (userId: string, title: string): void => {
+        const user = context.userRepo.getUser(userId);
+        context.todoRepo.saveTodo(title);
+    };
+}
+```
+
+**Generated:**
+
+```typescript
+container.register('createTodoUseCase', {
+  useFactory: (userRepo, todoRepo) => createTodoUseCase({ userRepo, todoRepo }),
+  dependencies: ['IUserRepository', 'ITodoRepository'],
+  lifecycle: Lifecycle.Singleton,
+});
+```
+
+  </TabItem>
+  <TabItem label="Separate Parameters">
+
+```typescript
+// factories/userUseCaseFactory.ts
+export function createUserUseCase(
+    userRepo: IUserRepository
+) {
+    return (userId: string): string => {
+        return userRepo.getUser(userId);
+    };
+}
+```
+
+**Generated:**
+
+```typescript
+container.register('createUserUseCase', {
+  useFactory: createUserUseCase,
+  dependencies: ['IUserRepository'],
+  lifecycle: Lifecycle.Singleton,
+});
+```
+
+  </TabItem>
+</Tabs>
+
+## Detection
+
+Functions are automatically detected if they:
+- Start with `create`, `make`, or `build`
+- Are marked with `@factory` or `@ioc-factory`
+- Are exported
+
+```typescript
+// ✅ Detected - starts with 'create'
+export function createUserService(repo: IUserRepository) {
+  return { /* ... */ };
+}
+
+// ✅ Detected - starts with 'make'
+export function makeConfig() {
+  return { /* ... */ };
+}
+
+// ✅ Detected - starts with 'build'
+export function buildRepository() {
+  return { /* ... */ };
+}
+
+// ✅ Detected - marked with @factory
+/**
+ * @factory
+ */
+export function myFactory() {
+  return { /* ... */ };
+}
+
+// ✅ Detected - marked with @ioc-factory
+/**
+ * @ioc-factory
+ */
+export function anotherFactory() {
+  return { /* ... */ };
+}
+
+// ❌ Not detected - doesn't start with create/make/build and no annotation
+export function getUserService() {
+  return { /* ... */ };
+}
+
+// ❌ Not detected - not exported
+function createService() {
+  return { /* ... */ };
+}
+```
+
+## Lifecycle
+
+<Tabs>
+  <TabItem label="Singleton (Default)">
+
+```typescript
+/**
+ * @scope singleton
+ */
+export function createService() {
+  return { /* ... */ };
+}
+```
+
+  </TabItem>
+  <TabItem label="Transient">
+
+```typescript
+/**
+ * @scope transient
+ */
+export function createService() {
+  return { /* ... */ };
+}
+```
+
+  </TabItem>
+</Tabs>
+
+## Usage
+
+```typescript
+import { container } from './container.gen';
+
+const createTodo = container.resolve('createTodoUseCase');
+createTodo('user-1', 'Buy groceries');
+```
+
+## When to Use
+
+<CardGrid>
+  <Card title="✅ Use Factories" icon="check">
+    • Custom creation logic  
+    • Validation or conditional setup  
+    • Returning functions (currying)  
+    • Functional programming style
+  </Card>
+  
+  <Card title="❌ Use Classes" icon="x">
+    • Simple constructor injection  
+    • Standard OOP patterns  
+    • No custom logic needed
+  </Card>
+</CardGrid>

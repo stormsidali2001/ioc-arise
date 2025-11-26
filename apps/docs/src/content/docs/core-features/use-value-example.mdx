@@ -1,0 +1,134 @@
+---
+title: Plain Object Services (useValue)
+description: Register pre-created instances directly using useValue - perfect for functional programming patterns
+sidebar:
+  order: 6
+---
+
+import { FileTree, Card, CardGrid, Badge, Tabs, TabItem } from '@astrojs/starlight/components';
+
+<div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 1rem 0 2rem 0;">
+  <Badge text="Functional Programming" variant="tip" />
+  <Badge text="Plain Objects" variant="success" />
+  <Badge text="useValue" variant="note" />
+</div>
+
+The `useValue` pattern allows you to register pre-created instances directly in the container, without requiring classes or factory functions.
+
+## Project Structure
+
+<FileTree>
+- use-value-example/
+  - services/
+    - IUserService.ts
+    - userService.ts        # Plain object
+    - IConfigService.ts
+    - configService.ts      # Plain object
+  - container.gen.ts
+  - demo.ts
+</FileTree>
+
+## When to Use
+
+<CardGrid>
+  <Card title="✅ Plain Objects" icon="seti:typescript">
+    Functional programming style - no classes
+  </Card>
+  
+  <Card title="⚙️ Configuration" icon="gear">
+    App configuration objects
+  </Card>
+  
+  <Card title="🔌 Third-Party" icon="plug">
+    Pre-created instances from external libraries
+  </Card>
+  
+  <Card title="🧪 Testing" icon="flask">
+    Easy to mock for testing
+  </Card>
+</CardGrid>
+
+## Example
+
+<Tabs>
+  <TabItem label="Interface">
+
+```typescript
+// services/IUserService.ts
+export interface IUserService {
+  getUser(id: string): string;
+  createUser(data: { name: string; email: string }): { 
+    id: string; 
+    name: string; 
+    email: string 
+  };
+}
+```
+
+  </TabItem>
+  <TabItem label="Plain Object">
+
+```typescript
+// services/userService.ts
+import { IUserService } from './IUserService';
+
+export const userService: IUserService = {
+  getUser: (id: string) => `User-${id}`,
+  createUser: (data: { name: string; email: string }) => ({
+    id: `user-${Date.now()}`,
+    name: data.name,
+    email: data.email,
+  }),
+};
+```
+
+  </TabItem>
+  <TabItem label="Generated">
+
+```typescript
+container.register('IUserService', {
+  useValue: userService,
+  lifecycle: Lifecycle.Singleton,
+});
+```
+
+  </TabItem>
+</Tabs>
+
+## Detection
+
+Exported const objects are automatically detected if they:
+- Use `export const`
+- Have explicit type annotation implementing an interface
+- Match pattern: `export const name: Interface = { ... }`
+
+## Lifecycle
+
+:::note[🔄 Always Singleton]
+`useValue` services are always singletons because they're pre-created instances.
+:::
+
+## Comparison
+
+| Feature | useClass | useFactory | useValue |
+|---------|----------|------------|----------|
+| **Creates instance?** | Yes (via `new`) | Yes (via function) | No (uses existing) |
+| **Dependencies?** | Yes | Yes | No |
+| **Lifecycle Transient?** | Yes | Yes | No (always singleton) |
+| **Pattern** | OOP | Functional | Functional |
+
+## Usage
+
+```typescript
+import { container } from './container.gen';
+
+const userService = container.resolve('IUserService');
+const user = userService.getUser('123');
+```
+
+## Best Practices
+
+1. Always type plain objects with interfaces
+2. Use `export const` to make objects detectable
+3. Remember: `useValue` objects can't have dependencies (pre-created)
+4. Perfect for configuration objects that don't need DI
