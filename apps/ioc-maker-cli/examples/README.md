@@ -4,37 +4,7 @@ This directory contains comprehensive examples demonstrating various features of
 
 ## Quick Start
 
-Each example has its own README with detailed explanations. 
-
-### Running Examples
-
-This is a standalone app using `tsx` to run TypeScript files directly.
-
-```bash
-# Install dependencies (from root)
-pnpm install
-
-# Generate containers for examples
-cd apps/examples
-pnpm generate:all
-
-# Run demos
-pnpm demo:use-value
-pnpm demo:factory-functions
-pnpm demo:scope
-pnpm demo:simple-modules
-```
-
-### Individual Example Commands
-
-Generate and run individual examples:
-```bash
-# Generate container
-pnpm generate:use-value
-
-# Run demo
-pnpm demo:use-value
-```
+Each example has its own README with detailed explanations. Run the examples using the commands below.
 
 ## Examples Overview
 
@@ -43,96 +13,101 @@ pnpm demo:use-value
 #### 1. **minimal-todo** - Getting Started
 Simple todo application demonstrating basic DI setup.
 ```bash
-pnpm generate:minimal-todo
+pnpm test4:generate
 ```
 
-#### 2. **simple-modules** - Basic Module System
+#### 2. **clean-architecture** - Multi-Module Application
+Demonstrates clean architecture with TodoModule and UserModule, showing:
+- Multiple modules
+- Interface-based dependencies
+- Presenters and use cases
+```bash
+pnpm test1:generate
+```
+
+#### 3. **simple-modules** - Basic Module System
 Simple example with user and todo modules.
 ```bash
-pnpm generate:simple-modules
-pnpm demo:simple-modules
+pnpm test5:generate
 ```
 
 ### 🔧 Advanced Patterns
 
-#### 3. **abstract-classes-example** - Abstract Classes
+#### 4. **abstract-classes-example** - Abstract Classes
 Demonstrates abstract class support:
 - Abstract base classes as dependencies
 - String token registration for abstract classes
 - Type-safe resolution
 ```bash
-pnpm generate:abstract-classes
+pnpm test9:generate
 ```
 
-#### 4. **scope-example** - Lifecycle Management
+#### 5. **scope-example** - Lifecycle Management
 Shows Singleton vs Transient lifecycles:
 - Singleton services (shared instance)
 - Transient services (new instance per resolution)
 - Mixed usage patterns
-```bash
-pnpm generate:scope
-pnpm demo:scope
-```
 
 ### ⚠️ Error Detection
 
-#### 5. **circular-deps-classes** - Class Circular Dependencies
+#### 6. **circular-deps-classes** - Class Circular Dependencies
 Example that intentionally triggers circular dependency detection between classes.
 ```bash
-pnpm generate:circular-deps-classes
+pnpm test3:generate
 # Expected: Error about circular dependencies
 ```
 
-#### 6. **circular-deps-modules** - Module Circular Dependencies
+#### 7. **circular-deps-modules** - Module Circular Dependencies
 Example that intentionally triggers circular dependency detection between modules.
 ```bash
-pnpm generate:circular-deps-modules
+pnpm test2:generate
 # Expected: Error about module circular dependencies
 ```
 
-#### 7. **duplicate-interfaces-example** - Duplicate Interface Detection
+#### 8. **duplicate-interfaces-example** - Duplicate Interface Detection
 Example showing duplicate interface implementation detection.
 ```bash
-pnpm generate:duplicate-interfaces
+pnpm test7:generate
 # Expected: Error about multiple implementations
 ```
 
-#### 8. **name-collision-example** - Name Collision Handling
+#### 9. **name-collision-example** - Name Collision Handling
 Demonstrates automatic handling of classes with the same name from different modules:
 - Automatic import aliasing
 - Collision detection and resolution
 ```bash
-pnpm generate:name-collision
-pnpm demo:name-collision
+pnpm test8:generate
 ```
 
 ### 📚 Other Examples
 
-#### 9. **factory-functions-example** - Factory Functions
+#### 10. **factory-functions-example** - Factory Functions
 Demonstrates factory function support for dependency injection:
 - Factory functions with dependencies
 - Context object pattern
 - Separate parameters pattern
 ```bash
-pnpm generate:factory-functions
-pnpm demo:factory-functions
+cd apps/ioc-maker-cli/examples/factory-functions-example
+node ../../dist/index.js generate
+npx tsx demo.ts
 ```
 
-#### 10. **use-cases-example** - Use Case Pattern
+#### 11. **use-cases-example** - Use Case Pattern
 Demonstrates the use case pattern with repositories and services.
 ```bash
-pnpm generate:use-cases
+pnpm test6:generate
 ```
 
-#### 11. **use-value-example** - Plain Object Services (useValue)
+#### 12. **use-value-example** - Plain Object Services (useValue)
 Demonstrates using `useValue` for dependency injection with plain object services:
 - Plain object services (functional programming style)
 - Configuration objects
 - No classes required
 - Always singleton lifecycle
 ```bash
-pnpm generate:use-value
-pnpm demo:use-value
+cd apps/ioc-maker-cli/examples/use-value-example
+node ../../dist/index.js generate
+npx tsx demo.ts
 ```
 
 ## Example Categories
@@ -154,28 +129,20 @@ pnpm demo:use-value
 
 ## Running Examples
 
-### Generate All Containers
-Generate containers for all examples:
+### Generate Container
+Most examples support container generation:
 ```bash
-cd apps/examples
-pnpm generate:all
-```
-
-### Generate Individual Containers
-```bash
-pnpm generate:use-value
-pnpm generate:factory-functions
-# ... etc
+cd apps/ioc-maker-cli
+pnpm test1:generate  # Replace with appropriate test number
 ```
 
 
 ## Example Structure
 
 Each example typically contains:
-- `ioc.config.ts` - TypeScript configuration for code generation (using `defineConfig`)
+- `ioc.config.json` - Configuration for code generation
 - `container.gen.ts` - Generated container (after running generate command)
 - `container.gen.d.ts` - Generated type declarations
-- `demo.ts` - Demo script (if applicable)
 - `README.md` - Detailed explanation
 - Source files organized by feature
 
@@ -200,7 +167,7 @@ All examples use **automatic code generation** via `ioc-maker-cli` to analyze Ty
 When adding new examples:
 1. Create a descriptive directory name
 2. Include a comprehensive README.md
-3. Add `ioc.config.ts` using `defineConfig` from `@notjustcoders/ioc-arise/config`
-4. Add generate and demo scripts to `package.json`
+3. Add `ioc.config.json` if using code generation
+4. Add a test script to `package.json`
 5. Update this main README with the new example
 

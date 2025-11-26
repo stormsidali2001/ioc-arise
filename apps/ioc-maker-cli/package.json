@@ -6,18 +6,6 @@
   "bin": {
     "ioc-arise": "dist/index.js"
   },
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.js"
-    },
-    "./config": {
-      "types": "./dist/config.d.ts",
-      "import": "./dist/config.js",
-      "require": "./dist/config.js"
-    }
-  },
   "files": [
     "dist/**/*",
     "README.md",
