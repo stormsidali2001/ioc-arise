@@ -4,16 +4,10 @@
  */
 import { Container, Lifecycle } from '@notjustcoders/di-container';
 import type { ContainerRegistry } from './container.gen.d';
-import { App } from './services/App';
 import { userService } from './services/userService';
 import { configService } from './services/configService';
 
 export const container = new Container<ContainerRegistry>();
-
-container.register(App, {
-  useClass: App,
-  lifecycle: Lifecycle.Singleton,
-});
 
 container.register('IUserService', {
   useValue: userService,

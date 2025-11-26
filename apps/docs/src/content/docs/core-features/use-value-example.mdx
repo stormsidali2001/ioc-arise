@@ -72,6 +72,9 @@ export interface IUserService {
 // services/userService.ts
 import { IUserService } from './IUserService';
 
+/**
+ * @value
+ */
 export const userService: IUserService = {
   getUser: (id: string) => `User-${id}`,
   createUser: (data: { name: string; email: string }) => ({
@@ -97,10 +100,24 @@ container.register('IUserService', {
 
 ## Detection
 
-Exported const objects are automatically detected if they:
-- Use `export const`
-- Have explicit type annotation implementing an interface
-- Match pattern: `export const name: Interface = { ... }`
+Values are automatically detected if they:
+- Are marked with `@value` JSDoc annotation (default behavior)
+- Match the `valuePattern` regex if configured in `ioc.config.json`
+- Implement a known interface (backward compatibility fallback)
+
+```typescript
+// ✅ Detected - marked with @value
+/**
+ * @value
+ */
+export const userService: IUserService = { ... };
+
+// ✅ Detected - matches valuePattern if configured (e.g., "Service$")
+export const configService: IConfigService = { ... };
+
+// ❌ Not detected - no @value annotation and doesn't match pattern
+export const helper = { ... };
+```
 
 ## Lifecycle
 
@@ -126,9 +143,23 @@ const userService = container.resolve('IUserService');
 const user = userService.getUser('123');
 ```
 
+## Configuration
+
+You can configure value detection patterns in `ioc.config.json`:
+
+```json
+{
+  "valuePattern": "Service$"
+}
+```
+
+This will match any value name ending with "Service" (case-insensitive), in addition to values with `@value` annotations.
+
 ## Best Practices
 
 1. Always type plain objects with interfaces
-2. Use `export const` to make objects detectable
-3. Remember: `useValue` objects can't have dependencies (pre-created)
-4. Perfect for configuration objects that don't need DI
+2. Use `@value` JSDoc annotation to explicitly mark values for detection
+3. Use `export const` to make objects detectable
+4. Remember: `useValue` objects can't have dependencies (pre-created)
+5. Perfect for configuration objects that don't need DI
+6. Configure `valuePattern` in large projects to limit detection scope

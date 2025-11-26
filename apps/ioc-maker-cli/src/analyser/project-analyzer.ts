@@ -17,7 +17,7 @@ export class ProjectAnalyzer {
     this.fileDiscovery = new FileDiscovery(options.sourceDir, options.excludePatterns);
     this.classAnalyzer = new ClassAnalyzer(options.sourceDir, options.interfacePattern);
     this.factoryAnalyzer = new FactoryAnalyzer(options.sourceDir, options.factoryPattern);
-    this.valueAnalyzer = new ValueAnalyzer(options.sourceDir);
+    this.valueAnalyzer = new ValueAnalyzer(options.sourceDir, options.valuePattern);
   }
 
   async analyzeProject(): Promise<{ classes: ClassInfo[]; factories: FactoryInfo[]; values: ValueInfo[] }> {

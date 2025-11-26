@@ -19,6 +19,7 @@ export const generateCommand = new Command('generate')
   .option('-i, --interface <pattern>', 'Interface name pattern to match (regex)')
   .option('-e, --exclude <patterns...>', 'Exclude patterns for files')
   .option('--factory-pattern <pattern>', 'Factory function name pattern to match (regex). Default: functions with @factory JSDoc comment')
+  .option('--value-pattern <pattern>', 'Value name pattern to match (regex). Default: values with @value JSDoc comment')
   .option('--check-cycles', 'Only check for circular dependencies without generating')
   .option('--verbose', 'Enable verbose logging')
   .action(async (options) => {
@@ -77,21 +78,24 @@ export const generateCommand = new Command('generate')
         sourceDir,
         interfacePattern: mergedOptions.interface,
         excludePatterns: mergedOptions.exclude,
-        factoryPattern: mergedOptions.factoryPattern
+        factoryPattern: mergedOptions.factoryPattern,
+        valuePattern: mergedOptions.valuePattern
       });
 
-      if (classes.length === 0) {
+      // Check if we have anything to generate
+      if (classes.length === 0 && (!factories || factories.length === 0) && (!values || values.length === 0)) {
         const error = ErrorFactory.noClassesFound(
           mergedOptions.interface || 'interfaces with "implements" keyword'
         );
         Logger.error(ErrorUtils.formatForConsole(error));
+        Logger.error('No classes, factories, or values found to generate a container.');
         process.exit(1);
         return;
       }
 
       // Group classes by modules if module resolver is available
-      let moduleGroupedClasses: Map<string, ClassInfo[]>;
-      if (moduleResolver) {
+      let moduleGroupedClasses: Map<string, ClassInfo[]> | undefined;
+      if (moduleResolver && classes.length > 0) {
         moduleGroupedClasses = moduleResolver.groupClassesByModule(classes);
 
         if (mergedOptions.verbose) {
@@ -108,18 +112,36 @@ export const generateCommand = new Command('generate')
           }
         }
       } else {
-        // Backward compatibility: single default module
-        moduleGroupedClasses = new Map([['CoreModule', classes]]);
+        // Backward compatibility: single default module (only if we have classes)
+        if (classes.length > 0) {
+          moduleGroupedClasses = new Map([['CoreModule', classes]]);
+        }
 
         if (mergedOptions.verbose) {
-          Logger.newline();
-          Logger.custom('📋', `Found ${classes.length} classes:`);
-          classes.forEach(cls => {
-            Logger.log(`   • ${cls.name} (${cls.dependencies.length} dependencies)`);
-            if (cls.dependencies.length > 0) {
-              Logger.log(`     Dependencies: ${cls.dependencies.map(dep => dep.name).join(', ')}`);
-            }
-          });
+          if (classes.length > 0) {
+            Logger.newline();
+            Logger.custom('📋', `Found ${classes.length} classes:`);
+            classes.forEach(cls => {
+              Logger.log(`   • ${cls.name} (${cls.dependencies.length} dependencies)`);
+              if (cls.dependencies.length > 0) {
+                Logger.log(`     Dependencies: ${cls.dependencies.map(dep => dep.name).join(', ')}`);
+              }
+            });
+          }
+          if (factories && factories.length > 0) {
+            Logger.newline();
+            Logger.custom('🏭', `Found ${factories.length} factories:`);
+            factories.forEach(factory => {
+              Logger.log(`   • ${factory.name} (${factory.dependencies.length} dependencies)`);
+            });
+          }
+          if (values && values.length > 0) {
+            Logger.newline();
+            Logger.custom('📦', `Found ${values.length} values:`);
+            values.forEach(value => {
+              Logger.log(`   • ${value.name}${value.interfaceName ? ` (${value.interfaceName})` : ''}`);
+            });
+          }
         }
       }
 
@@ -145,7 +167,7 @@ export const generateCommand = new Command('generate')
       }
 
       // Check for circular dependencies between modules
-      if (moduleGroupedClasses && moduleGroupedClasses.size > 1) {
+      if (moduleGroupedClasses && moduleGroupedClasses.size > 1 && classes.length > 0) {
         const moduleCycles = CircularDependencyDetector.detectModuleCycles(moduleGroupedClasses);
         if (moduleCycles.length > 0) {
           Logger.error('Circular dependencies detected between modules:');

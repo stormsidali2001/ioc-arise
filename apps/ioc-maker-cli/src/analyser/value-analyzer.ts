@@ -7,10 +7,18 @@ import { Logger } from '../utils/logger';
 export class ValueAnalyzer {
     private astParser: ASTParser;
     private sourceDir: string;
+    private valuePattern?: RegExp;
 
-    constructor(sourceDir: string) {
+    constructor(sourceDir: string, valuePattern?: string) {
         this.astParser = container.astParser;
         this.sourceDir = sourceDir;
+        if (valuePattern) {
+            try {
+                this.valuePattern = new RegExp(valuePattern, 'i');
+            } catch (error) {
+                Logger.warn(`Invalid value pattern regex: ${valuePattern}. Using default behavior.`);
+            }
+        }
     }
 
     async analyzeFiles(filePaths: string[]): Promise<ValueInfo[]> {
@@ -62,32 +70,71 @@ export class ValueAnalyzer {
 
                 const interfaceName = this.astParser.extractValueType(valueNode);
                 
-                // Only include values that implement known interfaces
-                if (interfaceName && allInterfaces.has(interfaceName)) {
-                    // Calculate import path
-                    const importPath = this.calculateImportPath(filePath);
+                // Check if value should be included
+                // Values are detected by:
+                // 1. @value JSDoc annotation (default behavior)
+                // 2. Value name matching valuePattern regex (if configured)
+                const hasValueAnnotation = this.hasValueAnnotation(root, valueNode);
+                const matchesValuePattern = this.valuePattern ? this.valuePattern.test(valueName) : false;
 
-                    // Determine token - use interface name if available, otherwise use value name
-                    const token = interfaceName || valueName;
-
-                    // useValue is always singleton
-                    const scope: InjectionScope = 'singleton';
-
-                    values.push({
-                        name: valueName,
-                        filePath,
-                        interfaceName,
-                        importPath,
-                        scope,
-                        token,
-                    });
+                if (!hasValueAnnotation && !matchesValuePattern) {
+                    Logger.debug(`Skipping value ${valueName}: no @value annotation and doesn't match pattern`);
+                    continue;
                 }
+
+                // Calculate import path
+                const importPath = this.calculateImportPath(filePath);
+
+                // Determine token - use interface name if available, otherwise use value name
+                const token = interfaceName || valueName;
+
+                // useValue is always singleton
+                const scope: InjectionScope = 'singleton';
+
+                values.push({
+                    name: valueName,
+                    filePath,
+                    interfaceName,
+                    importPath,
+                    scope,
+                    token,
+                });
             }
         } catch (error) {
             Logger.warn(`Warning: Could not analyze values in ${filePath}:`, { error });
         }
 
         return values;
+    }
+
+    private hasValueAnnotation(root: any, valueNode: any): boolean {
+        try {
+            // Find all JSDoc comments in the file
+            const comments = root.findAll({
+                rule: {
+                    kind: 'comment'
+                }
+            });
+
+            const valueRange = valueNode.range();
+
+            // Find the JSDoc comment that appears immediately before this value
+            for (const comment of comments) {
+                const commentText = comment.text();
+                if (commentText.includes('/**') && commentText.includes('@value')) {
+                    const commentRange = comment.range();
+                    // Check if the comment comes before the value (within a few lines)
+                    if (commentRange.end.line < valueRange.start.line && 
+                        valueRange.start.line - commentRange.end.line <= 2) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        } catch {
+            return false;
+        }
     }
 
     private calculateImportPath(filePath: string): string {

@@ -13,6 +13,7 @@ export interface IoCConfig {
   verbose?: boolean;
   modules?: Record<string, string[]>;
   factoryPattern?: string;
+  valuePattern?: string;
 }
 
 export class ConfigManager {
@@ -65,7 +66,8 @@ export class ConfigManager {
       checkCycles: cliOptions.checkCycles || this.config.checkCycles || false,
       verbose: cliOptions.verbose || this.config.verbose || false,
       modules: cliOptions.modules || this.config.modules,
-      factoryPattern: cliOptions.factoryPattern || this.config.factoryPattern
+      factoryPattern: cliOptions.factoryPattern || this.config.factoryPattern,
+      valuePattern: cliOptions.valuePattern || this.config.valuePattern
     };
   }
 

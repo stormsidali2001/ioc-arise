@@ -31,6 +31,7 @@ use-value-example/
 2. **No Classes Required**: Perfect for functional programming patterns
 3. **Always Singleton**: `useValue` services are always singletons (pre-created instances)
 4. **Type Safety**: Full TypeScript support with interface types
+5. **Flexible Detection**: Values are detected by `@value` JSDoc annotation or `valuePattern` regex
 
 ## Example Code
 
@@ -50,6 +51,9 @@ export interface IUserService {
 // services/userService.ts
 import { IUserService } from './IUserService';
 
+/**
+ * @value
+ */
 export const userService: IUserService = {
   getUser: (id: string) => {
     return `User-${id}`;
@@ -63,6 +67,13 @@ export const userService: IUserService = {
   },
 };
 ```
+
+## Value Detection
+
+Values are automatically detected if they:
+- Are marked with `@value` JSDoc annotation (default behavior)
+- Match the `valuePattern` regex if configured in `ioc.config.json`
+- Implement a known interface (backward compatibility fallback)
 
 ## Generated Container
 
@@ -123,10 +134,23 @@ node ../../dist/index.js generate
 npx tsx demo.ts
 ```
 
+## Configuration
+
+You can configure value detection patterns in `ioc.config.json`:
+
+```json
+{
+  "valuePattern": "Service$"
+}
+```
+
+This will match any value name ending with "Service" (case-insensitive), in addition to values with `@value` annotations.
+
 ## Benefits
 
 1. **Functional Programming**: No classes required, just plain objects
 2. **Simple**: Direct object registration without construction logic
 3. **Type Safe**: Full TypeScript support with interfaces
 4. **Testable**: Easy to mock by providing different objects
+5. **Flexible**: Control detection scope with patterns in large projects
 

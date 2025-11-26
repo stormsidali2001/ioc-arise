@@ -51,6 +51,7 @@ export interface AnalyzerOptions {
   interfacePattern?: string;
   excludePatterns?: string[];
   factoryPattern?: string;
+  valuePattern?: string;
 }
 
 export interface GeneratorOptions {
