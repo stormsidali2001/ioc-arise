@@ -21,7 +21,7 @@ export class ErrorFactory {
       `Configuration file not found: ${filePath}`,
       { filePath },
       [
-        'Create an ioc.config.json file in your project root',
+        'Create an ioc.config.ts file in your project root',
         'Use --config flag to specify a different config file path',
         'Run with --help to see configuration options'
       ]
@@ -34,9 +34,9 @@ export class ErrorFactory {
       `Failed to parse configuration file: ${parseError}`,
       { filePath },
       [
-        'Check JSON syntax in your configuration file',
-        'Validate JSON using an online JSON validator',
-        'Ensure all strings are properly quoted'
+        'Check TypeScript syntax in your configuration file',
+        'Ensure defineConfig() is properly called',
+        'Verify the config object structure matches IoCConfig type'
       ]
     );
   }

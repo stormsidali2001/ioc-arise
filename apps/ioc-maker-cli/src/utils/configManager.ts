@@ -1,8 +1,9 @@
-import { existsSync, readFileSync } from 'fs';
-import { resolve, dirname } from 'path';
+import { existsSync } from 'fs';
+import { resolve } from 'path';
 import { ErrorFactory } from '../errors/errorFactory';
 import { ErrorUtils } from '../errors/IoCError';
 import { Logger } from './logger';
+import { ConfigParser } from './configParser';
 
 export interface IoCConfig {
   source?: string;
@@ -15,7 +16,7 @@ export interface IoCConfig {
 }
 
 export class ConfigManager {
-  private static readonly CONFIG_FILE_NAME = 'ioc.config.json';
+  private static readonly CONFIG_FILE_NAME = 'ioc.config.ts';
   private config: IoCConfig = {};
   private configPath: string;
 
@@ -28,22 +29,15 @@ export class ConfigManager {
   private loadConfig(): void {
     if (existsSync(this.configPath)) {
       try {
-        const configContent = readFileSync(this.configPath, 'utf-8');
-        this.config = JSON.parse(configContent);
+        this.config = ConfigParser.parseConfigFile(this.configPath);
       } catch (error) {
-        if (error instanceof SyntaxError) {
-          const parseError = ErrorFactory.configParseError(
-            this.configPath,
-            error.message
-          );
-          Logger.warn(`Warning: ${ErrorUtils.formatForConsole(parseError)}`);
-        } else {
-          const readError = ErrorFactory.fileReadError(
+        const parseError = error instanceof Error && error.message.includes('Could not find')
+          ? error
+          : ErrorFactory.configParseError(
             this.configPath,
             error instanceof Error ? error.message : String(error)
           );
-          Logger.warn(`Warning: ${ErrorUtils.formatForConsole(readError)}`);
-        }
+        Logger.warn(`Warning: ${ErrorUtils.formatForConsole(parseError)}`);
         Logger.log('   Using default configuration.');
         this.config = {};
       }

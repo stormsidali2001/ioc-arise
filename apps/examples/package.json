@@ -1,0 +1,32 @@
+{
+    "name": "@ioc-arise/examples",
+    "version": "1.0.0",
+    "private": true,
+    "description": "Examples demonstrating IoC Arise features",
+    "type": "module",
+    "scripts": {
+        "demo:use-value": "tsx use-value-example/demo.ts",
+        "demo:factory-functions": "tsx factory-functions-example/demo.ts",
+        "demo:scope": "tsx scope-example/demo.ts",
+        "demo:simple-modules": "tsx simple-modules/demo.ts",
+        "demo:name-collision": "tsx name-collision-example/demo.ts",
+        "generate:use-value": "ioc-arise generate --source use-value-example",
+        "generate:factory-functions": "ioc-arise generate --source factory-functions-example",
+        "generate:minimal-todo": "ioc-arise generate --source minimal-todo",
+        "generate:simple-modules": "ioc-arise generate --source simple-modules",
+        "generate:use-cases": "ioc-arise generate --source use-cases-example",
+        "generate:abstract-classes": "ioc-arise generate --source abstract-classes-example",
+        "generate:scope": "ioc-arise generate --source scope-example",
+        "generate:name-collision": "ioc-arise generate --source name-collision-example",
+        "generate:duplicate-interfaces": "ioc-arise generate --source duplicate-interfaces-example",
+        "generate:circular-deps-classes": "ioc-arise generate --source circular-deps-classes",
+        "generate:circular-deps-modules": "ioc-arise generate --source circular-deps-modules",
+        "generate:all": "pnpm generate:use-value && pnpm generate:factory-functions && pnpm generate:minimal-todo && pnpm generate:simple-modules && pnpm generate:use-cases && pnpm generate:abstract-classes && pnpm generate:scope && pnpm generate:name-collision && pnpm generate:duplicate-interfaces && pnpm generate:circular-deps-classes && pnpm generate:circular-deps-modules"
+    },
+    "devDependencies": {
+        "@notjustcoders/ioc-arise": "workspace:*",
+        "@notjustcoders/di-container": "workspace:*",
+        "tsx": "^4.7.0",
+        "typescript": "^5.3.0"
+    }
+}

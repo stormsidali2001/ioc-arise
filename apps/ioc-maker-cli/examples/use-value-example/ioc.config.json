@@ -1,6 +1,0 @@
-{
-  "source": ".",
-  "output": "container.gen.ts",
-  "interface": "^I[A-Z]"
-}
-
