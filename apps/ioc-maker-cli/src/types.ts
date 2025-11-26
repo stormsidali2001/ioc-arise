@@ -37,6 +37,15 @@ export interface FactoryInfo {
   contextObjectProperties?: { name: string; type: string }[]; // Properties in the context object
 }
 
+export interface ValueInfo {
+  name: string;              // Variable name (e.g., "userService")
+  filePath: string;
+  interfaceName?: string;     // Interface it implements (e.g., "IUserService")
+  importPath: string;
+  scope: InjectionScope;     // Always singleton for useValue
+  token?: string;            // Token for registration (defaults to interfaceName or name)
+}
+
 export interface AnalyzerOptions {
   sourceDir: string;
   interfacePattern?: string;

@@ -72,7 +72,7 @@ export const generateCommand = new Command('generate')
 
       Logger.custom('🚀', 'Starting analysis...', Logger.getColors().cyan + Logger.getColors().bright);
       // Analyze the project (including factories)
-      const { classes, factories } = await analyzeProjectWithFactories(sourceDir, {
+      const { classes, factories, values } = await analyzeProjectWithFactories(sourceDir, {
         sourceDir,
         interfacePattern: mergedOptions.interface,
         excludePatterns: mergedOptions.exclude
@@ -168,13 +168,16 @@ export const generateCommand = new Command('generate')
 
       // Generate container file
       Logger.custom('🚀', 'Generating container...', Logger.getColors().cyan + Logger.getColors().bright);
-      IoCContainerGenerator.generate(classes, outputPath, moduleGroupedClasses, factories);
+      IoCContainerGenerator.generate(classes, outputPath, moduleGroupedClasses, factories, values);
 
       Logger.success('Container generated successfully!');
       Logger.log(Logger.colorizeText(`   File: ${outputPath}`, Logger.getColors().gray));
       Logger.log(Logger.colorizeText(`   Classes: ${classes.length}`, Logger.getColors().gray));
       if (factories && factories.length > 0) {
         Logger.log(Logger.colorizeText(`   Factories: ${factories.length}`, Logger.getColors().gray));
+      }
+      if (values && values.length > 0) {
+        Logger.log(Logger.colorizeText(`   Values: ${values.length}`, Logger.getColors().gray));
       }
 
       if (mergedOptions.verbose) {

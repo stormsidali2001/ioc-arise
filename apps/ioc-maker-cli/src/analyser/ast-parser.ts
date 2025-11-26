@@ -696,4 +696,170 @@ export class ASTParser {
       return false;
     }
   }
+
+  findAllExportedValues(root: any): any[] {
+    const values: any[] = [];
+
+    try {
+      // Find variable declarations - try multiple AST node kinds
+      let variableDeclarations: any[] = [];
+
+      // Try lexical_declaration (for const/let)
+      try {
+        const lexicalDecls = root.findAll({
+          rule: {
+            kind: 'lexical_declaration'
+          }
+        });
+        variableDeclarations.push(...lexicalDecls);
+      } catch (e) {
+        Logger.debug('Could not find lexical_declaration nodes');
+      }
+
+      // Try variable_declaration as fallback
+      try {
+        const varDecls = root.findAll({
+          rule: {
+            kind: 'variable_declaration'
+          }
+        });
+        variableDeclarations.push(...varDecls);
+      } catch (e) {
+        Logger.debug('Could not find variable_declaration nodes');
+      }
+
+      Logger.debug(`Found ${variableDeclarations.length} variable declarations`);
+
+      for (const varDecl of variableDeclarations) {
+        const varText = varDecl.text();
+
+        // Check if it's a const declaration first
+        if (!varText.includes('const ')) {
+          continue;
+        }
+
+        // Check if it's exported - check the node itself and parent nodes
+        const isExported = this.isExportedValue(varDecl);
+
+        if (isExported) {
+          values.push(varDecl);
+        }
+      }
+    } catch (error) {
+      Logger.warn('Warning: Could not find exported values:', { error });
+    }
+
+    Logger.debug(`Returning ${values.length} exported values`);
+    return values;
+  }
+
+  extractValueName(valueNode: any): string | undefined {
+    try {
+      // Find the variable declarator
+      const declarators = valueNode.findAll({
+        rule: {
+          kind: 'variable_declarator'
+        }
+      });
+
+      if (declarators.length === 0) {
+        return undefined;
+      }
+
+      const declarator = declarators[0];
+      const identifier = declarator.find({
+        rule: {
+          kind: 'identifier'
+        }
+      });
+
+      if (identifier) {
+        return identifier.text();
+      }
+
+      // Fallback: try to extract from text
+      const text = declarator.text();
+      const match = text.match(/^(\w+)\s*:/);
+      return match ? match[1] : undefined;
+    } catch (error) {
+      Logger.warn('Warning: Could not extract value name:', { error });
+      return undefined;
+    }
+  }
+
+  extractValueType(valueNode: any): string | undefined {
+    try {
+      const declarators = valueNode.findAll({
+        rule: {
+          kind: 'variable_declarator'
+        }
+      });
+
+      if (declarators.length === 0) {
+        return undefined;
+      }
+
+      const declarator = declarators[0];
+
+      // Find type annotation
+      const typeAnnotation = declarator.find({
+        rule: {
+          kind: 'type_annotation'
+        }
+      });
+
+      if (typeAnnotation) {
+        // Find the type identifier
+        const typeIdentifier = typeAnnotation.find({
+          rule: {
+            kind: 'type_identifier'
+          }
+        });
+
+        if (typeIdentifier) {
+          return typeIdentifier.text();
+        }
+
+        // Try to extract from text
+        const typeText = typeAnnotation.text();
+        const match = typeText.match(/:\s*(\w+)/);
+        return match ? match[1] : undefined;
+      }
+
+      return undefined;
+    } catch (error) {
+      Logger.warn('Warning: Could not extract value type:', { error });
+      return undefined;
+    }
+  }
+
+  isExportedValue(valueNode: any): boolean {
+    try {
+      // Check if the variable declaration itself has export
+      const varText = valueNode.text();
+      if (varText.includes('export ')) {
+        return true;
+      }
+
+      // Check parent nodes for export
+      let parent = valueNode.parent();
+      let depth = 0;
+      while (parent && depth < 5) {
+        try {
+          const parentText = parent.text();
+          if (parentText.includes('export ')) {
+            return true;
+          }
+          parent = parent.parent();
+          depth++;
+        } catch (e) {
+          break;
+        }
+      }
+
+      return false;
+    } catch (error) {
+      return false;
+    }
+  }
 }

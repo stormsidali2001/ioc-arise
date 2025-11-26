@@ -409,5 +409,96 @@ describe('Container', () => {
             expect(service.value).toBe('A');
         });
     });
+
+    describe('useValue Support', () => {
+        it('should register and resolve a value using useValue', () => {
+            const config = { apiUrl: 'https://api.example.com', timeout: 5000 };
+
+            container.register('AppConfig', {
+                useValue: config,
+            });
+
+            const resolved = container.resolve('AppConfig');
+            expect(resolved).toBe(config);
+            expect(resolved.apiUrl).toBe('https://api.example.com');
+            expect(resolved.timeout).toBe(5000);
+        });
+
+        it('should always return the same instance for useValue (singleton behavior)', () => {
+            const userService = {
+                getUser: (id: string) => `User-${id}`,
+                createUser: (data: any) => ({ id: '1', ...data }),
+            };
+
+            container.register('IUserService', {
+                useValue: userService,
+            });
+
+            const instance1 = container.resolve('IUserService');
+            const instance2 = container.resolve('IUserService');
+
+            expect(instance1).toBe(instance2);
+            expect(instance1).toBe(userService);
+        });
+
+        it('should ignore dependencies for useValue providers', () => {
+            const service = { method: () => 'test' };
+
+            container.register('TestService', {
+                useValue: service,
+                // Dependencies should be ignored for useValue
+            });
+
+            const resolved = container.resolve('TestService');
+            expect(resolved).toBe(service);
+        });
+
+        it('should support explicit lifecycle for useValue', () => {
+            const service = { method: () => 'test' };
+
+            container.register('TestService', {
+                useValue: service,
+                lifecycle: Lifecycle.Singleton,
+            });
+
+            const resolved = container.resolve('TestService');
+            expect(resolved).toBe(service);
+        });
+
+        it('should support useValue in ContainerModule', () => {
+            const config = { env: 'production', debug: false };
+            const myModule = new ContainerModule();
+
+            myModule.register('AppConfig', {
+                useValue: config,
+            });
+
+            container.registerModule(myModule);
+
+            const resolved = container.resolve('AppConfig');
+            expect(resolved).toBe(config);
+            expect(resolved.env).toBe('production');
+        });
+
+        it('should support plain object services with useValue', () => {
+            interface IUserService {
+                getUser(id: string): string;
+                createUser(data: any): any;
+            }
+
+            const userService: IUserService = {
+                getUser: (id: string) => `User-${id}`,
+                createUser: (data: any) => ({ id: '1', ...data }),
+            };
+
+            container.register('IUserService', {
+                useValue: userService,
+            });
+
+            const resolved = container.resolve('IUserService');
+            expect(resolved.getUser('123')).toBe('User-123');
+            expect(resolved.createUser({ name: 'John' })).toEqual({ id: '1', name: 'John' });
+        });
+    });
 });
 

@@ -81,10 +81,33 @@ pnpm test8:generate
 
 ### 📚 Other Examples
 
-#### 10. **use-cases-example** - Use Case Pattern
+#### 10. **factory-functions-example** - Factory Functions
+Demonstrates factory function support for dependency injection:
+- Factory functions with dependencies
+- Context object pattern
+- Separate parameters pattern
+```bash
+cd apps/ioc-maker-cli/examples/factory-functions-example
+node ../../dist/index.js generate
+npx tsx demo.ts
+```
+
+#### 11. **use-cases-example** - Use Case Pattern
 Demonstrates the use case pattern with repositories and services.
 ```bash
 pnpm test6:generate
+```
+
+#### 12. **use-value-example** - Plain Object Services (useValue)
+Demonstrates using `useValue` for dependency injection with plain object services:
+- Plain object services (functional programming style)
+- Configuration objects
+- No classes required
+- Always singleton lifecycle
+```bash
+cd apps/ioc-maker-cli/examples/use-value-example
+node ../../dist/index.js generate
+npx tsx demo.ts
 ```
 
 ## Example Categories
@@ -94,6 +117,8 @@ pnpm test6:generate
 - **Abstract Classes**: abstract-classes-example
 - **Modules**: clean-architecture, simple-modules, circular-deps-modules
 - **Lifecycles**: scope-example
+- **Factory Functions**: factory-functions-example
+- **Plain Object Services (useValue)**: use-value-example
 
 ### By Learning Path
 1. Start with: **minimal-todo**

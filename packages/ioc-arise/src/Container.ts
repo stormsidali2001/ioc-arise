@@ -11,6 +11,7 @@ interface Provider<T> {
   token: Token<T>;
   useClass?: new (...args: any[]) => T;
   useFactory?: (...args: any[]) => T;
+  useValue?: T;
   dependencies?: Token<any>[];
   lifecycle: Lifecycle;
   instance?: T; // For singletons
@@ -27,6 +28,10 @@ type ProviderConfig<T> =
     dependencies?: Token<any>[];
     lifecycle?: Lifecycle;
     contextObject?: string[]; // Property names for context object (in dependency order)
+  }
+  | {
+    useValue: T;
+    lifecycle?: Lifecycle; // Optional, defaults to Singleton
   };
 
 export interface IContainer<TRegistry = Record<string, any>> {
@@ -49,7 +54,12 @@ export class Container<TRegistry = Record<string, any>>
   public registerModule(module: ContainerModule): void {
     const registrations = module.getRegistrations();
     for (const registration of registrations) {
-      if ('useFactory' in registration && registration.useFactory) {
+      if ('useValue' in registration && registration.useValue !== undefined) {
+        this.register(registration.token, {
+          useValue: registration.useValue,
+          lifecycle: registration.lifecycle,
+        });
+      } else if ('useFactory' in registration && registration.useFactory) {
         this.register(registration.token, {
           useFactory: registration.useFactory,
           dependencies: registration.dependencies,
@@ -90,12 +100,33 @@ export class Container<TRegistry = Record<string, any>>
       }) as (...args: any[]) => T;
     }
 
+    // Handle useValue - validate no dependencies and set default lifecycle
+    const useValue = 'useValue' in provider ? provider.useValue : undefined;
+    if (useValue !== undefined) {
+      // useValue providers are pre-created, so they can't have dependencies
+      // Default to Singleton since the value already exists
+      const lifecycle = provider.lifecycle || Lifecycle.Singleton;
+
+      this.providers.set(this.getTokenId(token), {
+        token,
+        useValue,
+        lifecycle,
+        dependencies: [], // useValue providers cannot have dependencies
+      });
+      return;
+    }
+
+    // For useClass and useFactory, get dependencies from provider
+    const dependencies = ('dependencies' in provider && provider.dependencies)
+      ? provider.dependencies
+      : [];
+
     this.providers.set(this.getTokenId(token), {
       token,
       useClass: 'useClass' in provider ? provider.useClass : undefined,
       useFactory,
       lifecycle: provider.lifecycle || Lifecycle.Transient,
-      dependencies: provider.dependencies || [],
+      dependencies,
     });
   }
 
@@ -117,6 +148,16 @@ export class Container<TRegistry = Record<string, any>>
       throw new Error(`Circular dependency detected: ${cycle}`);
     }
 
+    // Check for useValue first - return directly without dependency resolution
+    if (provider.useValue !== undefined) {
+      // useValue is always effectively a singleton (pre-created instance)
+      // Store it as instance for consistency with singleton pattern
+      if (provider.lifecycle === Lifecycle.Singleton && provider.instance === undefined) {
+        provider.instance = provider.useValue;
+      }
+      return provider.instance || provider.useValue;
+    }
+
     if (provider.lifecycle === Lifecycle.Singleton && provider.instance) {
       return provider.instance;
     }
@@ -133,7 +174,7 @@ export class Container<TRegistry = Record<string, any>>
         instance = new provider.useClass(...args);
       } else {
         throw new Error(
-          `Provider for token ${String(token)} must have either useClass or useFactory`,
+          `Provider for token ${String(token)} must have either useClass, useFactory, or useValue`,
         );
       }
 

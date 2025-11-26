@@ -1,6 +1,7 @@
-import { AnalyzerOptions, ClassInfo, FactoryInfo } from '../types';
+import { AnalyzerOptions, ClassInfo, FactoryInfo, ValueInfo } from '../types';
 import { ClassAnalyzer } from './class-analyzer';
 import { FactoryAnalyzer } from './factory-analyzer';
+import { ValueAnalyzer } from './value-analyzer';
 import { FileDiscovery } from './file-discovery';
 import { ErrorFactory } from '../errors/errorFactory';
 import { ErrorUtils } from '../errors/IoCError';
@@ -10,19 +11,22 @@ export class ProjectAnalyzer {
   private fileDiscovery: FileDiscovery;
   private classAnalyzer: ClassAnalyzer;
   private factoryAnalyzer: FactoryAnalyzer;
+  private valueAnalyzer: ValueAnalyzer;
 
   constructor(options: AnalyzerOptions) {
     this.fileDiscovery = new FileDiscovery(options.sourceDir, options.excludePatterns);
     this.classAnalyzer = new ClassAnalyzer(options.sourceDir, options.interfacePattern);
     this.factoryAnalyzer = new FactoryAnalyzer(options.sourceDir);
+    this.valueAnalyzer = new ValueAnalyzer(options.sourceDir);
   }
 
-  async analyzeProject(): Promise<{ classes: ClassInfo[]; factories: FactoryInfo[] }> {
+  async analyzeProject(): Promise<{ classes: ClassInfo[]; factories: FactoryInfo[]; values: ValueInfo[] }> {
     const tsFiles = await this.fileDiscovery.findTypeScriptFiles();
 
     // Analyze all files in a single batch operation for better performance
     const allClasses = await this.classAnalyzer.analyzeFiles(tsFiles);
     const allFactories = await this.factoryAnalyzer.analyzeFiles(tsFiles);
+    const allValues = await this.valueAnalyzer.analyzeFiles(tsFiles);
 
     // Validate that no interface is implemented by multiple classes
     this.validateUniqueInterfaceImplementations(allClasses);
@@ -30,7 +34,7 @@ export class ProjectAnalyzer {
     // Validate that no abstract class is extended by multiple classes
     this.validateUniqueAbstractClassExtensions(allClasses);
 
-    return { classes: allClasses, factories: allFactories };
+    return { classes: allClasses, factories: allFactories, values: allValues };
   }
 
 
