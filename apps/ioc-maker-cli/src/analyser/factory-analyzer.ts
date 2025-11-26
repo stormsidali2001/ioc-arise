@@ -8,10 +8,18 @@ import { Logger } from '../utils/logger';
 export class FactoryAnalyzer {
     private astParser: ASTParser;
     private sourceDir: string;
+    private factoryPattern?: RegExp;
 
-    constructor(sourceDir: string) {
+    constructor(sourceDir: string, factoryPattern?: string) {
         this.astParser = container.astParser;
         this.sourceDir = sourceDir;
+        if (factoryPattern) {
+            try {
+                this.factoryPattern = new RegExp(factoryPattern, 'i');
+            } catch (error) {
+                Logger.warn(`Invalid factory pattern regex: ${factoryPattern}. Using default behavior.`);
+            }
+        }
     }
 
     async analyzeFiles(filePaths: string[]): Promise<FactoryInfo[]> {
@@ -75,15 +83,16 @@ export class FactoryAnalyzer {
                     continue;
                 }
 
-                // Only analyze exported functions that look like factories
-                // Factory functions typically start with "create" or are explicitly marked
+                // Only analyze exported functions that are factories
+                // Factory functions are detected by:
+                // 1. @factory JSDoc comment (default behavior)
+                // 2. Function name matching factoryPattern regex (if configured)
                 const isExported = this.astParser.isExportedFunction(functionNode);
-                const isFactoryLike = functionName.toLowerCase().startsWith('create') ||
-                    functionName.toLowerCase().startsWith('make') ||
-                    functionName.toLowerCase().startsWith('build');
+                const hasFactoryAnnotation = this.hasFactoryAnnotation(root, functionNode);
+                const matchesFactoryPattern = this.factoryPattern ? this.factoryPattern.test(functionName) : false;
 
-                Logger.debug(`Function ${functionName}: isExported=${isExported}, isFactoryLike=${isFactoryLike}`);
-                if (!isExported || (!isFactoryLike && !this.hasFactoryAnnotation(functionNode))) {
+                Logger.debug(`Function ${functionName}: isExported=${isExported}, hasFactoryAnnotation=${hasFactoryAnnotation}, matchesFactoryPattern=${matchesFactoryPattern}`);
+                if (!isExported || (!hasFactoryAnnotation && !matchesFactoryPattern)) {
                     Logger.debug(`Skipping function ${functionName}`);
                     continue;
                 }
@@ -148,11 +157,31 @@ export class FactoryAnalyzer {
         return factories;
     }
 
-    private hasFactoryAnnotation(functionNode: any): boolean {
+    private hasFactoryAnnotation(root: any, functionNode: any): boolean {
         try {
-            const functionText = functionNode.text();
-            // Check for @factory annotation in JSDoc
-            return functionText.includes('@factory') || functionText.includes('@ioc-factory');
+            // Find all JSDoc comments in the file
+            const comments = root.findAll({
+                rule: {
+                    kind: 'comment'
+                }
+            });
+
+            const functionRange = functionNode.range();
+
+            // Find the JSDoc comment that appears immediately before this function
+            for (const comment of comments) {
+                const commentText = comment.text();
+                if (commentText.includes('/**') && commentText.includes('@factory')) {
+                    const commentRange = comment.range();
+                    // Check if the comment comes before the function (within a few lines)
+                    if (commentRange.end.line < functionRange.start.line &&
+                        functionRange.start.line - commentRange.end.line <= 2) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         } catch {
             return false;
         }

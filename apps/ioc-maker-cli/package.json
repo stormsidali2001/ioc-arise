@@ -38,7 +38,8 @@
     "test7:generate": "npm run build && node dist/index.js generate --source examples/name-collision-example",
     "test8:generate": "npm run build && node dist/index.js generate --source examples/abstract-classes-example",
     "test9:generate": "npm run build && node dist/index.js generate --source examples/factory-functions-example",
-    "test10:generate": "npm run build && node dist/index.js generate --source examples/use-value-example"
+    "test10:generate": "npm run build && node dist/index.js generate --source examples/use-value-example",
+    "test11:generate": "npm run build && node dist/index.js generate --source examples/factory-functions-example"
   },
   "keywords": [
     "ioc",

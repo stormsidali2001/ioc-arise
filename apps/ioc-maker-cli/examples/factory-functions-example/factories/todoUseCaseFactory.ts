@@ -4,6 +4,7 @@ import { ITodoRepository } from '../repositories/ITodoRepository';
 /**
  * Factory function using context object pattern
  * @scope singleton
+ * @factory
  */
 export function createTodoUseCase(
     context: { userRepo: IUserRepository, todoRepo: ITodoRepository }

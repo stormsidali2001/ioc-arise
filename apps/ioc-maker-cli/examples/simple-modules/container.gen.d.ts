@@ -8,13 +8,14 @@ import type { IUserService } from './user/IUserService';
 import type { IUserRepository } from './user/IUserRepository';
 import type { ITodoService } from './todo/ITodoService';
 import type { ITodoRepository } from './todo/ITodoRepository';
+import type { User } from './user/User';
+import type { Todo } from './todo/Todo';
 
 export interface ContainerRegistry {
   'IUserService': IUserService;
   'IUserRepository': IUserRepository;
   'ITodoService': ITodoService;
   'ITodoRepository': ITodoRepository;
+  'User': User;
+  'Todo': Todo;
 }
-
-type t = keyof ContainerRegistry
-type value = ContainerRegistry[t]

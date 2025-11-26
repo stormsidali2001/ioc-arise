@@ -16,7 +16,7 @@ export class ProjectAnalyzer {
   constructor(options: AnalyzerOptions) {
     this.fileDiscovery = new FileDiscovery(options.sourceDir, options.excludePatterns);
     this.classAnalyzer = new ClassAnalyzer(options.sourceDir, options.interfacePattern);
-    this.factoryAnalyzer = new FactoryAnalyzer(options.sourceDir);
+    this.factoryAnalyzer = new FactoryAnalyzer(options.sourceDir, options.factoryPattern);
     this.valueAnalyzer = new ValueAnalyzer(options.sourceDir);
   }
 

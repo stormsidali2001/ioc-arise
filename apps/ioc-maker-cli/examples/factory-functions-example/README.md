@@ -47,9 +47,9 @@ export function createTodoUseCase(
 ## Key Features
 
 1. **Factory Detection**: IoC Arise automatically detects exported functions that:
-   - Start with `create`, `make`, or `build`
-   - Are marked with `@factory` or `@ioc-factory` annotation
-   - Have exported functions
+   - Are marked with `@factory` JSDoc annotation (default behavior)
+   - Match the `factoryPattern` regex if configured in `ioc.config.json`
+   - Are exported functions
 
 2. **Dependency Injection**: Factory functions receive their dependencies as parameters, which are automatically resolved by the container.
 

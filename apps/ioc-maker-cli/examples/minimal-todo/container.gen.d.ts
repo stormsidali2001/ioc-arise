@@ -6,8 +6,10 @@
  */
 import type { ITodoService } from './services/ITodoService';
 import type { ITodoRepository } from './repositories/ITodoRepository';
+import type { Todo } from './entities/Todo';
 
 export interface ContainerRegistry {
   'ITodoService': ITodoService;
   'ITodoRepository': ITodoRepository;
+  'Todo': Todo;
 }

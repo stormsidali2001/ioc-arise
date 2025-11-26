@@ -18,6 +18,7 @@ export const generateCommand = new Command('generate')
   .option('-o, --output <file>', 'Output file path', 'container.gen.ts')
   .option('-i, --interface <pattern>', 'Interface name pattern to match (regex)')
   .option('-e, --exclude <patterns...>', 'Exclude patterns for files')
+  .option('--factory-pattern <pattern>', 'Factory function name pattern to match (regex). Default: functions with @factory JSDoc comment')
   .option('--check-cycles', 'Only check for circular dependencies without generating')
   .option('--verbose', 'Enable verbose logging')
   .action(async (options) => {
@@ -75,7 +76,8 @@ export const generateCommand = new Command('generate')
       const { classes, factories, values } = await analyzeProjectWithFactories(sourceDir, {
         sourceDir,
         interfacePattern: mergedOptions.interface,
-        excludePatterns: mergedOptions.exclude
+        excludePatterns: mergedOptions.exclude,
+        factoryPattern: mergedOptions.factoryPattern
       });
 
       if (classes.length === 0) {

@@ -50,6 +50,7 @@ export interface AnalyzerOptions {
   sourceDir: string;
   interfacePattern?: string;
   excludePatterns?: string[];
+  factoryPattern?: string;
 }
 
 export interface GeneratorOptions {

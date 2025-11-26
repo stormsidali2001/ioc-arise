@@ -100,26 +100,11 @@ container.register('createUserUseCase', {
 ## Detection
 
 Functions are automatically detected if they:
-- Start with `create`, `make`, or `build`
-- Are marked with `@factory` or `@ioc-factory`
+- Are marked with `@factory` JSDoc annotation (default behavior)
+- Match the `factoryPattern` regex if configured in `ioc.config.json`
 - Are exported
 
 ```typescript
-// ✅ Detected - starts with 'create'
-export function createUserService(repo: IUserRepository) {
-  return { /* ... */ };
-}
-
-// ✅ Detected - starts with 'make'
-export function makeConfig() {
-  return { /* ... */ };
-}
-
-// ✅ Detected - starts with 'build'
-export function buildRepository() {
-  return { /* ... */ };
-}
-
 // ✅ Detected - marked with @factory
 /**
  * @factory
@@ -128,15 +113,12 @@ export function myFactory() {
   return { /* ... */ };
 }
 
-// ✅ Detected - marked with @ioc-factory
-/**
- * @ioc-factory
- */
-export function anotherFactory() {
+// ✅ Detected - matches factoryPattern if configured (e.g., "factory")
+export function createUserFactory(repo: IUserRepository) {
   return { /* ... */ };
 }
 
-// ❌ Not detected - doesn't start with create/make/build and no annotation
+// ❌ Not detected - no @factory annotation and doesn't match pattern
 export function getUserService() {
   return { /* ... */ };
 }
