@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Container, Lifecycle } from '../src/Container';
 import { ContainerModule } from '../src/ContainerModule';
-import { Module } from '../src/Module';
 
 class ServiceA {
     sayHello() { return 'Hello from A'; }
@@ -282,6 +281,132 @@ describe('Container', () => {
             expect(client).toBeInstanceOf(ApiClient);
             expect(client.getUrl()).toBe('https://api.production.example.com');
             expect(client.getRetries()).toBe(3);
+        });
+
+        it('should support factory functions with context object pattern', () => {
+            interface IRepo1 {
+                getValue(): string;
+            }
+
+            interface IRepo2 {
+                getValue(): string;
+            }
+
+            class Repo1 implements IRepo1 {
+                getValue() { return 'Repo1'; }
+            }
+
+            class Repo2 implements IRepo2 {
+                getValue() { return 'Repo2'; }
+            }
+
+            function createUseCase(context: { repo1: IRepo1, repo2: IRepo2 }) {
+                return () => {
+                    return `${context.repo1.getValue()}-${context.repo2.getValue()}`;
+                };
+            }
+
+            container.register('IRepo1', {
+                useClass: Repo1,
+                lifecycle: Lifecycle.Singleton,
+            });
+
+            container.register('IRepo2', {
+                useClass: Repo2,
+                lifecycle: Lifecycle.Singleton,
+            });
+
+            container.register('IUseCase', {
+                useFactory: createUseCase,
+                dependencies: ['IRepo1', 'IRepo2'],
+                contextObject: ['repo1', 'repo2'],
+                lifecycle: Lifecycle.Singleton,
+            });
+
+            const useCase = container.resolve('IUseCase');
+            expect(typeof useCase).toBe('function');
+            expect(useCase()).toBe('Repo1-Repo2');
+        });
+
+        it('should support context object pattern with singleton lifecycle', () => {
+            class ServiceA {
+                id = Math.random();
+            }
+
+            function createService(context: { serviceA: ServiceA }) {
+                return context.serviceA;
+            }
+
+            container.register(ServiceA, {
+                useClass: ServiceA,
+                lifecycle: Lifecycle.Singleton,
+            });
+
+            container.register('IService', {
+                useFactory: createService,
+                dependencies: [ServiceA],
+                contextObject: ['serviceA'],
+                lifecycle: Lifecycle.Singleton,
+            });
+
+            const instance1 = container.resolve('IService');
+            const instance2 = container.resolve('IService');
+
+            expect(instance1).toBe(instance2);
+            expect(instance1.id).toBe(instance2.id);
+        });
+
+        it('should support context object pattern with transient lifecycle', () => {
+            let callCount = 0;
+
+            class ServiceA {
+                id = callCount++;
+            }
+
+            function createService(context: { serviceA: ServiceA }) {
+                return { id: context.serviceA.id };
+            }
+
+            container.register(ServiceA, {
+                useClass: ServiceA,
+                lifecycle: Lifecycle.Transient,
+            });
+
+            container.register('IService', {
+                useFactory: createService,
+                dependencies: [ServiceA],
+                contextObject: ['serviceA'],
+                lifecycle: Lifecycle.Transient,
+            });
+
+            const instance1 = container.resolve('IService');
+            const instance2 = container.resolve('IService');
+
+            expect(instance1).not.toBe(instance2);
+        });
+
+        it('should maintain backward compatibility with individual parameters', () => {
+            class ServiceA {
+                value = 'A';
+            }
+
+            function createService(serviceA: ServiceA) {
+                return { value: serviceA.value };
+            }
+
+            container.register(ServiceA, {
+                useClass: ServiceA,
+                lifecycle: Lifecycle.Singleton,
+            });
+
+            container.register('IService', {
+                useFactory: createService,
+                dependencies: [ServiceA],
+                lifecycle: Lifecycle.Singleton,
+            });
+
+            const service = container.resolve('IService');
+            expect(service.value).toBe('A');
         });
     });
 });

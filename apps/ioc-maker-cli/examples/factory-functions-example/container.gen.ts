@@ -6,6 +6,7 @@ import { Container, Lifecycle } from '@notjustcoders/di-container';
 import type { ContainerRegistry } from './container.gen.d';
 import { UserRepository } from './repositories/UserRepository';
 import { TodoRepository } from './repositories/TodoRepository';
+import { createUserUseCase } from './factories/userUseCaseFactory';
 import { createTodoUseCase } from './factories/todoUseCaseFactory';
 
 export const container = new Container<ContainerRegistry>();
@@ -20,8 +21,14 @@ container.register('ITodoRepository', {
   lifecycle: Lifecycle.Singleton,
 });
 
+container.register('createUserUseCase', {
+  useFactory: createUserUseCase,
+  dependencies: ['IUserRepository'],
+  lifecycle: Lifecycle.Singleton,
+});
+
 container.register('createTodoUseCase', {
-  useFactory: createTodoUseCase,
+  useFactory: (userRepo, todoRepo) => createTodoUseCase({ userRepo, todoRepo }),
   dependencies: ['IUserRepository', 'ITodoRepository'],
   lifecycle: Lifecycle.Singleton,
 });

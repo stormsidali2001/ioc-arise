@@ -26,6 +26,7 @@ type ProviderConfig<T> =
     useFactory: (...args: any[]) => T;
     dependencies?: Token<any>[];
     lifecycle?: Lifecycle;
+    contextObject?: string[]; // Property names for context object (in dependency order)
   };
 
 export interface IContainer<TRegistry = Record<string, any>> {
@@ -68,10 +69,31 @@ export class Container<TRegistry = Record<string, any>>
     return typeof token === "function" ? token.name : token;
   }
   public register<T>(token: Token<T>, provider: ProviderConfig<T>): void {
+    let useFactory = 'useFactory' in provider ? provider.useFactory : undefined;
+    
+    // If contextObject is specified, wrap the factory to pass dependencies as an object
+    if (useFactory && 'contextObject' in provider && provider.contextObject) {
+      const originalFactory = useFactory;
+      const contextPropertyNames = provider.contextObject;
+      
+      // Create a wrapper that passes dependencies as a context object
+      useFactory = ((...args: any[]) => {
+        const context: Record<string, any> = {};
+        // Map dependencies to context object properties by index
+        args.forEach((arg, index) => {
+          const propName = contextPropertyNames[index];
+          if (propName) {
+            context[propName] = arg;
+          }
+        });
+        return originalFactory(context);
+      }) as (...args: any[]) => T;
+    }
+    
     this.providers.set(this.getTokenId(token), {
       token,
       useClass: 'useClass' in provider ? provider.useClass : undefined,
-      useFactory: 'useFactory' in provider ? provider.useFactory : undefined,
+      useFactory,
       lifecycle: provider.lifecycle || Lifecycle.Transient,
       dependencies: provider.dependencies || [],
     });

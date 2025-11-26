@@ -465,8 +465,25 @@ ${indent}});`;
                 ? 'Lifecycle.Singleton'
                 : 'Lifecycle.Transient';
 
+            // Generate factory function - wrap if context object pattern is used
+            let factoryFunction: string;
+            if (factory.useContextObject && factory.contextObjectProperties) {
+                // Generate wrapper function that passes dependencies as context object
+                const contextProps = factory.contextObjectProperties.map(prop => prop.name).join(', ');
+                const contextObject = factory.contextObjectProperties.map(prop => `${prop.name}`).join(', ');
+                const depParams = factory.dependencies.map((_, index) => {
+                    const propName = factory.contextObjectProperties?.[index]?.name || `dep${index}`;
+                    return propName;
+                }).join(', ');
+
+                factoryFunction = `(${depParams}) => ${factory.name}({ ${contextObject} })`;
+            } else {
+                // Use factory directly (existing behavior)
+                factoryFunction = factory.name;
+            }
+
             return `${indent}container.register(${token}, {
-${indent}  useFactory: ${factory.name},${dependencies}
+${indent}  useFactory: ${factoryFunction},${dependencies}
 ${indent}  lifecycle: ${lifecycle},
 ${indent}});`;
         }).join('\n\n');

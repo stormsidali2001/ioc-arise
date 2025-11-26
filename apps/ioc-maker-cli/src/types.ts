@@ -32,6 +32,9 @@ export interface FactoryInfo {
   importPath: string;
   scope: InjectionScope;
   token?: string; // Optional token name for registration
+  useContextObject?: boolean; // Whether factory uses context object pattern
+  contextObjectName?: string; // Name of the context parameter (e.g., "context")
+  contextObjectProperties?: { name: string; type: string }[]; // Properties in the context object
 }
 
 export interface AnalyzerOptions {

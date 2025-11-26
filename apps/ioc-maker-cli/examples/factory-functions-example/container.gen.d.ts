@@ -6,10 +6,12 @@
  */
 import type { IUserRepository } from './repositories/IUserRepository';
 import type { ITodoRepository } from './repositories/ITodoRepository';
+import { createUserUseCase } from './factories/userUseCaseFactory';
 import { createTodoUseCase } from './factories/todoUseCaseFactory';
 
 export interface ContainerRegistry {
   'IUserRepository': IUserRepository;
   'ITodoRepository': ITodoRepository;
+  'createUserUseCase': ReturnType<typeof createUserUseCase>;
   'createTodoUseCase': ReturnType<typeof createTodoUseCase>;
 }

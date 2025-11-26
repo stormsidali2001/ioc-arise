@@ -581,12 +581,27 @@ export class ASTParser {
         const paramText = paramNode.text();
         Logger.debug('Function parameter text:', paramText);
 
-        // Parse parameter: name: type
-        const paramMatch = paramText.match(/(\w+)(\?)?\s*:\s*(\w+)/);
+        // Try to parse object type parameter FIRST: name: { prop1: Type1, prop2: Type2 }
+        // This must come before simple parameter parsing to avoid matching nested properties
+        const objectParamMatch = paramText.match(/(\w+)(\?)?\s*:\s*\{/);
+        if (objectParamMatch) {
+          const [, name, optional] = objectParamMatch;
+          // For object types, extract the full object type string
+          // Use a more robust regex that handles multi-line and nested braces
+          const fullTypeMatch = paramText.match(/:\s*(\{[^}]*\})/s);
+          const type = fullTypeMatch ? fullTypeMatch[1] : 'object';
+          parameters.push({
+            name: name.trim(),
+            type: type.trim(),
+            isOptional: !!optional,
+          });
+          continue;
+        }
 
-        if (paramMatch) {
-          const [, name, optional, type] = paramMatch;
-
+        // Try to parse simple parameter: name: type
+        const simpleParamMatch = paramText.match(/(\w+)(\?)?\s*:\s*(\w+)/);
+        if (simpleParamMatch) {
+          const [, name, optional, type] = simpleParamMatch;
           parameters.push({
             name: name.trim(),
             type: type.trim(),
@@ -599,6 +614,44 @@ export class ASTParser {
     }
 
     return parameters;
+  }
+
+  extractObjectTypeProperties(functionNode: any, paramName: string): { name: string; type: string }[] {
+    const properties: { name: string; type: string }[] = [];
+
+    try {
+      const functionText = functionNode.text();
+
+      // Find the parameter with the given name - handle both single line and multi-line
+      // Pattern: paramName: { prop1: Type1, prop2: Type2 }
+      const paramPattern = new RegExp(`${paramName}\\s*:\\s*\\{([^}]+)\\}`, 's');
+      const match = functionText.match(paramPattern);
+
+      if (!match || !match[1]) {
+        return properties;
+      }
+
+      const objectBody = match[1];
+
+      // Extract properties: prop1: Type1, prop2: Type2
+      // Handle both single line and multi-line formats
+      // Match property name and type (type can be a simple identifier like IUserRepository)
+      const propertyPattern = /(\w+)\s*:\s*(\w+)/g;
+      let propMatch;
+
+      while ((propMatch = propertyPattern.exec(objectBody)) !== null) {
+        if (propMatch[1] && propMatch[2]) {
+          properties.push({
+            name: propMatch[1].trim(),
+            type: propMatch[2].trim(),
+          });
+        }
+      }
+    } catch (error) {
+      Logger.warn('Warning: Could not extract object type properties:', { error });
+    }
+
+    return properties;
   }
 
   extractFunctionReturnType(functionNode: any): string | undefined {
