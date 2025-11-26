@@ -1,10 +1,10 @@
-import { ContainerModule } from './ContainerModule';
+import { ContainerModule } from "./ContainerModule";
 
 export type Token<T> = string | symbol | (new (...args: any[]) => T);
 
 export enum Lifecycle {
-  Transient = 'TRANSIENT',
-  Singleton = 'SINGLETON',
+  Transient = "TRANSIENT",
+  Singleton = "SINGLETON",
 }
 
 interface Provider<T> {
@@ -23,13 +23,15 @@ export interface IContainer<TRegistry = Record<string, any>> {
       useClass: new (...args: any[]) => T;
       dependencies?: Token<any>[];
       lifecycle?: Lifecycle;
-    }
+    },
   ): void;
   registerModule(module: ContainerModule): void;
   createChild(): IContainer<TRegistry>;
 }
 
-export class Container<TRegistry = Record<string, any>> implements IContainer<TRegistry> {
+export class Container<TRegistry = Record<string, any>>
+  implements IContainer<TRegistry>
+{
   private providers = new Map<Token<any>, Provider<any>>();
   private parent?: Container<TRegistry>;
   private resolutionStack = new Set<Token<any>>();
@@ -50,7 +52,7 @@ export class Container<TRegistry = Record<string, any>> implements IContainer<TR
   }
 
   private getTokenId(token: Token<any>): string | symbol {
-    return typeof token === 'function' ? token.name : token;
+    return typeof token === "function" ? token.name : token;
   }
   public register<T>(
     token: Token<T>,
@@ -58,7 +60,7 @@ export class Container<TRegistry = Record<string, any>> implements IContainer<TR
       useClass: new (...args: any[]) => T;
       dependencies?: Token<any>[];
       lifecycle?: Lifecycle;
-    }
+    },
   ): void {
     this.providers.set(this.getTokenId(token), {
       token,
@@ -71,7 +73,11 @@ export class Container<TRegistry = Record<string, any>> implements IContainer<TR
   public resolve<K extends keyof TRegistry>(token: K): TRegistry[K];
   public resolve<T>(token: Token<T>): T;
   public resolve(token: any): any {
-    console.log({ token, providers: this.providers, provider: this.providers.get(this.getTokenId(token)) })
+    console.log({
+      token,
+      providers: this.providers,
+      provider: this.providers.get(this.getTokenId(token)),
+    });
     const provider = this.providers.get(this.getTokenId(token));
 
     if (provider == null) {
@@ -79,8 +85,11 @@ export class Container<TRegistry = Record<string, any>> implements IContainer<TR
     }
 
     // Circular dependency check
-    if (this.resolutionStack.has(this.getTokenId(token))) {
-      const cycle = [...this.resolutionStack, token].map(t => String(t)).join(' -> ');
+
+    if (this.resolutionStack.has(token)) {
+      const cycle = [...this.resolutionStack, token]
+        .map((t) => String(t))
+        .join(" -> ");
       throw new Error(`Circular dependency detected: ${cycle}`);
     }
 
