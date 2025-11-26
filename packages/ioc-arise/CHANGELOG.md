@@ -1,5 +1,11 @@
 # @notjustcoders/di-container
 
+## 1.0.7
+
+### Patch Changes
+
+- fix: issues related to valueObjects and factories detection
+
 ## 1.0.6
 
 ### Patch Changes

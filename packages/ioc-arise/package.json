@@ -1,6 +1,6 @@
 {
     "name": "@notjustcoders/di-container",
-    "version": "1.0.6",
+    "version": "1.0.7",
     "description": "A lightweight, type-safe dependency injection framework for TypeScript with zero decorators.",
     "main": "dist/index.js",
     "module": "dist/index.js",

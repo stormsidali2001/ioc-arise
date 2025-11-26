@@ -1,5 +1,13 @@
 # @notjustcoders/ioc-arise
 
+## 1.1.19
+
+### Patch Changes
+
+- fix: issues related to valueObjects and factories detection
+- Updated dependencies
+  - @notjustcoders/di-container@1.0.7
+
 ## 1.1.18
 
 ### Patch Changes
