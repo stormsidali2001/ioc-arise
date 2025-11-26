@@ -1,5 +1,11 @@
 # @notjustcoders/di-container
 
+## 1.0.6
+
+### Patch Changes
+
+- feat: supporting value objects
+
 ## 1.0.5
 
 ### Patch Changes

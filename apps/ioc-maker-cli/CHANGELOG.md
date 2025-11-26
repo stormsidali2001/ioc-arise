@@ -1,5 +1,13 @@
 # @notjustcoders/ioc-arise
 
+## 1.1.18
+
+### Patch Changes
+
+- feat: supporting value objects
+- Updated dependencies
+  - @notjustcoders/di-container@1.0.6
+
 ## 1.1.17
 
 ### Patch Changes
