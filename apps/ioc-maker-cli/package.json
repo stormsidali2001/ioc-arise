@@ -29,15 +29,14 @@
     "test:watch": "vitest --watch",
     "prepublishOnly": "npm run build",
     "prepack": "npm run build",
-    "test1:generate": "npm run build && node dist/index.js generate --source examples/clean-architecture",
-    "test2:generate": "npm run build && node dist/index.js generate --source examples/circular-deps-modules",
-    "test3:generate": "npm run build && node dist/index.js generate --source examples/circular-deps-classes",
-    "test4:generate": "npm run build && node dist/index.js generate --source examples/minimal-todo",
-    "test5:generate": "npm run build && node dist/index.js generate --source examples/simple-modules",
-    "test6:generate": "npm run build && node dist/index.js generate --source examples/use-cases-example",
-    "test7:generate": "npm run build && node dist/index.js generate --source examples/duplicate-interfaces-example",
-    "test8:generate": "npm run build && node dist/index.js generate --source examples/name-collision-example",
-    "test9:generate": "npm run build && node dist/index.js generate --source examples/abstract-classes-example"
+    "test1:generate": "npm run build && node dist/index.js generate --source examples/circular-deps-modules",
+    "test2:generate": "npm run build && node dist/index.js generate --source examples/circular-deps-classes",
+    "test3:generate": "npm run build && node dist/index.js generate --source examples/minimal-todo",
+    "test4:generate": "npm run build && node dist/index.js generate --source examples/simple-modules",
+    "test5:generate": "npm run build && node dist/index.js generate --source examples/use-cases-example",
+    "test6:generate": "npm run build && node dist/index.js generate --source examples/duplicate-interfaces-example",
+    "test7:generate": "npm run build && node dist/index.js generate --source examples/name-collision-example",
+    "test8:generate": "npm run build && node dist/index.js generate --source examples/abstract-classes-example"
   },
   "keywords": [
     "ioc",

@@ -89,12 +89,6 @@ export default defineConfig({
                     ],
                 },
                 {
-                    label: 'Architecture Patterns',
-                    items: [
-                        { label: 'Clean Architecture', link: '/architecture-patterns/clean-architecture/' },
-                    ],
-                },
-                {
                     label: 'Error Detection',
                     items: [
                         { label: 'Duplicate Interface Detection', link: '/error-detection/duplicate-interfaces-example/' },

@@ -124,6 +124,58 @@ const controller = container.resolve(UserController);
   </TabItem>
 </Tabs>
 
+## Class Structure
+
+This example demonstrates mixing interface-based and direct class dependencies:
+
+```mermaid
+classDiagram
+    class IUserRepository {
+        <<interface>>
+        +findById(id) Promise~User~
+        +save(user) Promise~void~
+    }
+    class UserRepository {
+        +findById(id) Promise~User~
+        +save(user) Promise~void~
+    }
+    class IEmailService {
+        <<interface>>
+        +sendEmail(to, subject, body) Promise~void~
+    }
+    class EmailService {
+        +sendEmail(to, subject, body) Promise~void~
+    }
+    class CreateUserUseCase {
+        -userRepository: IUserRepository
+        -emailService: IEmailService
+        +execute(name, email) Promise~void~
+    }
+    class GetUserUseCase {
+        -userRepository: IUserRepository
+        +execute(userId) Promise~void~
+    }
+    class UserController {
+        -createUserUseCase: CreateUserUseCase
+        -getUserUseCase: GetUserUseCase
+        +createUser(name, email) Promise~void~
+        +getUser(userId) Promise~void~
+    }
+    
+    IUserRepository <|.. UserRepository : implements
+    IEmailService <|.. EmailService : implements
+    CreateUserUseCase --> IUserRepository : depends on
+    CreateUserUseCase --> IEmailService : depends on
+    GetUserUseCase --> IUserRepository : depends on
+    UserController --> CreateUserUseCase : depends on
+    UserController --> GetUserUseCase : depends on
+```
+
+**Key Pattern:**
+- Repositories and services use interfaces (string token resolution)
+- Use cases and controllers are direct classes (constructor resolution)
+- Both resolution methods work seamlessly together
+
 ## Service Definitions
 
 ### User Entity and Repository Interface

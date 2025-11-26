@@ -35,6 +35,29 @@ graph LR
     style B fill:#ff6b6b
 ```
 
+The class structure shows the circular dependency:
+
+```mermaid
+classDiagram
+    class IClassA {
+        <<interface>>
+    }
+    class ClassA {
+    }
+    class IClassB {
+        <<interface>>
+    }
+    class ClassB {
+    }
+    
+    IClassA <|.. ClassA : implements
+    IClassB <|.. ClassB : implements
+    ClassA --> IClassB : depends on
+    ClassB --> IClassA : depends on
+```
+
+**The Cycle:** `ClassA` → `IClassB` (resolves to `ClassB`) → `IClassA` (resolves to `ClassA`) → **impossible to instantiate!**
+
 ## Project Structure
 
 <FileTree>

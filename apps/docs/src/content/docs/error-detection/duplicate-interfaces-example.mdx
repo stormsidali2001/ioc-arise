@@ -46,6 +46,37 @@ This example demonstrates how IoC Arise handles the **error case** where multipl
   </Card>
 </CardGrid>
 
+## Class Structure
+
+Multiple classes implementing the same interface creates ambiguity:
+
+```mermaid
+classDiagram
+    class INotificationService {
+        <<interface>>
+        +sendNotification(message, recipient) Promise~void~
+        +getServiceName() string
+    }
+    class EmailNotificationService {
+        +sendNotification(message, recipient) Promise~void~
+        +getServiceName() string
+    }
+    class SmsNotificationService {
+        +sendNotification(message, recipient) Promise~void~
+        +getServiceName() string
+    }
+    class PushNotificationService {
+        +sendNotification(message, recipient) Promise~void~
+        +getServiceName() string
+    }
+    
+    INotificationService <|.. EmailNotificationService : implements
+    INotificationService <|.. SmsNotificationService : implements
+    INotificationService <|.. PushNotificationService : implements
+```
+
+**The Problem:** When resolving `INotificationService`, which implementation should the container use? All three classes implement the same interface, creating ambiguity.
+
 ## Code Examples
 
 <Tabs>

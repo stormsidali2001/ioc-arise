@@ -121,6 +121,37 @@ export class ServiceB implements IServiceB {
   </TabItem>
 </Tabs>
 
+## Class Structure
+
+The module-level circular dependency creates an unsolvable cycle:
+
+```mermaid
+classDiagram
+    class ModuleA {
+        <<module>>
+    }
+    class IServiceA {
+        <<interface>>
+    }
+    class ServiceA {
+    }
+    class ModuleB {
+        <<module>>
+    }
+    class IServiceB {
+        <<interface>>
+    }
+    class ServiceB {
+    }
+    
+    IServiceA <|.. ServiceA : implements
+    IServiceB <|.. ServiceB : implements
+    ServiceA --> IServiceB : depends on
+    ServiceB --> IServiceA : depends on
+```
+
+**The Cycle:** `ModuleA` (via `ServiceA`) → `ModuleB` (via `IServiceB`) → `ModuleA` (via `IServiceA`) → **impossible to load either module!**
+
 ## IoC Arise Detection
 
 :::tip[🔍 Automatic Module-Level Detection]

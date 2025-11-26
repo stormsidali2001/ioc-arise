@@ -70,6 +70,36 @@ This example showcases a **User Module** and **Product Module** with cross-modul
   </Card>
 </CardGrid>
 
+## Class Structure
+
+Abstract classes provide both contracts and shared implementation:
+
+```mermaid
+classDiagram
+    class AbstractUserRepository {
+        <<abstract>>
+    }
+    class UserRepository {
+    }
+    class AbstractProductRepository {
+        <<abstract>>
+    }
+    class ProductRepository {
+    }
+    class ProductUseCase {
+    }
+    
+    AbstractUserRepository <|-- UserRepository : extends
+    AbstractProductRepository <|-- ProductRepository : extends
+    ProductUseCase --> AbstractProductRepository : depends on
+    ProductUseCase ..> AbstractUserRepository : cross-module
+```
+
+**Key Pattern:**
+- Abstract classes define contracts and provide shared `log()` implementation
+- Concrete repositories extend abstract classes and implement abstract methods
+- `ProductUseCase` depends on both abstract classes, including cross-module `AbstractUserRepository`
+
 ## Entity Definitions
 
 <Tabs>

@@ -38,6 +38,55 @@ This example demonstrates the simplest possible IoC Arise setup with a todo list
   - README.md
 </FileTree>
 
+## Class Structure
+
+The complete dependency graph for the Todo application:
+
+```mermaid
+classDiagram
+    class ITodoService {
+        <<interface>>
+        +createTodo(data) Promise~Todo~
+        +getAllTodos() Promise~Todo[]~
+        +getTodoById(id) Promise~Todo~
+    }
+    class TodoService {
+        -todoRepository: ITodoRepository
+        +createTodo(data) Promise~Todo~
+        +getAllTodos() Promise~Todo[]~
+        +getTodoById(id) Promise~Todo~
+    }
+    class ITodoRepository {
+        <<interface>>
+        +create(todo) Promise~Todo~
+        +findAll() Promise~Todo[]~
+        +findById(id) Promise~Todo~
+    }
+    class InMemoryTodoRepository {
+        -todos: Todo[]
+        +create(todo) Promise~Todo~
+        +findAll() Promise~Todo[]~
+        +findById(id) Promise~Todo~
+    }
+    class Todo {
+        +id: string
+        +title: string
+        +description: string
+        +completed: boolean
+        +markAsCompleted()
+        +markAsPending()
+    }
+    
+    ITodoService <|.. TodoService : implements
+    ITodoRepository <|.. InMemoryTodoRepository : implements
+    TodoService --> ITodoRepository : depends on
+```
+
+**Dependency Flow:**
+- `TodoService` implements `ITodoService` and depends on `ITodoRepository`
+- `InMemoryTodoRepository` implements `ITodoRepository`
+- `Todo` is a domain entity with no dependencies
+
 {/* Body Section with Open Loops */}
 
 ## Todo Entity

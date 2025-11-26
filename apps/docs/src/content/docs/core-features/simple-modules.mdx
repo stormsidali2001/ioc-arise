@@ -67,6 +67,72 @@ This example demonstrates IoC Arise's **powerful module system** for organizing 
   </Card>
 </CardGrid>
 
+## Class Structure
+
+The module system organizes classes into logical groups with cross-module dependencies:
+
+```mermaid
+classDiagram
+    class UserModule {
+        <<module>>
+    }
+    class IUserService {
+        <<interface>>
+        +createUser(name, email) Promise~User~
+        +getUserById(id) Promise~User~
+    }
+    class UserService {
+        -userRepository: IUserRepository
+        +createUser(name, email) Promise~User~
+        +getUserById(id) Promise~User~
+    }
+    class IUserRepository {
+        <<interface>>
+        +findById(id) Promise~User~
+        +save(user) Promise~void~
+    }
+    class UserRepository {
+        +findById(id) Promise~User~
+        +save(user) Promise~void~
+    }
+    class TodoModule {
+        <<module>>
+    }
+    class ITodoService {
+        <<interface>>
+        +createTodo(title, userId) Promise~Todo~
+        +getTodosByUser(userId) Promise~Todo[]~
+    }
+    class TodoService {
+        -todoRepository: ITodoRepository
+        -userRepository: IUserRepository
+        +createTodo(title, userId) Promise~Todo~
+        +getTodosByUser(userId) Promise~Todo[]~
+    }
+    class ITodoRepository {
+        <<interface>>
+        +findById(id) Promise~Todo~
+        +save(todo) Promise~void~
+    }
+    class TodoRepository {
+        +findById(id) Promise~Todo~
+        +save(todo) Promise~void~
+    }
+    
+    IUserService <|.. UserService : implements
+    IUserRepository <|.. UserRepository : implements
+    UserService --> IUserRepository : depends on
+    ITodoService <|.. TodoService : implements
+    ITodoRepository <|.. TodoRepository : implements
+    TodoService --> ITodoRepository : depends on
+    TodoService ..> IUserRepository : cross-module dependency
+```
+
+**Key Pattern:**
+- `UserModule` contains user-related services and repositories
+- `TodoModule` contains todo-related services and repositories
+- `TodoService` depends on `IUserRepository` from `UserModule` (cross-module dependency)
+
 ## Cross-Module Dependencies
 
 :::note[🔗 The Power of Modules]

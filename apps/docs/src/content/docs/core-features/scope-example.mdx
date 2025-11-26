@@ -58,6 +58,46 @@ Master **lifecycle scopes** to control how your services are instantiated:
   </Card>
 </CardGrid>
 
+## Class Structure
+
+Services can have different lifecycle scopes, controlled by JSDoc annotations:
+
+```mermaid
+classDiagram
+    class ILogger {
+        <<interface>>
+        +log(message: string) void
+    }
+    class Logger {
+        +log(message: string) void
+    }
+    class SingletonService {
+        <<@scope singleton>>
+        -logger: ILogger
+        +getServiceId() string
+    }
+    class TransientService {
+        <<@scope transient>>
+        -logger: ILogger
+        +getServiceId() string
+    }
+    class ScopedService {
+        <<@scope singleton>>
+        -logger: ILogger
+        +getServiceId() string
+    }
+    
+    ILogger <|.. Logger : implements
+    SingletonService --> ILogger : depends on
+    TransientService --> ILogger : depends on
+    ScopedService --> ILogger : depends on
+```
+
+**Scope Differences:**
+- `SingletonService`: Default scope (singleton) - one instance shared everywhere
+- `TransientService`: `@scope transient` - new instance every time
+- `ScopedService`: Explicit `@scope singleton` - same as default but explicit
+
 ## Service Examples
 
 <Tabs>

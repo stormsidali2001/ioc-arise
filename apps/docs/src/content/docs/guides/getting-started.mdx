@@ -99,6 +99,28 @@ IoC Arise provides maximum flexibility through a clean separation of concerns:
 
 </Steps>
 
+## Class Structure
+
+The basic dependency injection pattern uses interfaces and their implementations:
+
+```mermaid
+classDiagram
+    class IUserService {
+        <<interface>>
+        +getUser(id: string) Promise~User~
+    }
+    class UserService {
+        +getUser(id: string) Promise~User~
+    }
+    
+    IUserService <|.. UserService : implements
+```
+
+**Key Points:**
+- `IUserService` defines the contract (interface)
+- `UserService` implements the interface
+- The container resolves `IUserService` to `UserService` automatically
+
 ## Generated Code
 
 :::note[✨ What Gets Generated]
