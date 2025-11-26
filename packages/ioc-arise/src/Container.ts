@@ -9,29 +9,34 @@ export enum Lifecycle {
 
 interface Provider<T> {
   token: Token<T>;
-  useClass: new (...args: any[]) => T;
+  useClass?: new (...args: any[]) => T;
+  useFactory?: (...args: any[]) => T;
   dependencies?: Token<any>[];
   lifecycle: Lifecycle;
   instance?: T; // For singletons
 }
 
+type ProviderConfig<T> =
+  | {
+    useClass: new (...args: any[]) => T;
+    dependencies?: Token<any>[];
+    lifecycle?: Lifecycle;
+  }
+  | {
+    useFactory: (...args: any[]) => T;
+    dependencies?: Token<any>[];
+    lifecycle?: Lifecycle;
+  };
+
 export interface IContainer<TRegistry = Record<string, any>> {
   resolve<K extends keyof TRegistry>(token: K): TRegistry[K];
-  register<T>(
-    token: Token<T>,
-    provider: {
-      useClass: new (...args: any[]) => T;
-      dependencies?: Token<any>[];
-      lifecycle?: Lifecycle;
-    },
-  ): void;
+  register<T>(token: Token<T>, provider: ProviderConfig<T>): void;
   registerModule(module: ContainerModule): void;
   createChild(): IContainer<TRegistry>;
 }
 
 export class Container<TRegistry = Record<string, any>>
-  implements IContainer<TRegistry>
-{
+  implements IContainer<TRegistry> {
   private providers = new Map<Token<any>, Provider<any>>();
   private parent?: Container<TRegistry>;
   private resolutionStack = new Set<Token<any>>();
@@ -43,28 +48,30 @@ export class Container<TRegistry = Record<string, any>>
   public registerModule(module: ContainerModule): void {
     const registrations = module.getRegistrations();
     for (const registration of registrations) {
-      this.register(registration.token, {
-        useClass: registration.useClass,
-        dependencies: registration.dependencies,
-        lifecycle: registration.lifecycle,
-      });
+      if ('useFactory' in registration && registration.useFactory) {
+        this.register(registration.token, {
+          useFactory: registration.useFactory,
+          dependencies: registration.dependencies,
+          lifecycle: registration.lifecycle,
+        });
+      } else if ('useClass' in registration && registration.useClass) {
+        this.register(registration.token, {
+          useClass: registration.useClass,
+          dependencies: registration.dependencies,
+          lifecycle: registration.lifecycle,
+        });
+      }
     }
   }
 
   private getTokenId(token: Token<any>): string | symbol {
     return typeof token === "function" ? token.name : token;
   }
-  public register<T>(
-    token: Token<T>,
-    provider: {
-      useClass: new (...args: any[]) => T;
-      dependencies?: Token<any>[];
-      lifecycle?: Lifecycle;
-    },
-  ): void {
+  public register<T>(token: Token<T>, provider: ProviderConfig<T>): void {
     this.providers.set(this.getTokenId(token), {
       token,
-      useClass: provider.useClass,
+      useClass: 'useClass' in provider ? provider.useClass : undefined,
+      useFactory: 'useFactory' in provider ? provider.useFactory : undefined,
       lifecycle: provider.lifecycle || Lifecycle.Transient,
       dependencies: provider.dependencies || [],
     });
@@ -73,11 +80,6 @@ export class Container<TRegistry = Record<string, any>>
   public resolve<K extends keyof TRegistry>(token: K): TRegistry[K];
   public resolve<T>(token: Token<T>): T;
   public resolve(token: any): any {
-    console.log({
-      token,
-      providers: this.providers,
-      provider: this.providers.get(this.getTokenId(token)),
-    });
     const provider = this.providers.get(this.getTokenId(token));
 
     if (provider == null) {
@@ -101,7 +103,17 @@ export class Container<TRegistry = Record<string, any>>
 
     try {
       const args = this.resolveDependencies(provider.dependencies || []);
-      const instance = new provider.useClass(...args);
+      let instance: any;
+
+      if (provider.useFactory) {
+        instance = provider.useFactory(...args);
+      } else if (provider.useClass) {
+        instance = new provider.useClass(...args);
+      } else {
+        throw new Error(
+          `Provider for token ${String(token)} must have either useClass or useFactory`,
+        );
+      }
 
       if (provider.lifecycle === Lifecycle.Singleton) {
         provider.instance = instance;
