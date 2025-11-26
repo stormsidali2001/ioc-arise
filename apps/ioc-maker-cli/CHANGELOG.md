@@ -1,5 +1,13 @@
 # @notjustcoders/ioc-arise
 
+## 1.1.17
+
+### Patch Changes
+
+- Feat: adding support for factory functions injection
+- Updated dependencies
+  - @notjustcoders/di-container@1.0.5
+
 ## 1.1.16
 
 ### Patch Changes

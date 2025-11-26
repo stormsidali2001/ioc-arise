@@ -70,12 +70,12 @@ export class Container<TRegistry = Record<string, any>>
   }
   public register<T>(token: Token<T>, provider: ProviderConfig<T>): void {
     let useFactory = 'useFactory' in provider ? provider.useFactory : undefined;
-    
+
     // If contextObject is specified, wrap the factory to pass dependencies as an object
     if (useFactory && 'contextObject' in provider && provider.contextObject) {
       const originalFactory = useFactory;
       const contextPropertyNames = provider.contextObject;
-      
+
       // Create a wrapper that passes dependencies as a context object
       useFactory = ((...args: any[]) => {
         const context: Record<string, any> = {};
@@ -89,7 +89,7 @@ export class Container<TRegistry = Record<string, any>>
         return originalFactory(context);
       }) as (...args: any[]) => T;
     }
-    
+
     this.providers.set(this.getTokenId(token), {
       token,
       useClass: 'useClass' in provider ? provider.useClass : undefined,

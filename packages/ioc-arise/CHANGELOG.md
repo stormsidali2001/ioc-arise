@@ -1,5 +1,11 @@
 # @notjustcoders/di-container
 
+## 1.0.5
+
+### Patch Changes
+
+- Feat: adding support for factory functions injection
+
 ## 1.0.4
 
 ### Patch Changes
