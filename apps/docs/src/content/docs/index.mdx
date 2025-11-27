@@ -1,12 +1,12 @@
 ---
 title: IoC Arise
-description: Code-generation powered Dependency Injection for TypeScript. Zero decorators, compile-time safety, auto-generated containers.
+description: A lightweight, type-safe dependency injection framework for TypeScript. Zero decorators, zero coupling, zero overhead.
 template: splash
 hero:
   tagline: |
-    **Code-Generation Powered** Dependency Injection for TypeScript
+    **Type-Safe Dependency Injection** for TypeScript
     
-    Zero decorators. Compile-time safety. Auto-generated containers.
+    Zero decorators. Zero coupling. ~4KB runtime.
   image:
     html: |
       <div style="width: 100%; max-width: 100vw; margin: 1rem 0; padding: 0; box-sizing: border-box; overflow: hidden;">
@@ -85,613 +85,162 @@ import { Card, CardGrid, Badge, Tabs, TabItem, Steps, FileTree } from '@astrojs/
 </div>
 
 :::note[🎯 The Big Idea]
-**Most DI frameworks run at runtime and require decorators.** IoC Arise runs at **compile-time** and requires **zero decorators**. Write pure TypeScript, run one command, get production-ready DI containers.
+**Most DI frameworks require decorators and runtime reflection.** IoC Arise provides a **lightweight container framework** (~4KB) that works with pure TypeScript. Use it standalone or with optional code generation for automated setup.
 :::
-
-## Why IoC Arise Exists
-
-The TypeScript ecosystem has two common approaches for dependency injection:
-
-1. **Runtime DI frameworks** (InversifyJS, TSyringe) - require decorators throughout your codebase
-2. **Manual wiring** - time-intensive and difficult to maintain at scale
-
-**IoC Arise offers an alternative:** Automated code generation with compile-time analysis.
-
-<Tabs>
-<TabItem label="❌ Decorator-Based DI">
-
-```typescript
-// Domain code with framework decorators
-@Injectable()
-class UserService {
-  constructor(
-    @Inject('LOGGER_TOKEN') private logger: ILogger,
-    @Inject('USER_REPO_TOKEN') private repo: IUserRepository
-  ) {}
-}
-
-// Manual registration required
-container.register('LOGGER_TOKEN', { useClass: ConsoleLogger });
-container.register('USER_REPO_TOKEN', { useClass: UserRepository });
-container.register(UserService, UserService);
-```
-
-**Tradeoffs:**
-- Decorators create framework coupling
-- Manual registration increases maintenance overhead
-- Runtime reflection impacts performance
-- String tokens lack compile-time validation
-- Domain layer has infrastructure dependencies
-
-</TabItem>
-<TabItem label="✅ IoC Arise Approach">
-
-```typescript
-// Pure TypeScript - no decorators, no framework coupling
-class UserService implements IUserService {
-  constructor(
-    private logger: ILogger,
-    private repo: IUserRepository
-  ) {}
-}
-
-// That's it! Run one command:
-// $ npx @notjustcoders/ioc-arise
-```
-
-**Generated Result:**
-
-```typescript
-// Auto-generated container with all classes registered
-import { container } from './container.gen';
-
-// Type-safe resolution with IntelliSense
-const service = container.resolve('IUserService'); // UserService
-```
-
-**Key Advantages:**
-- **No decorators** - domain code remains framework-agnostic  
-- **Automated discovery** - CLI analyzes and registers all classes
-- **Compile-time validation** - catch issues during build
-- **Static analysis** - detects circular dependencies, duplicates, and collisions
-- **Full type safety** - complete IntelliSense support
-- **Modular output** - generates organized module files
-
-</TabItem>
-</Tabs>
-
-:::tip[💡 How It Works]
-IoC Arise uses **AST analysis** (powered by Rust) to understand your TypeScript code at compile-time. It analyzes interfaces, classes, and dependencies to generate **production-ready DI code** with better performance than runtime reflection.
-:::
-
-## See It In Action
-
-One command transforms your codebase:
-
-```bash
-npx @notjustcoders/ioc-arise
-```
-
-<Tabs>
-<TabItem label="📂 Your Code (Before)">
-
-```typescript
-// user/IUserRepository.ts
-export interface IUserRepository {
-  findById(id: string): Promise<User>;
-}
-
-// user/UserRepository.ts
-export class UserRepository implements IUserRepository {
-  async findById(id: string) { /* ... */ }
-}
-
-// user/UserService.ts
-export class UserService implements IUserService {
-  constructor(private repo: IUserRepository) {}
-  
-  async getUser(id: string) {
-    return this.repo.findById(id);
-  }
-}
-```
-
-**Just normal TypeScript!** No decorators, no registration, nothing special.
-
-</TabItem>
-<TabItem label="✨ Generated (After)">
-
-**1. Main Container** (`container.gen.ts`)
-```typescript
-import { Container } from '@notjustcoders/di-container';
-import type { ContainerRegistry } from './container.gen.d';
-import { userModule } from './modules/userModule.module';
-
-export const container = new Container<ContainerRegistry>();
-container.registerModule(userModule);
-```
-
-**2. Module File** (`modules/userModule.module.ts`)
-```typescript
-import { ContainerModule, Lifecycle } from '@notjustcoders/di-container';
-import { UserService } from '../user/UserService';
-import { UserRepository } from '../user/UserRepository';
-
-export const userModule = new ContainerModule()
-  .register('IUserRepository', {
-    useClass: UserRepository,
-    lifecycle: Lifecycle.Singleton
-  })
-  .register('IUserService', {
-    useClass: UserService,
-    dependencies: ['IUserRepository'],
-    lifecycle: Lifecycle.Singleton
-  });
-```
-
-**3. Type Declarations** (`container.gen.d.ts`)
-```typescript
-import type { IUserService } from './user/IUserService';
-import type { IUserRepository } from './user/IUserRepository';
-
-export interface ContainerRegistry {
-  'IUserService': IUserService;
-  'IUserRepository': IUserRepository;
-}
-```
-
-**Result:** Full IntelliSense + compile-time safety + zero manual work!
-
-</TabItem>
-<TabItem label="🎯 Usage">
-
-```typescript
-import { container } from './container.gen';
-
-// All dependencies auto-injected!
-const userService = container.resolve('IUserService');
-//    ^? UserService - Full autocomplete!
-
-// Or resolve by class
-const service = container.resolve(UserService);
-//    ^? UserService
-
-const user = await userService.getUser('123');
-```
-
-**What happened:**
-- CLI analyzed your code structure
-- Detected `IUserRepository` → `UserRepository` mapping  
-- Identified `UserService` depends on `IUserRepository`
-- Generated all wiring code automatically
-- Created TypeScript declarations for autocomplete
-- Organized into clean module structure
-
-**Analysis:** Fast AST-powered parsing
-
-</TabItem>
-</Tabs>
-
-## Quick Start
-
-<Steps>
-
-1. **Install**
-
-   ```bash
-   npm install -D @notjustcoders/ioc-arise
-   npm install @notjustcoders/di-container
-   ```
-
-2. **Write normal TypeScript** (no decorators!)
-
-   ```typescript
-   // Pure TypeScript with constructor injection
-   export class UserService implements IUserService {
-     constructor(private repo: IUserRepository) {}
-   }
-   ```
-
-3. **Generate** (one command!)
-
-   ```bash
-   npx @notjustcoders/ioc-arise
-   ```
-   
-   ✨ Generates:
-   - `container.gen.ts` - Ready-to-use DI container
-   - `modules/*.module.ts` - Organized by module  
-   - `container.gen.d.ts` - Full TypeScript types
-
-4. **Enjoy type-safe DI**
-
-   ```typescript
-   import { container } from './container.gen';
-   
-   const userService = container.resolve('IUserService');
-   //    ^? IUserService - Full IntelliSense!
-   ```
-
-</Steps>
-
-:::note[Quick Setup]
-No configuration files required. No decorators to add. No manual registration. Simply write TypeScript classes and run the CLI to generate your DI container.
-:::
-
-## Key Features
-
-<CardGrid stagger>
-  <Card title="🚫 Zero Decorators" icon="rocket">
-    **Framework-agnostic domain code.** No `@Injectable()`, no `@Inject()`, no framework coupling.
-    
-    ```typescript
-    // Just clean TypeScript
-    export class UserService implements IUserService {
-      constructor(private repo: IUserRepository) {}
-      
-      async getUser(id: string) {
-        return this.repo.findById(id);
-      }
-   }
-   ```
-
-    Your classes work independently of IoC Arise - ideal for Clean Architecture.
-  </Card>
-  
-  <Card title="⚡ Blazing Fast Analysis" icon="forward">
-    **AST-powered by Rust** (ast-grep). Fast analysis for projects of any size.
-    
-    ```bash
-    $ npx @notjustcoders/ioc-arise
-    
-    🔍 Scanning files... Found 1247 classes
-    🔗 Analyzing dependencies... Graph validated
-    ✨ Container generated successfully!
-    ```
-    
-    Generated code has zero reflection overhead - just direct class instantiation.
-  </Card>
-  
-  <Card title="🛡️ Compile-Time Safety" icon="approve-check">
-    **Early error detection.** Generated `.d.ts` files provide full IntelliSense.
-    
-    ```typescript
-    // Full autocomplete + type checking
-    const service = container.resolve('IUserService');
-    //    ^? UserService
-    
-    const user = await service.getUser('123');
-    //                         ^? UserService.getUser(id:string)
-    ```
-    
-    Missing dependencies and circular references are caught at compile-time.
-  </Card>
-  
-  <Card title="🧠 Advanced Static Analysis" icon="magnifier">
-    **Comprehensive error detection:**
-    
-    ```typescript
-    // Detects circular dependencies
-    ❌ UserService → OrderService → UserService
-    
-    // Detects duplicate interfaces
-    ❌ ILogger implemented by: ConsoleLogger, FileLogger
-    
-    // Detects name collisions
-    ❌ UpdateUserUseCase in user/ and order/
-    ```
-    
-    Each error includes clear messages and fix suggestions.
-  </Card>
-  
-  <Card title="🏗️ Automated Modular Architecture" icon="puzzle">
-    **Simplified organization.** Configure once, get module files automatically.
-
-   ```json
-   {
-     "modules": {
-        "UserModule": ["user/**"],
-        "OrderModule": ["order/**"]
-     }
-   }
-   ```
-
-    Generates `modules/userModule.module.ts` and `modules/orderModule.module.ts`.
-  </Card>
-  
-  <Card title="🎯 Full TypeScript Support" icon="seti:typescript">
-    **Interfaces, abstract classes, everything.** String tokens for runtime resolution.
-    
-    ```typescript
-    // Interfaces as tokens
-    container.resolve('IUserService');
-    
-    // Abstract classes as tokens
-    container.resolve('AbstractRepository');
-    
-    // Direct class resolution
-    container.resolve(UserService);
-    ```
-    
-    Type-safe without runtime type information.
-  </Card>
-  
-  <Card title="⏱️ Smart Lifecycle Control" icon="seti:config">
-    **Simple JSDoc annotations.** The CLI reads and generates the right code.
-
-   ```typescript
-    /** @scope singleton */
-    class UserService {}  // One instance shared
-    
-    /** @scope transient */
-    class RequestHandler {}  // New instance each time
-    ```
-    
-    No manual configuration needed.
-  </Card>
-  
-  <Card title="🌐 Universal Runtime" icon="external">
-    **Run anywhere.** Node.js, Browser, Deno, Bun, Edge Workers.
-    
-    ```typescript
-    // Same API everywhere
-    import { Container } from '@notjustcoders/di-container';
-    
-    const container = new Container();
-    // Works in: Node, Browser, Deno, Cloudflare
-    ```
-    
-    Only **~4KB** with zero dependencies.
-  </Card>
-</CardGrid>
 
 ## How It Works
 
-IoC Arise is a **two-package system** designed for maximum flexibility
+### Step 1: Write Your Code (Pure TypeScript, No Decorators!)
 
+Write your classes, interfaces, value objects, and factory functions in pure TypeScript:
 
-1. **`@notjustcoders/ioc-arise`** (CLI Tool)
-   - AST-powered code analyzer (Rust-backed)
-   - Dependency graph builder
-   - Circular dependency detector
-   - Code generator
+<CardGrid stagger>
+  <Card title="💎 Value Objects" icon="star">
+    ```typescript
+    /**
+     * @value
+     */
+    const config: IConfig = { apiUrl: 'https://api.example.com' };
+    
+    /**
+     * @value
+     */
+    const userService: IUserService = {
+      getUser: (id: string) => Promise.resolve({ id, name: 'User' })
+    };
+    ```
+  </Card>
+  
+  <Card title="🏭 Factory Functions" icon="puzzle">
+    ```typescript
+    /**
+     * @factory
+     */
+    function createService(repo: IRepo1, config: IConfig) {
+      return (userId: string) => {
+        if (config.environment === 'prod') {
+          return new ProductionService(repo, userId);
+        }
+        return new DevelopmentService(repo, userId);
+      };
+    }
+    ```
+  </Card>
+  
+  <Card title="🏗️ Classes" icon="rocket">
+    ```typescript
+    interface IService1 {
+      getData(id: string): Promise<any>;
+    }
+    
+    interface IRepo1 {
+      findById(id: string): Promise<any>;
+    }
+    
+    class Repo1 implements IRepo1 {
+      async findById(id: string) { /* ... */ }
+    }
+    
+    class Service1 implements IService1 {
+      constructor(private repo: IRepo1) {}
+      async getData(id: string) { /* ... */ }
+    }
+    ```
+  </Card>
+  
+  <Card title="📐 Abstract Classes" icon="document">
+    ```typescript
+    abstract class BaseRepo {
+      abstract findById(id: string): Promise<any>;
+    }
+    
+    class Repo1 extends BaseRepo {
+      async findById(id: string) { /* ... */ }
+    }
+    ```
+  </Card>
+</CardGrid>
 
-2. **`@notjustcoders/di-container`** (Runtime)
-   - Lightweight DI container (~4KB)
-   - Zero decorators, zero reflection
-   - Can be used standalone without CLI
-   - Framework-agnostic
+### Step 2: Generate Your Container
 
-## Real-World Example
+Run the CLI command to auto-generate, or type the container registration code manually:
 
-Complete application setup with modular architecture
+```bash
+npx @notjustcoders/ioc-arise generate
+```
 
-<Tabs>
-<TabItem label="1. Domain Code">
+### Step 3: All Your Code is Registered! ✨
+
+**If you used the CLI**, it analyzes your code and generates two files. **If you typed it manually**, you'll have the same structure:
+
+**`container.gen.d.ts`** - Type-safe registry interface:
 
 ```typescript
-// user/IUserRepository.ts
-export interface IUserRepository {
-  findById(id: string): Promise<User | null>;
-  save(user: User): Promise<void>;
-}
+// container.gen.d.ts (auto-generated)
+import type { IConfig } from './config';
+import type { IUserService } from './userService';
+import type { IService1 } from './services/IService1';
+import type { IRepo1 } from './repositories/IRepo1';
+import type { BaseRepo } from './repositories/BaseRepo';
 
-// user/UserRepository.ts  
-export class UserRepository implements IUserRepository {
-  async findById(id: string) {
-    // Database logic
-  }
-  async save(user: User) {
-    // Database logic
-  }
-}
-
-// user/UserService.ts
-export class UserService implements IUserService {
-  constructor(
-    private repo: IUserRepository,
-    private logger: ILogger
-  ) {}
-  
-  async getUser(id: string) {
-    this.logger.log(`Fetching user ${id}`);
-    return this.repo.findById(id);
-  }
+export interface ContainerRegistry {
+  'IConfig': IConfig;
+  'IUserService': IUserService;
+  'IService1': IService1;
+  'IRepo1': IRepo1;
+  'BaseRepo': BaseRepo;
 }
 ```
 
-**Notice:** Zero decorators! Just clean TypeScript with constructor injection.
-
-</TabItem>
-<TabItem label="2. Configuration">
-
-```json
-{
-  "sourceDir": "./src",
-  "outputPath": "./src/container.gen.ts",
-  "interface": "I*.ts",
-  "modules": {
-    "UserModule": ["user/**"],
-    "TodoModule": ["todo/**"],
-    "CoreModule": ["shared/**"]
-  }
-}
-```
-
-Optional configuration for modules. Works fine without config too!
-
-</TabItem>
-<TabItem label="3. Generated Code">
+**`container.gen.ts`** - Container with all registrations:
 
 ```typescript
 // container.gen.ts (auto-generated)
 import { Container, Lifecycle } from '@notjustcoders/di-container';
 import type { ContainerRegistry } from './container.gen.d';
-import { userModule } from './modules/userModule.module';
-import { todoModule } from './modules/todoModule.module';
+import { config } from './config';
+import { userService } from './userService';
+import { createService } from './createService';
+import { Repo1, Service1 } from './classes';
 
 export const container = new Container<ContainerRegistry>();
 
-container.registerModule(userModule);
-container.registerModule(todoModule);
+// All your value objects, factories, and classes are registered!
+container.register('IConfig', { useValue: config });
+container.register('IUserService', { useValue: userService });
+container.register('IService1', { 
+  useFactory: createService, 
+  dependencies: ['IRepo1', 'IConfig'] 
+});
+container.register('IService1', { 
+  useClass: Service1, 
+  dependencies: ['IRepo1'],
+  lifecycle: Lifecycle.Singleton 
+});
+// ... and more
 ```
 
-```typescript
-// modules/userModule.module.ts (auto-generated)
-import { ContainerModule, Lifecycle } from '@notjustcoders/di-container';
-import { UserService } from '../user/UserService';
-import { UserRepository } from '../user/UserRepository';
-
-export const userModule = new ContainerModule()
-  .register('IUserRepository', {
-    useClass: UserRepository,
-    lifecycle: Lifecycle.Singleton
-  })
-  .register('IUserService', {
-    useClass: UserService,
-    dependencies: ['IUserRepository', 'ILogger'],
-    lifecycle: Lifecycle.Singleton
-  });
-```
-
-</TabItem>
-<TabItem label="4. Usage">
+### Step 4: Use It with Full Type Safety
 
 ```typescript
-// app.ts
 import { container } from './container.gen';
 
-// Type-safe resolution with full IntelliSense
-const userService = container.resolve('IUserService');
-const user = await userService.getUser('123');
-
-// Or resolve by class
-const service = container.resolve(UserService);
+const service = container.resolve('IService1');
+//    ^? IService1 - Full IntelliSense!
 ```
 
-**Benefits:**
-- ✅ All dependencies auto-injected
-- ✅ Full type safety with autocomplete
-- ✅ Zero runtime reflection
-- ✅ Modular architecture
+## Installation
 
-</TabItem>
-</Tabs>
-
-## Head-to-Head Comparison
-
-How does IoC Arise stack up against other approaches?
-
-| Feature | IoC Arise 🏆 | Runtime DI Frameworks<br/><small>(TSyringe, InversifyJS, TypeDI)</small> | Manual DI<br/><small>(DIY)</small> |
-|---------|-------------|--------------------------------------------------------------------------|-----------------------------------|
-| **Zero Decorators** | ✅ Pure TypeScript | ❌ `@Injectable()` required | ✅ Yes |
-| **Type-Safe Resolution** | ✅ Full (generated `.d.ts`) | ⚠️ Partial (via decorators) | ❌ No autocomplete |
-| **Compile-Time Errors** | ✅ Catch before build | ❌ Fail at runtime | ❌ Fail at runtime |
-| **Auto-Wiring** | ✅ Fully automated | ⚠️ Manual decorators | ❌ 100% manual |
-| **Circular Dep Detection** | ✅ CLI + Runtime (both levels) | ⚠️ Runtime only | ❌ No detection |
-| **Module Organization** | ✅ Auto-generated files | ⚠️ Manual setup | ⚠️ Manual setup |
-| **Name Collision Detection** | ✅ Compile-time error | ❌ Manual resolution | ❌ Manual resolution |
-| **Bundle Size** | ✅ ~4KB runtime | ⚠️ 15-20KB | ✅ 0KB (but labor cost) |
-| **Framework Coupling** | ✅ Zero (pure TypeScript) | ❌ Tight coupling | ✅ Zero |
-| **Learning Curve** | ✅ Very low | ⚠️ Medium-High | ⚠️ High |
-| **Refactoring Support** | ⚠️ Regenerate after refactor | ⚠️ String tokens break | ⚠️ Manual updates |
-| **Production Ready** | ✅ Day 1 | ✅ Day 1 | ⚠️ Weeks of work |
-
-:::tip[💡 Best of Both Worlds]
-IoC Arise combines the **clean code** of manual DI with the **automation** of framework-based DI, while minimizing the tradeoffs of each approach.
-:::
-
-## Battle-Tested Features
-
-Production-ready features you won't find anywhere else
-
-<CardGrid stagger>
-  <Card title="🔍 Dependency Analysis" icon="star">
-    **Understand your architecture:**
-    ```bash
-    npx @notjustcoders/ioc-arise analyze
-    ```
-    Lists all classes, their interfaces, dependencies, and detects circular dependencies. Useful for understanding coupling and architecture validation.
-  </Card>
-  
-  <Card title="📊 Module-Level Circular Deps" icon="document">
-    **Most DI tools only check class-level cycles.** IoC Arise also detects **module-level** circular dependencies:
-    ```
-    ❌ ModuleA → ModuleB → ModuleA
-    ```
-    Enforces proper layered architecture in large applications.
-  </Card>
-  
-  <Card title="🎭 Abstract Class First-Class Support" icon="puzzle">
-    **Abstract classes work perfectly:**
-    ```typescript
-    abstract class BaseRepository {}
-    class UserRepository extends BaseRepository {}
-    
-    // Resolve by abstract class name
-    const repo = container.resolve('BaseRepository');
-    //    ^? UserRepository (fully typed!)
-    ```
-  </Card>
-  
-  <Card title="⚙️ Zero-Config Smart Defaults" icon="seti:config">
-    **Works out of the box.** No config file needed! But if you want modules:
-    ```json
-    {
-      "modules": {
-        "UserModule": ["user/**"],
-        "TodoModule": ["todo/**"]
-      }
-    }
-    ```
-    That's it. The CLI does the rest.
-  </Card>
-  
-</CardGrid>
-
-## Use Cases
-
-IoC Arise is particularly well-suited for:
-
-<CardGrid stagger>
-  <Card title="🏢 Enterprise Applications" icon="rocket">
-    **Large codebases** with hundreds of services benefit from automated discovery and wiring. Module-level organization maintains clean architecture as systems scale.
-  </Card>
-  
-  <Card title="🧱 Clean Architecture" icon="approve-check">
-    **Hexagonal/Onion/Clean Architecture** implementations benefit from decorator-free domain layers. Infrastructure wiring is isolated in generated code.
-  </Card>
-  
-  <Card title="🔄 Microservices & Monorepos" icon="puzzle">
-    **Multiple services** in a monorepo can share the DI container package while maintaining service-specific configurations. Ensures consistent patterns across services.
-  </Card>
-  
-  <Card title="🎓 Teaching DI Concepts" icon="star">
-    **Educational environments** benefit from the focus on constructor injection patterns rather than framework-specific decorators. Emphasizes core DI principles.
-  </Card>
-</CardGrid>
-
-## Getting Started
-
-Choose the approach that fits your needs:
-
-:::tip[🎯 Installation Options]
-
-**Option 1: Full Automation (Recommended)**
-```bash
-npm install -D @notjustcoders/ioc-arise
-npm install @notjustcoders/di-container
-npx @notjustcoders/ioc-arise
-```
-The CLI analyzes your code and generates the complete DI setup.
-
-**Option 2: Runtime Only**
 ```bash
 npm install @notjustcoders/di-container
 ```
-Use the DI container standalone with manual registration. No decorators required.
 
-:::
+## Links
+
+- **Container Package**: [@notjustcoders/di-container](https://www.npmjs.com/package/@notjustcoders/di-container) - Core DI framework
+- **CLI Tool**: [@notjustcoders/ioc-arise](https://www.npmjs.com/package/@notjustcoders/ioc-arise) - Code generation tool
+- **GitHub**: [spithacode/ioc-maker](https://github.com/spithacode/ioc-maker)
+- **Documentation**: [ioc-arise.notjustcoders.com](https://ioc-arise.notjustcoders.com)
 
 <div style="text-align: center; margin: 3rem 0;">
   <a href="/guides/getting-started/" style="display: inline-block; background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%); color: white; padding: 1rem 2.5rem; border-radius: 0.5rem; text-decoration: none; font-weight: 600; font-size: 1.125rem; box-shadow: 0 4px 6px rgba(124, 58, 237, 0.3); transition: all 0.2s;">

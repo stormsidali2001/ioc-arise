@@ -142,7 +142,7 @@ export const container = new Container<ContainerRegistry>();
 container.registerModule(userModule);
 ```
 
-**Benefits:** ✅ All imports auto-generated • ✅ Modules automatically registered • ✅ Type-safe by default
+**Benefits:** ✅ All imports auto-generated • ✅ Modules automatically registered • ✅ Type-safe with `ContainerRegistry` • ✅ Full IntelliSense support
 
   </TabItem>
   <TabItem label="Type Declarations">
@@ -158,7 +158,16 @@ export interface ContainerRegistry {
 }
 ```
 
-**Benefits:** ✅ Autocomplete for all tokens • ✅ Compile-time type checking • ✅ IDE refactoring support
+**Usage with type safety:**
+
+```typescript
+import { container } from './container.gen';
+
+const service = container.resolve('IUserService');
+//    ^? IUserService - Full type safety!
+```
+
+**Benefits:** ✅ Autocomplete for all tokens • ✅ Compile-time type checking • ✅ IDE refactoring support • ✅ Type-safe resolution
 
   </TabItem>
   <TabItem label="Module Files">
@@ -191,7 +200,13 @@ You can use `@notjustcoders/di-container` standalone if you prefer manual config
 ```typescript
 import { Container, Lifecycle } from '@notjustcoders/di-container';
 
-const container = new Container();
+// Define registry for type safety
+interface ContainerRegistry {
+  'IUserService': IUserService;
+  'IUserRepository': IUserRepository;
+}
+
+const container = new Container<ContainerRegistry>();
 
 // Manual registration (no code generation)
 container.register('IUserService', {
@@ -200,7 +215,9 @@ container.register('IUserService', {
   lifecycle: Lifecycle.Singleton
 });
 
+// Full type safety
 const service = container.resolve('IUserService');
+//    ^? IUserService
 ```
 
 **When to use manual setup:**

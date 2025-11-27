@@ -1,193 +1,193 @@
 # IoC Arise
 
-> **Arise type-safe IoC containers from your code. Zero overhead, zero coupling.**
+> **A lightweight, type-safe dependency injection framework for TypeScript. Zero decorators, zero coupling, zero overhead.**
 
-A powerful TypeScript IoC container generator CLI tool that automatically creates type-safe dependency injection containers from your existing code. No decorators, no annotations, no manual wiring required.
+A production-ready dependency injection container framework that works standalone or with automated code generation. The core `@notjustcoders/di-container` package provides a powerful, type-safe DI runtime (~4KB), while the optional CLI tool automates container setup by analyzing your code and generating configuration.
 
-[![npm version](https://badge.fury.io/js/@notjustcoders%2Fioc-arise.svg)](https://www.npmjs.com/package/@notjustcoders/ioc-arise)
+[![npm version](https://badge.fury.io/js/@notjustcoders%2Fdi-container.svg)](https://www.npmjs.com/package/@notjustcoders/di-container)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Documentation](https://img.shields.io/badge/docs-ioc--arise.notjustcoders.com-blue)](https://ioc-arise.notjustcoders.com)
 
-## ✨ Features
+## Features
 
-- 🚀 **Zero Configuration** - No decorators, annotations, or manual wiring required
-- 🔒 **100% Type Safe** - Generated containers are fully typed with compile-time validation
-- ⚡ **Blazing Fast** - Powered by AST-grep (built with Rust) for lightning-fast analysis
-- 🎯 **Smart Dependency Analysis** - Automatically detects circular dependencies and missing implementations
-- 🏗️ **Modular Architecture** - Organize code into logical modules with cross-module dependency support
-- 🔄 **Zero Coupling** - Your business logic stays clean and framework-agnostic
-- 📊 **Advanced Features** - Supports scopes (singleton/transient), name collision handling, and more
+- 🔒 **100% Type Safe** - Full TypeScript support with compile-time validation
+- 🪶 **Lightweight** - Only ~4KB with zero dependencies
+- 🚫 **Zero Decorators** - Pure TypeScript, no framework coupling
+- 💎 **Value Objects** - Inject plain objects and functional services
+- 🏭 **Factory Functions** - Custom instance creation logic
+- 🏗️ **Class Injection** - Traditional class-based dependency injection
+- 📐 **Abstract Classes** - First-class support for abstract base classes
+- 🏗️ **Modular Architecture** - Built-in module system
+- 🔄 **Lifecycle Management** - Singleton and Transient scopes
+- 🌐 **Universal Runtime** - Works in Node.js, Browser, Deno, Bun, Edge Workers
 
-## 🚀 Quick Start
+## Table of Contents
 
-### Installation
+- [Installation](#installation)
+- [How It Works](#how-it-works)
+  - [Step 1: Write Your Code](#step-1-write-your-code-pure-typescript-no-decorators)
+  - [Step 2: Generate Your Container](#step-2-generate-your-container)
+  - [Step 3: All Your Code is Automatically Registered](#step-3-all-your-code-is-automatically-registered-)
+  - [Step 4: Use It with Full Type Safety](#step-4-use-it-with-full-type-safety)
+- [Documentation](#documentation)
+- [Links](#links)
+- [License](#license)
+
+## Installation
 
 ```bash
-# Install globally
-npm install -g @notjustcoders/ioc-arise
-
-# Or use with your package manager
-pnpm add -D @notjustcoders/ioc-arise
+npm install @notjustcoders/di-container
 ```
 
-### Basic Usage
+## How It Works
 
-1. **Create your interfaces and classes:**
+### Step 1: Write Your Code (Pure TypeScript, No Decorators!)
+
+Write your classes, interfaces, value objects, and factory functions in pure TypeScript:
+
+**Value Objects:**
 
 ```typescript
-// IUserService.ts
-export interface IUserService {
-  createUser(name: string, email: string): Promise<User>;
-}
+/**
+ * @value
+ */
+const config: IConfig = { apiUrl: 'https://api.example.com' };
 
-// UserService.ts
-export class UserService implements IUserService {
-  constructor(private userRepository: IUserRepository) {}
-  
-  async createUser(name: string, email: string): Promise<User> {
-    // Implementation
-  }
+/**
+ * @value
+ */
+const userService: IUserService = {
+  getUser: (id: string) => Promise.resolve({ id, name: 'User' })
+};
+```
+
+**Factory Functions:**
+
+```typescript
+/**
+ * @factory
+ */
+function createService(repo: IRepo1, config: IConfig) {
+  return (userId: string) => {
+    if (config.environment === 'prod') {
+      return new ProductionService(repo, userId);
+    }
+    return new DevelopmentService(repo, userId);
+  };
 }
 ```
 
-2. **Generate your container:**
+**Classes:**
+
+```typescript
+interface IService1 {
+  getData(id: string): Promise<any>;
+}
+
+interface IRepo1 {
+  findById(id: string): Promise<any>;
+}
+
+class Repo1 implements IRepo1 {
+  async findById(id: string) { /* ... */ }
+}
+
+class Service1 implements IService1 {
+  constructor(private repo: IRepo1) {}
+  async getData(id: string) { /* ... */ }
+}
+```
+
+**Abstract Classes:**
+
+```typescript
+abstract class BaseRepo {
+  abstract findById(id: string): Promise<any>;
+}
+
+class Repo1 extends BaseRepo {
+  async findById(id: string) { /* ... */ }
+}
+```
+
+### Step 2: Generate Your Container
+
+Run the CLI command to auto-generate, or type the container registration code manually:
 
 ```bash
-npx ioc-arise generate
+npx @notjustcoders/ioc-arise generate
 ```
 
-3. **Use the generated container:**
+### Step 3: All Your Code is Registered! ✨
+
+**If you used the CLI**, it analyzes your code and generates two files. **If you typed it manually**, you'll have the same structure:
+
+**`container.gen.d.ts`** - Type-safe registry interface:
+
+```typescript
+// container.gen.d.ts (auto-generated)
+import type { IConfig } from './config';
+import type { IUserService } from './userService';
+import type { IService1 } from './services/IService1';
+import type { IRepo1 } from './repositories/IRepo1';
+import type { BaseRepo } from './repositories/BaseRepo';
+
+export interface ContainerRegistry {
+  'IConfig': IConfig;
+  'IUserService': IUserService;
+  'IService1': IService1;
+  'IRepo1': IRepo1;
+  'BaseRepo': BaseRepo;
+}
+```
+
+**`container.gen.ts`** - Container with all registrations:
+
+```typescript
+// container.gen.ts (auto-generated)
+import { Container, Lifecycle } from '@notjustcoders/di-container';
+import type { ContainerRegistry } from './container.gen.d';
+import { config } from './config';
+import { userService } from './userService';
+import { createService } from './createService';
+import { Repo1, Service1 } from './classes';
+
+export const container = new Container<ContainerRegistry>();
+
+// All your value objects, factories, and classes are registered!
+container.register('IConfig', { useValue: config });
+container.register('IUserService', { useValue: userService });
+container.register('IService1', { 
+  useFactory: createService, 
+  dependencies: ['IRepo1', 'IConfig'] 
+});
+container.register('IService1', { 
+  useClass: Service1, 
+  dependencies: ['IRepo1'],
+  lifecycle: Lifecycle.Singleton 
+});
+// ... and more
+```
+
+### Step 4: Use It with Full Type Safety
 
 ```typescript
 import { container } from './container.gen';
 
-const userService = container.coreModule.UserService;
-const user = await userService.createUser('John Doe', 'john@example.com');
+const service = container.resolve('IService1');
+//    ^? IService1 - Full IntelliSense!
 ```
 
-## 📖 Documentation
+## Documentation
 
-For comprehensive documentation, examples, and advanced usage patterns, visit:
+For comprehensive documentation and examples, visit **[ioc-arise.notjustcoders.com](https://ioc-arise.notjustcoders.com)**
 
-**🌐 [ioc-arise.notjustcoders.com](https://ioc-arise.notjustcoders.com)**
+## Links
 
-### Key Documentation Sections:
-
-- [**Getting Started**](https://ioc-arise.notjustcoders.com/guides/getting-started/) - Quick setup guide
-- [**Examples**](https://ioc-arise.notjustcoders.com/examples/) - Real-world usage patterns
-- [**CLI Reference**](https://ioc-arise.notjustcoders.com/reference/cli-reference/) - Complete command reference
-- [**Configuration**](https://ioc-arise.notjustcoders.com/reference/configuration/) - Advanced configuration options
-
-## 🏗️ Project Structure
-
-This is a monorepo containing:
-
-```
-ioc-maker/
-├── apps/
-│   ├── docs/                    # Documentation website (Astro + Starlight)
-│   └── ioc-maker-cli/           # CLI tool package
-├── packages/
-│   ├── eslint-config/           # Shared ESLint configuration
-│   └── typescript-config/       # Shared TypeScript configuration
-└── examples/                    # Example projects
-```
-
-## 🛠️ Development
-
-### Prerequisites
-
-- Node.js >= 18
-- pnpm (recommended package manager)
-
-### Setup
-
-```bash
-# Clone the repository
-git clone https://github.com/spithacode/ioc-maker.git
-cd ioc-maker
-
-# Install dependencies
-pnpm install
-
-# Build all packages
-pnpm build
-
-# Start development
-pnpm dev
-```
-
-### Available Scripts
-
-- `pnpm build` - Build all packages
-- `pnpm dev` - Start development mode
-- `pnpm lint` - Run linting
-- `pnpm format` - Format code with Prettier
-- `pnpm check-types` - Type checking
-
-### Working with the CLI
-
-```bash
-# Navigate to CLI package
-cd apps/ioc-maker-cli
-
-# Build the CLI
-pnpm build
-
-# Test with examples
-pnpm test1:generate  # Clean architecture example
-pnpm test2:generate  # Circular dependencies example
-pnpm test3:generate  # Simple modules example
-# ... more test scripts available
-```
-
-### Working with Documentation
-
-```bash
-# Navigate to docs
-cd apps/docs
-
-# Start development server
-pnpm dev
-
-# Build for production
-pnpm build
-```
-
-## 📝 Examples
-
-The repository includes comprehensive examples demonstrating various patterns:
-
-- **Minimal Todo** - Basic repository pattern
-- **Simple Modules** - Cross-module dependencies
-- **Clean Architecture** - Advanced architectural patterns
-- **Use Cases** - Classes without interfaces
-- **Name Collision** - Handling duplicate class names
-- **Circular Dependencies** - Error detection and handling
-- **Scope Management** - Singleton vs Transient lifecycles
-
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
-
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🔗 Links
-
-- **Documentation**: [ioc-arise.notjustcoders.com](https://ioc-arise.notjustcoders.com)
-- **npm Package**: [@notjustcoders/ioc-arise](https://www.npmjs.com/package/@notjustcoders/ioc-arise)
+- **Container Package**: [@notjustcoders/di-container](https://www.npmjs.com/package/@notjustcoders/di-container)
+- **CLI Tool**: [@notjustcoders/ioc-arise](https://www.npmjs.com/package/@notjustcoders/ioc-arise)
 - **GitHub**: [spithacode/ioc-maker](https://github.com/spithacode/ioc-maker)
-- **Website**: [NotJustCoders](https://notjustcoders.com)
 
-## 🙏 Acknowledgments
+## License
 
-- Built with [AST-grep](https://ast-grep.github.io/) for fast TypeScript parsing
-- Documentation powered by [Astro](https://astro.build/) and [Starlight](https://starlight.astro.build/)
-- Monorepo managed with [Turbo](https://turbo.build/)
-
----
-
-**Made with ❤️ by the NotJustCoders team**
+MIT © [NotJustCoders](https://notjustcoders.com)
