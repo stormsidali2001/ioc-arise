@@ -1,391 +1,70 @@
 ---
-title: Lifecycle Scopes Example
-description: Demonstrates how to use singleton and transient scopes in IoC Arise
+title: Lifecycle Scopes
+description: Control service instantiation with singleton and transient scopes
 sidebar:
   order: 3
 ---
 
-import { FileTree, Card, CardGrid, Badge, Tabs, TabItem } from '@astrojs/starlight/components';
-
-<div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 1rem 0 2rem 0;">
-  <Badge text="Lifecycle Management" variant="tip" />
-  <Badge text="Singleton vs Transient" variant="success" />
-  <Badge text="Performance" variant="note" />
-</div>
-
-:::tip[🎯 What You'll Learn]
-Master **lifecycle scopes** to control how your services are instantiated:
-- **Singleton Scope** - One shared instance across the entire application
-- **Transient Scope** - New instance every time it's requested
-- **Performance Implications** - When to use each scope
-- **JSDoc Annotations** - Simple comments control the behavior
-:::
-
-## Project Structure
-
-<FileTree>
-- scope-example/
-  - services/
-    - SingletonService.ts  # Default scope (singleton)
-    - TransientService.ts  # Explicitly transient
-    - ScopedService.ts     # Explicitly singleton
-    - ILogger.ts           # Interface for logging
-  - container.gen.ts         # Generated container
-  - demo.ts                  # Demonstration of scopes
-  - ioc.config.json          # IoC configuration
-  - README.md                # This file
-</FileTree>
-
-## Understanding Scopes
-
-<CardGrid>
-  <Card title="🔄 Singleton (Default)" icon="star">
-    **One instance shared everywhere**
-    
-    • Perfect for stateless services  
-    • Better performance (created once)  
-    • Use for: Repositories, configs, caches  
-    • No annotation needed (default)
-  </Card>
-  
-  <Card title="⚡ Transient" icon="rocket">
-    **New instance every time**
-    
-    • Perfect for stateful services  
-    • Isolated state per request  
-    • Use for: Request handlers, commands  
-    • Requires `@scope transient` annotation
-  </Card>
-</CardGrid>
-
-## Class Structure
-
-Services can have different lifecycle scopes, controlled by JSDoc annotations:
-
-```mermaid
-classDiagram
-    class ILogger {
-        <<interface>>
-        +log(message: string) void
-    }
-    class Logger {
-        +log(message: string) void
-    }
-    class SingletonService {
-        <<@scope singleton>>
-        -logger: ILogger
-        +getServiceId() string
-    }
-    class TransientService {
-        <<@scope transient>>
-        -logger: ILogger
-        +getServiceId() string
-    }
-    class ScopedService {
-        <<@scope singleton>>
-        -logger: ILogger
-        +getServiceId() string
-    }
-    
-    ILogger <|.. Logger : implements
-    SingletonService --> ILogger : depends on
-    TransientService --> ILogger : depends on
-    ScopedService --> ILogger : depends on
-```
-
-**Scope Differences:**
-- `SingletonService`: Default scope (singleton) - one instance shared everywhere
-- `TransientService`: `@scope transient` - new instance every time
-- `ScopedService`: Explicit `@scope singleton` - same as default but explicit
-
-## Service Examples
-
-<Tabs>
-  <TabItem label="Singleton (Default)">
-
-**No annotation needed** - singleton is the default:
+## Step 1: Write Your Code
 
 ```typescript
-// ✅ No @scope annotation = Singleton by default
+// Singleton (default - no annotation needed)
 export class SingletonService {
-  private static instanceCounter = 0;
-  private instanceId: number;
-
-  constructor(private logger: ILogger) {
-    SingletonService.instanceCounter++;
-    this.instanceId = SingletonService.instanceCounter;
-    this.logger.log(`SingletonService instance ${this.instanceId} created`);
-  }
-
-  getServiceId(): string {
-    return `SingletonService (instance ${this.instanceId})`;
-  }
+  constructor(private logger: ILogger) {}
+  getServiceId(): string { return 'singleton'; }
 }
-```
 
-**Result:** Only creates ONE instance, reused everywhere.
-
-  </TabItem>
-  <TabItem label="Transient">
-
-**Add `@scope transient` JSDoc comment:**
-
-```typescript
+// Transient (requires @scope annotation)
 /**
  * @scope transient
  */
 export class TransientService {
-  private static instanceCounter = 0;
-  private instanceId: number;
-
-  constructor(private logger: ILogger) {
-    TransientService.instanceCounter++;
-    this.instanceId = TransientService.instanceCounter;
-    this.logger.log(`TransientService instance ${this.instanceId} created`);
-  }
-
-  getServiceId(): string {
-    return `TransientService (instance ${this.instanceId})`;
-  }
+  constructor(private logger: ILogger) {}
+  getServiceId(): string { return 'transient'; }
 }
 ```
 
-**Result:** Creates a NEW instance every time you resolve it.
+## Step 2: Generate Container
 
-  </TabItem>
-  <TabItem label="Explicit Singleton">
-
-**Explicitly specify singleton** (same as default):
-
-```typescript
-/**
- * @scope singleton
- */
-export class ScopedService {
-  private static instanceCounter = 0;
-  private instanceId: number;
-
-  constructor(private logger: ILogger) {
-    ScopedService.instanceCounter++;
-    this.instanceId = ScopedService.instanceCounter;
-    this.logger.log(`ScopedService instance ${this.instanceId} created`);
-  }
-
-  getServiceId(): string {
-    return `ScopedService (instance ${this.instanceId})`;
-  }
-}
+```bash
+npx @notjustcoders/ioc-arise generate
 ```
 
-**Best Practice:** Be explicit for clarity!
+## Step 3: Generated Code
 
-  </TabItem>
-</Tabs>
-
-## Generated Container
-
-:::tip[✨ Auto-Generated Lifecycles]
-The CLI detects `@scope` annotations and generates the correct lifecycle configuration automatically!
-:::
+**`container.gen.ts`:**
 
 ```typescript
-// container.gen.ts
 import { Container, Lifecycle } from '@notjustcoders/di-container';
 import type { ContainerRegistry } from './container.gen.d';
-import { SingletonService } from './services/SingletonService';
-import { TransientService } from './services/TransientService';
-import { ScopedService } from './services/ScopedService';
-import { Logger } from './services/Logger';
 
 export const container = new Container<ContainerRegistry>();
 
-// ✅ Logger: Singleton (default)
-container.register('ILogger', {
-  useClass: Logger,
-  lifecycle: Lifecycle.Singleton,
-});
-
-// ✅ SingletonService: Singleton (default, no annotation)
-container.register(SingletonService, {
+container.register('SingletonService', {
   useClass: SingletonService,
   dependencies: ['ILogger'],
-  lifecycle: Lifecycle.Singleton,
+  lifecycle: Lifecycle.Singleton  // Default
 });
 
-// ✅ TransientService: Transient (from @scope transient)
-container.register(TransientService, {
+container.register('TransientService', {
   useClass: TransientService,
   dependencies: ['ILogger'],
-  lifecycle: Lifecycle.Transient,
-});
-
-// ✅ ScopedService: Singleton (from @scope singleton)
-container.register(ScopedService, {
-  useClass: ScopedService,
-  dependencies: ['ILogger'],
-  lifecycle: Lifecycle.Singleton,
+  lifecycle: Lifecycle.Transient  // From @scope transient
 });
 ```
 
-## Usage Examples
-
-<Tabs>
-  <TabItem label="Singleton Behavior">
-
-**Singletons return the same instance every time:**
+## Step 4: Use It
 
 ```typescript
 import { container } from './container.gen';
 
-// Resolve twice
-const singleton1 = container.resolve(SingletonService);
-const singleton2 = container.resolve(SingletonService);
+// Singleton - same instance
+const s1 = container.resolve('SingletonService');
+const s2 = container.resolve('SingletonService');
+console.log(s1 === s2); // true
 
-// ✅ Same instance!
-console.log(singleton1 === singleton2); // true
-
-// ✅ Same instance ID!
-console.log(singleton1.getServiceId()); // SingletonService (instance 1)
-console.log(singleton2.getServiceId()); // SingletonService (instance 1)
+// Transient - new instance each time
+const t1 = container.resolve('TransientService');
+const t2 = container.resolve('TransientService');
+console.log(t1 === t2); // false
 ```
-
-**Output:**
-```
-SingletonService instance 1 created
-true
-SingletonService (instance 1)
-SingletonService (instance 1)
-```
-
-Only one instance created!
-
-  </TabItem>
-  <TabItem label="Transient Behavior">
-
-**Transients create a new instance every time:**
-
-```typescript
-import { container } from './container.gen';
-
-// Resolve twice
-const transient1 = container.resolve(TransientService);
-const transient2 = container.resolve(TransientService);
-
-// ❌ Different instances!
-console.log(transient1 === transient2); // false
-
-// ❌ Different instance IDs!
-console.log(transient1.getServiceId()); // TransientService (instance 1)
-console.log(transient2.getServiceId()); // TransientService (instance 2)
-```
-
-**Output:**
-```
-TransientService instance 1 created
-TransientService instance 2 created
-false
-TransientService (instance 1)
-TransientService (instance 2)
-```
-
-Two instances created!
-
-  </TabItem>
-  <TabItem label="Complete Comparison">
-
-**Side-by-side comparison:**
-
-```typescript
-import { container } from './container.gen';
-
-// Singletons
-const s1 = container.resolve(SingletonService);
-const s2 = container.resolve(SingletonService);
-console.log(`Singleton: ${s1 === s2}`); // true ✅
-
-// Transients
-const t1 = container.resolve(TransientService);
-const t2 = container.resolve(TransientService);
-console.log(`Transient: ${t1 === t2}`); // false ❌
-
-// Explicit Singleton
-const scoped1 = container.resolve(ScopedService);
-const scoped2 = container.resolve(ScopedService);
-console.log(`Scoped: ${scoped1 === scoped2}`); // true ✅
-```
-
-**Output:**
-```
-Singleton: true
-Transient: false
-Scoped: true
-```
-
-Clear difference in behavior!
-
-  </TabItem>
-</Tabs>
-
-## Configuration
-
-:::note[⚙️ Simple Config]
-No special configuration needed - the CLI detects `@scope` annotations automatically!
-:::
-
-```json
-{
-  "sourceDir": ".",
-  "outputPath": "container.gen.ts",
-  "interface": "I*.ts"
-}
-```
-
-The CLI will:
-• Scan all TypeScript files  
-• Detect `@scope` JSDoc tags  
-• Generate correct lifecycle configurations
-
-## When to Use Each Scope
-
-<CardGrid>
-  <Card title="🔄 Use Singleton For:" icon="star">
-    **Stateless or shared-state services**
-    
-    • Database connections  
-    • Configuration services  
-    • Logging services  
-    • Cache managers  
-    • Repository implementations
-  </Card>
-  
-  <Card title="⚡ Use Transient For:" icon="rocket">
-    **Stateful or isolated services**
-    
-    • HTTP request handlers  
-    • Command processors  
-    • Per-request loggers  
-    • Event processors  
-    • Short-lived workers
-  </Card>
-</CardGrid>
-
-## Key Takeaways
-
-<CardGrid>
-  <Card title="🎯 Simple Annotations" icon="pencil">
-    Just add `@scope transient` in a JSDoc comment. Default is singleton.
-  </Card>
-  <Card title="⚡ Performance" icon="rocket">
-    Singletons create once, transients create on-demand. Choose wisely!
-  </Card>
-  <Card title="🛡️ Type Safety" icon="seti:typescript">
-    Full IntelliSense regardless of scope. No runtime surprises.
-  </Card>
-  <Card title="🧪 Testability" icon="approve-check">
-    Mock any service easily, regardless of its lifecycle scope.
-  </Card>
-</CardGrid>
-
-:::tip[🚀 Best Practice]
-**Be explicit with `@scope` annotations** even for singletons. It makes your code more readable and intentions clear to other developers!
-:::

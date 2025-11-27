@@ -25,3 +25,5 @@ container.register('ITodoRepository', {
   useClass: InMemoryTodoRepository,
   lifecycle: Lifecycle.Singleton,
 });
+
+container.resolve("")

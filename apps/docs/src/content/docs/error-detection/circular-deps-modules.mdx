@@ -1,162 +1,42 @@
 ---
-title: Circular Dependencies (Modules) Example
-description: Demonstrates how IoC Arise detects and handles circular dependencies between modules
+title: Circular Dependencies (Modules)
+description: How IoC Arise detects circular dependencies between modules
 sidebar:
   order: 8
 ---
 
-import { FileTree, Card, CardGrid, Badge, Tabs, TabItem } from '@astrojs/starlight/components';
-
-<div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 1rem 0 2rem 0;">
-  <Badge text="Module-Level Detection" variant="caution" />
-  <Badge text="Compile-Time" variant="success" />
-  <Badge text="Cross-Module" variant="tip" />
-</div>
-
-:::danger[⚠️ Module Circular Dependencies]
-When modules depend on each other in a cycle, it creates an unsolvable dependency problem:
-- **ModuleA** depends on **ModuleB**
-- **ModuleB** depends on **ModuleA**
-- **Impossible to load either module!**
-
-IoC Arise **detects module-level circular dependencies** at compile-time before they become runtime disasters!
-:::
-
-## Project Structure
-
-<FileTree>
-- circular-deps-modules/
-  - interfaces/
-    - IServiceA.ts
-    - IServiceB.ts
-  - services/
-    - ServiceA.ts
-    - ServiceB.ts
-  - ioc.config.json
-  - README.md
-</FileTree>
-
-## The Circular Dependency
-
-<Tabs>
-  <TabItem label="Module Configuration">
+## The Problem
 
 ```json
 {
-  "sourceDir": ".",
-  "outputPath": "container.gen.ts",
-  "interface": "I*.ts",
   "modules": {
-    "ModuleA": [
-      "services/ServiceA.ts",
-      "interfaces/IServiceA.ts"
-    ],
-    "ModuleB": [
-      "services/ServiceB.ts", 
-      "interfaces/IServiceB.ts"
-    ]
+    "ModuleA": ["services/ServiceA.ts"],
+    "ModuleB": ["services/ServiceB.ts"]
   }
 }
 ```
 
-**The Problem:** ModuleA and ModuleB are configured as separate modules, but they depend on each other!
-
-  </TabItem>
-  <TabItem label="Interfaces">
-
 ```typescript
-// interfaces/IServiceA.ts
-export interface IServiceA {
-  doSomething(): string;
-}
-
-// interfaces/IServiceB.ts
-export interface IServiceB {
-  doSomething(): string;
-}
-```
-
-  </TabItem>
-  <TabItem label="ServiceA (ModuleA)">
-
-**ServiceA depends on ServiceB** (from ModuleB):
-
-```typescript
-// services/ServiceA.ts
-import { IServiceB } from '../interfaces/IServiceB';
-
+// ServiceA (ModuleA) depends on ServiceB (ModuleB)
 export class ServiceA implements IServiceA {
   constructor(private serviceB: IServiceB) {}
-  //                          ^^^^^^^^
-  //                     Needs ModuleB!
-  
   doSomething(): string {
     return 'A: ' + this.serviceB.doSomething();
   }
 }
-```
 
-  </TabItem>
-  <TabItem label="ServiceB (ModuleB)">
-
-**ServiceB depends on ServiceA** (from ModuleA):
-
-```typescript
-// services/ServiceB.ts
-import { IServiceA } from '../interfaces/IServiceA';
-
+// ServiceB (ModuleB) depends on ServiceA (ModuleA)
 export class ServiceB implements IServiceB {
   constructor(private serviceA: IServiceA) {}
-  //                          ^^^^^^^^
-  //                     Needs ModuleA!
-  
   doSomething(): string {
     return 'B: ' + this.serviceA.doSomething();
   }
 }
 ```
 
-**The Cycle:** ModuleA → ModuleB → ModuleA (impossible to load!)
+**The Cycle:** `ModuleA` → `ModuleB` → `ModuleA` → **impossible to load!**
 
-  </TabItem>
-</Tabs>
-
-## Class Structure
-
-The module-level circular dependency creates an unsolvable cycle:
-
-```mermaid
-classDiagram
-    class ModuleA {
-        <<module>>
-    }
-    class IServiceA {
-        <<interface>>
-    }
-    class ServiceA {
-    }
-    class ModuleB {
-        <<module>>
-    }
-    class IServiceB {
-        <<interface>>
-    }
-    class ServiceB {
-    }
-    
-    IServiceA <|.. ServiceA : implements
-    IServiceB <|.. ServiceB : implements
-    ServiceA --> IServiceB : depends on
-    ServiceB --> IServiceA : depends on
-```
-
-**The Cycle:** `ModuleA` (via `ServiceA`) → `ModuleB` (via `IServiceB`) → `ModuleA` (via `IServiceA`) → **impossible to load either module!**
-
-## IoC Arise Detection
-
-:::tip[🔍 Automatic Module-Level Detection]
-When you run `npx @notjustcoders/ioc-arise`, the CLI analyzes cross-module dependencies and catches this immediately:
-:::
+## Detection
 
 ```bash
 ❌ Error: Circular dependency detected between modules.
@@ -168,37 +48,29 @@ Detailed circular dependency:
   ServiceA (ModuleA) → IServiceB (ServiceB in ModuleB) → IServiceA (ServiceA in ModuleA)
 
 Modules involved in circular dependencies:
-  - ModuleA: services/ServiceA.ts, interfaces/IServiceA.ts
-  - ModuleB: services/ServiceB.ts, interfaces/IServiceB.ts
-
+  - ModuleA: services/ServiceA.ts
+  - ModuleB: services/ServiceB.ts
 ```
 
-**Why this matters:**
-- ✅ **Caught at compile-time** - not at runtime when customers are using your app
-- ✅ **Clear error message** - shows exact module dependency chain
-- ✅ **File locations** - know exactly which modules are involved
-- ✅ **Prevents deployment** - won't generate container with broken module dependencies
+## How to Fix
 
-## Key Takeaways
+**Merge modules or extract common dependency:**
 
-<CardGrid>
-  <Card title="🔍 Module-Level Detection" icon="magnifier">
-    IoC Arise detects circular dependencies **between modules**, not just classes.
-  </Card>
-  <Card title="⚡ Compile-Time Safety" icon="rocket">
-    Catches module cycles before deployment. No runtime surprises!
-  </Card>
-  <Card title="📊 Clear Error Messages" icon="document">
-    Shows exact module dependency chain with file locations.
-  </Card>
-  <Card title="🛡️ Type Safety" icon="seti:typescript">
-    Full TypeScript support with proper type checking across module boundaries.
-  </Card>
-  <Card title="✅ Best Practices" icon="approve-check">
-    Circular dependencies often indicate design issues - caught early before deployment!
-  </Card>
-</CardGrid>
+```typescript
+// ✅ Extract shared service
+class SharedService {
+  doSomething(): string {
+    return 'shared logic';
+  }
+}
 
-:::caution[💡 Architectural Consideration]
-Circular dependencies between modules indicate architectural issues that should be resolved through refactoring. IoC Arise helps you identify these problems early in development.
-:::
+// ModuleA
+class ServiceA {
+  constructor(private shared: SharedService) {}
+}
+
+// ModuleB
+class ServiceB {
+  constructor(private shared: SharedService) {}
+}
+```

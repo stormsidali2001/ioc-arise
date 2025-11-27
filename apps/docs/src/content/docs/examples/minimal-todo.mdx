@@ -1,150 +1,11 @@
 ---
 title: Minimal Todo Example
-description: A simple todo list application demonstrating basic IoC Arise usage with repository and service patterns
+description: A simple todo application demonstrating basic IoC Arise usage
 sidebar:
   order: 1
 ---
 
-import { FileTree, Card, CardGrid, Badge, Tabs, TabItem } from '@astrojs/starlight/components';
-
-<div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 1rem 0 2rem 0;">
-  <Badge text="Beginner Friendly" variant="success" />
-  <Badge text="Full Example" variant="tip" />
-  <Badge text="Repository Pattern" variant="note" />
-</div>
-
-:::tip[🎯 What You'll Learn]
-This example demonstrates the simplest possible IoC Arise setup with a todo list application. You'll see:
-- **Interface-based DI** - Decoupling interfaces from implementations
-- **Repository Pattern** - Data access abstraction
-- **Service Layer** - Business logic organization
-- **Auto-generated Container** - Zero manual wiring
-:::
-
-## Project Structure
-
-<FileTree>
-- minimal-todo/
-  - entities/
-    - Todo.ts Todo entity class with business logic
-  - repositories/
-    - ITodoRepository.ts Repository interface
-    - InMemoryTodoRepository.ts In-memory repository implementation
-  - services/
-    - ITodoService.ts Service interface
-    - TodoService.ts Service implementation
-  - container.gen.ts Generated IoC container
-  - ioc.config.json IoC configuration
-  - README.md
-</FileTree>
-
-## Class Structure
-
-The complete dependency graph for the Todo application:
-
-```mermaid
-classDiagram
-    class ITodoService {
-        <<interface>>
-        +createTodo(data) Promise~Todo~
-        +getAllTodos() Promise~Todo[]~
-        +getTodoById(id) Promise~Todo~
-    }
-    class TodoService {
-        -todoRepository: ITodoRepository
-        +createTodo(data) Promise~Todo~
-        +getAllTodos() Promise~Todo[]~
-        +getTodoById(id) Promise~Todo~
-    }
-    class ITodoRepository {
-        <<interface>>
-        +create(todo) Promise~Todo~
-        +findAll() Promise~Todo[]~
-        +findById(id) Promise~Todo~
-    }
-    class InMemoryTodoRepository {
-        -todos: Todo[]
-        +create(todo) Promise~Todo~
-        +findAll() Promise~Todo[]~
-        +findById(id) Promise~Todo~
-    }
-    class Todo {
-        +id: string
-        +title: string
-        +description: string
-        +completed: boolean
-        +markAsCompleted()
-        +markAsPending()
-    }
-    
-    ITodoService <|.. TodoService : implements
-    ITodoRepository <|.. InMemoryTodoRepository : implements
-    TodoService --> ITodoRepository : depends on
-```
-
-**Dependency Flow:**
-- `TodoService` implements `ITodoService` and depends on `ITodoRepository`
-- `InMemoryTodoRepository` implements `ITodoRepository`
-- `Todo` is a domain entity with no dependencies
-
-{/* Body Section with Open Loops */}
-
-## Todo Entity
-
-The Todo entity includes built-in business logic and validation:
-
-```typescript
-// entities/Todo.ts
-export interface CreateTodoData {
-  title: string;
-  description?: string;
-}
-
-export interface UpdateTodoData {
-  title?: string;
-  description?: string;
-  completed?: boolean;
-}
-
-export class Todo {
-  id: string;
-  title: string;
-  description?: string;
-  completed: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-
-  constructor(data: CreateTodoData) {
-    this.id = Math.random().toString(36).substr(2, 9);
-    this.title = data.title;
-    this.description = data.description;
-    this.completed = false;
-    this.createdAt = new Date();
-    this.updatedAt = new Date();
-  }
-
-  markAsCompleted(): void {
-    this.completed = true;
-    this.updatedAt = new Date();
-  }
-
-  markAsPending(): void {
-    this.completed = false;
-    this.updatedAt = new Date();
-  }
-
-  update(data: UpdateTodoData): void {
-    if (data.title !== undefined) this.title = data.title;
-    if (data.description !== undefined) this.description = data.description;
-    if (data.completed !== undefined) this.completed = data.completed;
-    this.updatedAt = new Date();
-  }
-}
-```
-
-## Repository Pattern
-
-How do we abstract data access? Through interfaces and implementations:
+## Step 1: Write Your Code
 
 ```typescript
 // repositories/ITodoRepository.ts
@@ -152,150 +13,52 @@ export interface ITodoRepository {
   create(todo: Todo): Promise<Todo>;
   findById(id: string): Promise<Todo | undefined>;
   findAll(): Promise<Todo[]>;
-  update(id: string, data: UpdateTodoData): Promise<Todo | undefined>;
-  delete(id: string): Promise<boolean>;
-  findByCompleted(completed: boolean): Promise<Todo[]>;
 }
-```
 
-```typescript
 // repositories/InMemoryTodoRepository.ts
 export class InMemoryTodoRepository implements ITodoRepository {
   private todos: Todo[] = [];
-
-  async create(todo: Todo): Promise<Todo> {
-    this.todos.push(todo);
-    return todo;
-  }
-
-  async findById(id: string): Promise<Todo | undefined> {
-    return this.todos.find(todo => todo.id === id);
-  }
-
-  async findAll(): Promise<Todo[]> {
-    return [...this.todos];
-  }
-
-  async update(id: string, data: UpdateTodoData): Promise<Todo | undefined> {
-    const todo = this.todos.find(t => t.id === id);
-    if (todo) {
-      todo.update(data);
-      return todo;
-    }
-    return undefined;
-  }
-
-  async delete(id: string): Promise<boolean> {
-    const initialLength = this.todos.length;
-    this.todos = this.todos.filter(todo => todo.id !== id);
-    return this.todos.length < initialLength;
-  }
-
-  async findByCompleted(completed: boolean): Promise<Todo[]> {
-    return this.todos.filter(todo => todo.completed === completed);
-  }
+  async create(todo: Todo) { /* ... */ }
+  async findById(id: string) { /* ... */ }
+  async findAll() { /* ... */ }
 }
-```
 
-## Service Layer
-
-What about business logic? That goes in services:
-
-```typescript
 // services/ITodoService.ts
 export interface ITodoService {
   createTodo(data: CreateTodoData): Promise<Todo>;
   getAllTodos(): Promise<Todo[]>;
   getTodoById(id: string): Promise<Todo | undefined>;
-  updateTodo(id: string, data: UpdateTodoData): Promise<Todo | undefined>;
-  deleteTodo(id: string): Promise<boolean>;
-  markAsCompleted(id: string): Promise<Todo | undefined>;
-  markAsPending(id: string): Promise<Todo | undefined>;
-  getCompletedTodos(): Promise<Todo[]>;
-  getPendingTodos(): Promise<Todo[]>;
 }
-```
 
-```typescript
-// services/TodoService.ts (singleton by default)
+// services/TodoService.ts
 export class TodoService implements ITodoService {
   constructor(private todoRepository: ITodoRepository) {}
-
-  async createTodo(data: CreateTodoData): Promise<Todo> {
-    const todo = new Todo(data);
-    return await this.todoRepository.create(todo);
-  }
-
-  async getAllTodos(): Promise<Todo[]> {
-    return await this.todoRepository.findAll();
-  }
-
-  async getTodoById(id: string): Promise<Todo | undefined> {
-    return await this.todoRepository.findById(id);
-  }
-
-  async updateTodo(id: string, data: UpdateTodoData): Promise<Todo | undefined> {
-    return await this.todoRepository.update(id, data);
-  }
-
-  async deleteTodo(id: string): Promise<boolean> {
-    return await this.todoRepository.delete(id);
-  }
-
-  async markAsCompleted(id: string): Promise<Todo | undefined> {
-    const todo = await this.todoRepository.findById(id);
-    if (todo) {
-      todo.markAsCompleted();
-      return await this.todoRepository.update(id, { completed: true });
-    }
-    return undefined;
-  }
-
-  async markAsPending(id: string): Promise<Todo | undefined> {
-    const todo = await this.todoRepository.findById(id);
-    if (todo) {
-      todo.markAsPending();
-      return await this.todoRepository.update(id, { completed: false });
-    }
-    return undefined;
-  }
-
-  async getCompletedTodos(): Promise<Todo[]> {
-    return await this.todoRepository.findByCompleted(true);
-  }
-
-  async getPendingTodos(): Promise<Todo[]> {
-    return await this.todoRepository.findByCompleted(false);
-  }
+  async createTodo(data: CreateTodoData) { /* ... */ }
+  async getAllTodos() { /* ... */ }
+  async getTodoById(id: string) { /* ... */ }
 }
 ```
 
-## Configuration
+## Step 2: Generate Container
 
-:::note[⚙️ Simple Config]
-Just two lines! The CLI handles everything else automatically.
-:::
-
-```json
-{
-  "sourceDir": ".",
-  "outputPath": "container.gen.ts"
-}
+```bash
+npx @notjustcoders/ioc-arise generate
 ```
 
-## Generated Container
+## Step 3: Generated Code
 
-:::tip[✨ One Command, Complete Setup]
-Run `npx @notjustcoders/ioc-arise` and get production-ready code:
-:::
-
-<Tabs>
-  <TabItem label="Main Container">
-  
-After generation, you'll get a fully-configured container:
+**`container.gen.d.ts`:**
 
 ```typescript
-// container.gen.ts
+export interface ContainerRegistry {
+  'ITodoService': ITodoService;
+  'ITodoRepository': ITodoRepository;
+}
+```
+
+**`container.gen.ts`:**
+
+```typescript
 import { Container, Lifecycle } from '@notjustcoders/di-container';
 import type { ContainerRegistry } from './container.gen.d';
 import { TodoService } from './services/TodoService';
@@ -303,136 +66,30 @@ import { InMemoryTodoRepository } from './repositories/InMemoryTodoRepository';
 
 export const container = new Container<ContainerRegistry>();
 
-// ✅ Dependencies auto-detected
 container.register('ITodoRepository', {
   useClass: InMemoryTodoRepository,
-  lifecycle: Lifecycle.Singleton,
+  lifecycle: Lifecycle.Singleton
 });
 
-// ✅ Knows ITodoService needs ITodoRepository
 container.register('ITodoService', {
   useClass: TodoService,
   dependencies: ['ITodoRepository'],
-  lifecycle: Lifecycle.Singleton,
+  lifecycle: Lifecycle.Singleton
 });
 ```
 
-**What happened:**
-
-CLI analyzed your TypeScript files → Detected `TodoService` depends on `ITodoRepository` → Generated all wiring code automatically → Created type-safe resolution
-
-  </TabItem>
-  <TabItem label="Type Declarations">
-  
-**`container.gen.d.ts`** - Full IntelliSense:
-
-```typescript
-import type { ITodoService } from './services/ITodoService';
-import type { ITodoRepository } from './repositories/ITodoRepository';
-
-export interface ContainerRegistry {
-  'ITodoService': ITodoService;
-  'ITodoRepository': ITodoRepository;
-}
-```
-
-**Benefits:**
-
-✅ Autocomplete for all services • ✅ Type errors at compile-time • ✅ IDE refactoring support
-
-  </TabItem>
-</Tabs>
-
-## Usage
-
-:::tip[🎯 Type-Safe Resolution]
-Get full IntelliSense and compile-time type checking when resolving services!
-:::
-
-<Tabs>
-  <TabItem label="Basic Usage">
-
-```typescript
-import { container } from './container.gen';
-
-// Resolve with full type safety
-const todoService = container.resolve('ITodoService');
-//    ^? ITodoService - Full autocomplete!
-
-// Create todos
-await todoService.createTodo({
-  title: 'Learn IoC Arise',
-  description: 'Study dependency injection'
-});
-```
-
-  </TabItem>
-  <TabItem label="Complete Example">
+## Step 4: Use It
 
 ```typescript
 import { container } from './container.gen';
 
 const todoService = container.resolve('ITodoService');
+//    ^? ITodoService - Full type safety!
 
-// Create multiple todos
 await todoService.createTodo({
   title: 'Learn IoC Arise',
   description: 'Study dependency injection'
 });
 
-await todoService.createTodo({
-  title: 'Buy groceries',
-  description: 'Milk, bread, eggs'
-});
-
-// Get all todos
 const todos = await todoService.getAllTodos();
-console.log('All todos:', todos);
-
-// Update a todo
-if (todos.length > 0) {
-  await todoService.updateTodo(todos[0].id, {
-    title: 'Buy groceries - DONE',
-    completed: true
-  });
-}
-
-// Get completed vs pending todos
-const completedTodos = await todoService.getCompletedTodos();
-const pendingTodos = await todoService.getPendingTodos();
-
-console.log(`Completed: ${completedTodos.length}, Pending: ${pendingTodos.length}`);
 ```
-
-  </TabItem>
-</Tabs>
-
-## Key Takeaways
-
-<CardGrid>
-  <Card title="✅ Zero Decorators" icon="approve-check">
-    Pure TypeScript code with no framework coupling. Your domain logic stays clean!
-  </Card>
-  <Card title="🎯 Interface-Based" icon="star">
-    Clean separation between contracts and implementations. Easy to mock and test.
-  </Card>
-  <Card title="🛡️ Type Safety" icon="seti:typescript">
-    Full IntelliSense support with compile-time type checking. No runtime surprises!
-  </Card>
-  <Card title="🔄 Repository Pattern" icon="document">
-    Clean data access abstraction. Swap in-memory for database with zero business logic changes.
-  </Card>
-  <Card title="⚡ Auto-Wiring" icon="rocket">
-    Dependencies detected and wired automatically. No manual registration needed!
-  </Card>
-  <Card title="📦 Modular" icon="puzzle">
-    Service layer organizes business logic. Easy to extend and maintain.
-  </Card>
-</CardGrid>
-
-:::tip[🚀 Next Steps]
-This example shows the basics. Ready for more?
-- Add [modules](/core-features/simple-modules/) for larger projects
-- Explore [lifecycle scopes](/core-features/scope-example/) (singleton vs transient)
-- See [Clean Architecture](/architecture-patterns/clean-architecture/) for production patterns
-:::

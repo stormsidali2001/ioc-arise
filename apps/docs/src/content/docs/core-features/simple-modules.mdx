@@ -1,444 +1,30 @@
 ---
-title: Simple Modules Example
-description: Demonstrates IoC Arise's module system with cross-module dependencies
+title: Simple Modules
+description: Organize code into modules with cross-module dependencies
 sidebar:
   order: 2
 ---
 
-import { FileTree, Card, CardGrid, Badge, Tabs, TabItem } from '@astrojs/starlight/components';
-
-<div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 1rem 0 2rem 0;">
-  <Badge text="Modular Architecture" variant="tip" />
-  <Badge text="Cross-Module DI" variant="success" />
-  <Badge text="Auto-Generated" variant="note" />
-</div>
-
-:::tip[🎯 What You'll Learn]
-This example demonstrates IoC Arise's **powerful module system** for organizing large codebases:
-- **Logical Module Separation** - Group related functionality together
-- **Cross-Module Dependencies** - Services can depend on other modules seamlessly
-- **Auto-Generated Module Files** - CLI creates separate module files automatically
-- **Type-Safe Resolution** - Full IntelliSense across module boundaries
-:::
-
-## Project Structure
-
-<FileTree>
-- simple-modules/
-  - user/
-    - User.ts User entity
-    - IUserRepository.ts User repository interface
-    - UserRepository.ts User repository implementation
-    - IUserService.ts User service interface
-    - UserService.ts User service implementation
-  - todo/
-    - Todo.ts Todo entity
-    - ITodoRepository.ts Todo repository interface
-    - TodoRepository.ts Todo repository implementation
-    - ITodoService.ts Todo service interface
-    - TodoService.ts Todo service implementation (cross-module dependency)
-  - container.gen.ts Main container aggregating modules
-  - demo.ts Demonstration of module interaction
-  - ioc.config.json IoC configuration with module definitions
-  - README.md This file
-</FileTree>
-
-## Module Organization
-
-<CardGrid>
-  <Card title="👥 User Module" icon="user">
-    **User Domain** - Encapsulates all user-related functionality:
-    
-    • `User` entity with validation  
-    • `IUserRepository` data access interface  
-    • `UserRepository` in-memory implementation  
-    • `IUserService` business logic interface  
-    • `UserService` with CRUD operations
-  </Card>
-  
-  <Card title="✅ Todo Module" icon="document">
-    **Todo Domain** - Manages todo items with user ownership:
-    
-    • `Todo` entity with user reference  
-    • `ITodoRepository` data access interface  
-    • `TodoRepository` in-memory implementation  
-    • `ITodoService` business logic interface  
-    • `TodoService` **depends on UserModule!**
-  </Card>
-</CardGrid>
-
-## Class Structure
-
-The module system organizes classes into logical groups with cross-module dependencies:
-
-```mermaid
-classDiagram
-    class UserModule {
-        <<module>>
-    }
-    class IUserService {
-        <<interface>>
-        +createUser(name, email) Promise~User~
-        +getUserById(id) Promise~User~
-    }
-    class UserService {
-        -userRepository: IUserRepository
-        +createUser(name, email) Promise~User~
-        +getUserById(id) Promise~User~
-    }
-    class IUserRepository {
-        <<interface>>
-        +findById(id) Promise~User~
-        +save(user) Promise~void~
-    }
-    class UserRepository {
-        +findById(id) Promise~User~
-        +save(user) Promise~void~
-    }
-    class TodoModule {
-        <<module>>
-    }
-    class ITodoService {
-        <<interface>>
-        +createTodo(title, userId) Promise~Todo~
-        +getTodosByUser(userId) Promise~Todo[]~
-    }
-    class TodoService {
-        -todoRepository: ITodoRepository
-        -userRepository: IUserRepository
-        +createTodo(title, userId) Promise~Todo~
-        +getTodosByUser(userId) Promise~Todo[]~
-    }
-    class ITodoRepository {
-        <<interface>>
-        +findById(id) Promise~Todo~
-        +save(todo) Promise~void~
-    }
-    class TodoRepository {
-        +findById(id) Promise~Todo~
-        +save(todo) Promise~void~
-    }
-    
-    IUserService <|.. UserService : implements
-    IUserRepository <|.. UserRepository : implements
-    UserService --> IUserRepository : depends on
-    ITodoService <|.. TodoService : implements
-    ITodoRepository <|.. TodoRepository : implements
-    TodoService --> ITodoRepository : depends on
-    TodoService ..> IUserRepository : cross-module dependency
-```
-
-**Key Pattern:**
-- `UserModule` contains user-related services and repositories
-- `TodoModule` contains todo-related services and repositories
-- `TodoService` depends on `IUserRepository` from `UserModule` (cross-module dependency)
-
-## Cross-Module Dependencies
-
-:::note[🔗 The Power of Modules]
-TodoService demonstrates **cross-module dependency** by depending on UserRepository from a different module. IoC Arise handles this automatically!
-:::
-
-The TodoService depends on both its own module AND the User module:
+## Step 1: Write Your Code
 
 ```typescript
+// user/UserService.ts
+export class UserService implements IUserService {
+  constructor(private userRepo: IUserRepository) {}
+  async createUser(name: string, email: string) { /* ... */ }
+}
+
+// todo/TodoService.ts
 export class TodoService implements ITodoService {
   constructor(
-    private todoRepository: ITodoRepository, // Same module (TodoModule)
-    private userRepository: IUserRepository, // Different module (UserModule)!
+    private todoRepo: ITodoRepository,
+    private userRepo: IUserRepository  // Cross-module dependency!
   ) {}
-
-  async createTodo(title: string, userId: string): Promise<Todo> {
-    // Validate user exists using cross-module dependency
-    const user = await this.userRepository.findById(userId);
-    if (!user) {
-      throw new Error(`User with ID ${userId} not found`);
-    }
-    // Create todo logic...
-  }
+  async createTodo(title: string, userId: string) { /* ... */ }
 }
 ```
 
-## What IoC Arise Does Automatically
-
-<CardGrid>
-  <Card title="🔍 Discovery" icon="magnifier">
-    Analyzes all files and discovers dependencies **across module boundaries**
-  </Card>
-  <Card title="📊 Ordering" icon="list-format">
-    Creates proper module instantiation order to avoid circular dependencies
-  </Card>
-  <Card title="🔗 Wiring" icon="puzzle">
-    Generates all registration code with correct dependency arrays
-  </Card>
-  <Card title="✅ Validation" icon="approve-check">
-    Detects issues at compile-time before they become runtime errors
-  </Card>
-</CardGrid>
-
-## Generated Container Structure
-
-:::tip[✨ One Command, Modular Output]
-Run `npx @notjustcoders/ioc-arise` and get a complete modular setup:
-:::
-
-<Tabs>
-  <TabItem label="File Structure">
-
-```
-src/
-├── container.gen.ts          # Main container
-├── container.gen.d.ts        # Type declarations
-└── modules/
-    ├── userModule.module.ts  # User module
-    └── todoModule.module.ts  # Todo module
-```
-
-**Benefits:**
-• Clean separation of concerns  
-• Easy to navigate and understand  
-• Follows standard module patterns  
-• Scales to hundreds of modules
-
-  </TabItem>
-  <TabItem label="Main Container">
-
-```typescript
-// container.gen.ts
-import { Container } from '@notjustcoders/di-container';
-import type { ContainerRegistry } from './container.gen.d';
-import { userModule } from './modules/userModule.module';
-import { todoModule } from './modules/todoModule.module';
-
-export const container = new Container<ContainerRegistry>();
-
-// ✅ Modules registered in correct order
-container.registerModule(userModule);
-container.registerModule(todoModule);
-```
-
-The container aggregates all modules into one unified DI system!
-
-  </TabItem>
-  <TabItem label="User Module">
-
-```typescript
-// modules/userModule.module.ts
-import { ContainerModule, Lifecycle } from '@notjustcoders/di-container';
-import { UserService } from '../user/UserService';
-import { UserRepository } from '../user/UserRepository';
-
-export const userModule = new ContainerModule()
-  .register('IUserService', { 
-    useClass: UserService, 
-    dependencies: ['IUserRepository'], 
-    lifecycle: Lifecycle.Singleton 
-  })
-  .register('IUserRepository', { 
-    useClass: UserRepository, 
-    lifecycle: Lifecycle.Singleton 
-  });
-```
-
-Each module is self-contained and independently testable!
-
-  </TabItem>
-  <TabItem label="Todo Module">
-
-```typescript
-// modules/todoModule.module.ts
-import { ContainerModule, Lifecycle } from '@notjustcoders/di-container';
-import { TodoService } from '../todo/TodoService';
-import { TodoRepository } from '../todo/TodoRepository';
-
-export const todoModule = new ContainerModule()
-  .register('ITodoService', { 
-    useClass: TodoService, 
-    // ✅ Cross-module dependency detected!
-    dependencies: ['ITodoRepository', 'IUserRepository'], 
-    lifecycle: Lifecycle.Singleton 
-  })
-  .register('ITodoRepository', { 
-    useClass: TodoRepository, 
-    lifecycle: Lifecycle.Singleton 
-  });
-```
-
-TodoModule depends on UserModule - **handled automatically!**
-
-  </TabItem>
-</Tabs>
-
-## Usage Example
-
-:::tip[🎯 Type-Safe Cross-Module Resolution]
-Services from different modules work together seamlessly with full type safety!
-:::
-
-<Tabs>
-  <TabItem label="Basic Usage">
-
-```typescript
-import { container } from "./container.gen";
-
-// ✅ Resolve services from User Module
-const userService = container.resolve('IUserService');
-//    ^? IUserService - Full autocomplete!
-
-// ✅ Resolve services from Todo Module  
-const todoService = container.resolve('ITodoService');
-//    ^? ITodoService - Full autocomplete!
-
-// Create a user
-const user = await userService.createUser(
-  "John Doe", 
-  "john@example.com"
-);
-
-// Create a todo (uses cross-module dependency!)
-const todo = await todoService.createTodo(
-  "Learn IoC Arise", 
-  user.id
-);
-```
-
-  </TabItem>
-  <TabItem label="Complete Workflow">
-
-```typescript
-import { container } from "./container.gen";
-
-const userService = container.resolve('IUserService');
-const todoService = container.resolve('ITodoService');
-
-// Step 1: Create multiple users
-const alice = await userService.createUser("Alice", "alice@example.com");
-const bob = await userService.createUser("Bob", "bob@example.com");
-
-// Step 2: Create todos for users (cross-module!)
-const aliceTodo1 = await todoService.createTodo("Buy groceries", alice.id);
-const aliceTodo2 = await todoService.createTodo("Call dentist", alice.id);
-const bobTodo = await todoService.createTodo("Finish project", bob.id);
-
-// Step 3: Get todos by user (demonstrates module interaction)
-const aliceTodos = await todoService.getTodosByUser(alice.id);
-const bobTodos = await todoService.getTodosByUser(bob.id);
-
-console.log(`Alice has ${aliceTodos.length} todos`);
-console.log(`Bob has ${bobTodos.length} todos`);
-```
-
-**Output:**
-```
-Alice has 2 todos
-Bob has 1 todos
-```
-
-  </TabItem>
-  <TabItem label="Error Handling">
-
-```typescript
-import { container } from "./container.gen";
-
-const todoService = container.resolve('ITodoService');
-
-// ❌ Try to create todo for non-existent user
-try {
-  await todoService.createTodo(
-    "Invalid todo", 
-    "non-existent-user-id"
-  );
-} catch (error) {
-  console.error(error.message);
-  // Output: "User with ID non-existent-user-id not found"
-}
-```
-
-**The Magic:**  
-TodoService validates users via `IUserRepository` (from UserModule) **before** creating todos. This is **cross-module validation** at its finest!
-
-  </TabItem>
-</Tabs>
-
-## Domain Models
-
-<Tabs>
-  <TabItem label="Entities">
-
-**User Entity:**
-```typescript
-export class User {
-  constructor(
-    public id: string,
-    public name: string,
-    public email: string,
-  ) {}
-}
-```
-
-**Todo Entity (with user reference):**
-```typescript
-export class Todo {
-  constructor(
-    public id: string,
-    public title: string,
-    public userId: string,  // ✅ Links to User
-    public completed: boolean = false,
-  ) {}
-}
-```
-
-  </TabItem>
-  <TabItem label="User Interface">
-
-**IUserService** - User operations:
-
-```typescript
-export interface IUserService {
-  getAllUsers(): Promise<User[]>;
-  getUserById(id: string): Promise<User | undefined>;
-  createUser(name: string, email: string): Promise<User>;
-  updateUser(
-    id: string,
-    name?: string,
-    email?: string,
-  ): Promise<User | undefined>;
-  deleteUser(id: string): Promise<boolean>;
-}
-```
-
-Standard CRUD operations for users.
-
-  </TabItem>
-  <TabItem label="Todo Interface">
-
-**ITodoService** - Todo operations:
-
-```typescript
-export interface ITodoService {
-  getAllTodos(): Promise<Todo[]>;
-  getTodoById(id: string): Promise<Todo | undefined>;
-  getTodosByUser(userId: string): Promise<Todo[]>;  // ✅ Cross-module query
-  createTodo(title: string, userId: string): Promise<Todo>;
-  updateTodo(
-    id: string,
-    title?: string,
-    completed?: boolean,
-  ): Promise<Todo | undefined>;
-  deleteTodo(id: string): Promise<boolean>;
-}
-```
-
-Note: `getTodosByUser()` and `createTodo()` require user validation from UserModule!
-
-  </TabItem>
-</Tabs>
-
-## Configuration
-
-:::note[⚙️ Simple Module Configuration]
-Tell IoC Arise which files belong to which module using glob patterns:
-:::
+## Step 2: Configure Modules
 
 ```json
 {
@@ -451,40 +37,48 @@ Tell IoC Arise which files belong to which module using glob patterns:
 }
 ```
 
-**What this does:**
-• Groups all `user/` files → `UserModule`  
-• Groups all `todo/` files → `TodoModule`  
-• Resolves cross-module dependencies automatically  
-• Generates separate module files with proper order
+## Step 3: Generate Container
 
-## Key Takeaways
+```bash
+npx @notjustcoders/ioc-arise generate
+```
 
-<CardGrid>
-  <Card title="📦 Modular Organization" icon="puzzle">
-    Keep related code together in logical, self-contained modules. Perfect for domain-driven design!
-  </Card>
-  <Card title="🔗 Cross-Module DI" icon="star">
-    Services can safely depend on other modules. IoC Arise handles the wiring automatically.
-  </Card>
-  <Card title="🛡️ Type Safety" icon="seti:typescript">
-    Full IntelliSense and compile-time checking across all module boundaries.
-  </Card>
-  <Card title="🧪 Easy Testing" icon="approve-check">
-    Mock entire modules or individual services. Modules are independently testable.
-  </Card>
-  <Card title="📈 Scalability" icon="rocket">
-    Add new modules without touching existing code. Grows with your application.
-  </Card>
-  <Card title="✅ Auto-Validation" icon="warning">
-    Circular dependencies and missing services caught at compile-time.
-  </Card>
-</CardGrid>
+## Step 4: Generated Code
 
-:::tip[🚀 Production Ready]
-IoC Arise's module system enables **clean separation of concerns** while maintaining the ability to share functionality across domains. Perfect for:
-- **Microservices** - Each module can become a service
-- **Monorepos** - Share modules across packages
-- **Large Teams** - Work on modules independently
-- **Clean Architecture** - Enforce domain boundaries
-:::
+**`container.gen.ts`:**
 
+```typescript
+import { Container } from '@notjustcoders/di-container';
+import type { ContainerRegistry } from './container.gen.d';
+import { userModule } from './modules/userModule.module';
+import { todoModule } from './modules/todoModule.module';
+
+export const container = new Container<ContainerRegistry>();
+
+container.registerModule(userModule);
+container.registerModule(todoModule);
+```
+
+**`modules/todoModule.module.ts`:**
+
+```typescript
+import { ContainerModule, Lifecycle } from '@notjustcoders/di-container';
+import { TodoService } from '../todo/TodoService';
+
+export const todoModule = new ContainerModule()
+  .register('ITodoService', {
+    useClass: TodoService,
+    dependencies: ['ITodoRepository', 'IUserRepository'],  // Cross-module!
+    lifecycle: Lifecycle.Singleton
+  });
+```
+
+## Step 5: Use It
+
+```typescript
+import { container } from './container.gen';
+
+const userService = container.resolve('IUserService');
+const todoService = container.resolve('ITodoService');
+//    ^? ITodoService - Full type safety across modules!
+```

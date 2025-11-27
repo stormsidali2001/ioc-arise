@@ -2,7 +2,7 @@
 
 > **A lightweight, type-safe dependency injection framework for TypeScript. Zero decorators, zero coupling, zero overhead.**
 
-A production-ready dependency injection container framework that works standalone or with automated code generation. The core `@notjustcoders/di-container` package provides a powerful, type-safe DI runtime (~4KB), while the optional CLI tool automates container setup by analyzing your code and generating configuration.
+A  dependency injection container framework that works standalone or with automated code generation. The core `@notjustcoders/di-container` package provides a powerful, type-safe DI runtime (~4KB), while the optional CLI tool automates container setup by analyzing your code and generating configuration.
 
 [![npm version](https://badge.fury.io/js/@notjustcoders%2Fdi-container.svg)](https://www.npmjs.com/package/@notjustcoders/di-container)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)

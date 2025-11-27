@@ -1,185 +1,89 @@
 ---
 title: Factory Functions
-description: Use factory functions for dependency injection with custom logic, context objects, and currying patterns
+description: Use factory functions for custom instance creation logic
 sidebar:
   order: 5
 ---
 
-import { FileTree, Card, CardGrid, Badge, Tabs, TabItem } from '@astrojs/starlight/components';
+## Step 1: Write Your Code
 
-<div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 1rem 0 2rem 0;">
-  <Badge text="Factory Pattern" variant="tip" />
-  <Badge text="Functional Programming" variant="success" />
-  <Badge text="Context Objects" variant="note" />
-</div>
-
-Factory functions allow you to create instances with custom business logic, validation, or conditional setup that goes beyond simple constructor injection.
-
-## Project Structure
-
-<FileTree>
-- factory-functions-example/
-  - repositories/
-    - IUserRepository.ts
-    - UserRepository.ts
-    - ITodoRepository.ts
-    - TodoRepository.ts
-  - factories/
-    - todoUseCaseFactory.ts    # Context object pattern
-    - userUseCaseFactory.ts     # Separate parameters pattern
-  - container.gen.ts
-  - demo.ts
-</FileTree>
-
-## Patterns
-
-<CardGrid>
-  <Card title="📦 Context Object" icon="seti:typescript">
-    Dependencies as a single object parameter
-  </Card>
-  
-  <Card title="🔧 Separate Parameters" icon="rocket">
-    Traditional parameter-based injection
-  </Card>
-</CardGrid>
-
-## Examples
-
-<Tabs>
-  <TabItem label="Context Object Pattern">
+**Separate Parameters Pattern:**
 
 ```typescript
-// factories/todoUseCaseFactory.ts
-export function createTodoUseCase(
-    context: { userRepo: IUserRepository, todoRepo: ITodoRepository }
-) {
-    return (userId: string, title: string): void => {
-        const user = context.userRepo.getUser(userId);
-        context.todoRepo.saveTodo(title);
-    };
-}
-```
-
-**Generated:**
-
-```typescript
-container.register('createTodoUseCase', {
-  useFactory: (userRepo, todoRepo) => createTodoUseCase({ userRepo, todoRepo }),
-  dependencies: ['IUserRepository', 'ITodoRepository'],
-  lifecycle: Lifecycle.Singleton,
-});
-```
-
-  </TabItem>
-  <TabItem label="Separate Parameters">
-
-```typescript
-// factories/userUseCaseFactory.ts
-export function createUserUseCase(
-    userRepo: IUserRepository
-) {
-    return (userId: string): string => {
-        return userRepo.getUser(userId);
-    };
-}
-```
-
-**Generated:**
-
-```typescript
-container.register('createUserUseCase', {
-  useFactory: createUserUseCase,
-  dependencies: ['IUserRepository'],
-  lifecycle: Lifecycle.Singleton,
-});
-```
-
-  </TabItem>
-</Tabs>
-
-## Detection
-
-Functions are automatically detected if they:
-- Are marked with `@factory` JSDoc annotation (default behavior)
-- Match the `factoryPattern` regex if configured in `ioc.config.json`
-- Are exported
-
-```typescript
-// ✅ Detected - marked with @factory
 /**
  * @factory
  */
-export function myFactory() {
-  return { /* ... */ };
-}
-
-// ✅ Detected - matches factoryPattern if configured (e.g., "factory")
-export function createUserFactory(repo: IUserRepository) {
-  return { /* ... */ };
-}
-
-// ❌ Not detected - no @factory annotation and doesn't match pattern
-export function getUserService() {
-  return { /* ... */ };
-}
-
-// ❌ Not detected - not exported
-function createService() {
-  return { /* ... */ };
+function createUserUseCase(userRepo: IUserRepository) {
+  return (userId: string): string => {
+    return userRepo.getUser(userId);
+  };
 }
 ```
 
-## Lifecycle
-
-<Tabs>
-  <TabItem label="Singleton (Default)">
+**Context Object Pattern:**
 
 ```typescript
 /**
- * @scope singleton
+ * @factory
  */
-export function createService() {
-  return { /* ... */ };
+function createTodoUseCase(
+  context: { userRepo: IUserRepository, todoRepo: ITodoRepository }
+) {
+  return (userId: string, title: string): void => {
+    const user = context.userRepo.getUser(userId);
+    context.todoRepo.saveTodo(title);
+  };
 }
 ```
 
-  </TabItem>
-  <TabItem label="Transient">
+## Step 2: Generate Container
+
+```bash
+npx @notjustcoders/ioc-arise generate
+```
+
+## Step 3: Generated Code
+
+**`container.gen.d.ts`:**
 
 ```typescript
-/**
- * @scope transient
- */
-export function createService() {
-  return { /* ... */ };
+export interface ContainerRegistry {
+  'createUserUseCase': ReturnType<typeof createUserUseCase>;
+  'createTodoUseCase': ReturnType<typeof createTodoUseCase>;
 }
 ```
 
-  </TabItem>
-</Tabs>
+**`container.gen.ts`:**
 
-## Usage
+```typescript
+import { Container, Lifecycle } from '@notjustcoders/di-container';
+import type { ContainerRegistry } from './container.gen.d';
+import { createUserUseCase } from './factories/userUseCaseFactory';
+import { createTodoUseCase } from './factories/todoUseCaseFactory';
+
+export const container = new Container<ContainerRegistry>();
+
+container.register('createUserUseCase', {
+  useFactory: createUserUseCase,
+  dependencies: ['IUserRepository'],
+  lifecycle: Lifecycle.Singleton
+});
+
+container.register('createTodoUseCase', {
+  useFactory: (userRepo, todoRepo) => createTodoUseCase({ userRepo, todoRepo }),
+  dependencies: ['IUserRepository', 'ITodoRepository'],
+  lifecycle: Lifecycle.Singleton
+});
+```
+
+## Step 4: Use It
 
 ```typescript
 import { container } from './container.gen';
 
+const createUser = container.resolve('createUserUseCase');
 const createTodo = container.resolve('createTodoUseCase');
+
+createUser('user-1');
 createTodo('user-1', 'Buy groceries');
 ```
-
-## When to Use
-
-<CardGrid>
-  <Card title="✅ Use Factories" icon="check">
-    • Custom creation logic  
-    • Validation or conditional setup  
-    • Returning functions (currying)  
-    • Functional programming style
-  </Card>
-  
-  <Card title="❌ Use Classes" icon="x">
-    • Simple constructor injection  
-    • Standard OOP patterns  
-    • No custom logic needed
-  </Card>
-</CardGrid>

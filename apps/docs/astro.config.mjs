@@ -23,7 +23,7 @@ export default defineConfig({
         starlight({
 
             title: 'IoC Arise',
-            tagline: 'Code-Generation Powered DI for TypeScript',
+            tagline: 'Auto-Generate Container Registration for TypeScript',
             logo: {
                 light: "./src/assets/logoLight.svg",
                 dark: "./src/assets/logoDark.svg"
@@ -82,12 +82,12 @@ export default defineConfig({
                 {
                     label: 'Core Features',
                     items: [
-                        { label: 'Module System', link: '/core-features/simple-modules/' },
-                        { label: 'Abstract Classes Support', link: '/core-features/abstract-classes-example/' },
-                        { label: 'Non-Interface Classes', link: '/core-features/use-cases-example/' },
-                        { label: 'Scope Management', link: '/core-features/scope-example/' },
+                        { label: 'Value Objects', link: '/core-features/use-value-example/' },
                         { label: 'Factory Functions', link: '/core-features/factory-functions-example/' },
-                        { label: 'Plain Object Services (useValue)', link: '/core-features/use-value-example/' },
+                        { label: 'Class Injection', link: '/core-features/use-cases-example/' },
+                        { label: 'Abstract Classes', link: '/core-features/abstract-classes-example/' },
+                        { label: 'Modules', link: '/core-features/simple-modules/' },
+                        { label: 'Lifecycle Scopes', link: '/core-features/scope-example/' },
                     ],
                 },
                 {
