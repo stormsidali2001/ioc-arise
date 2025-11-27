@@ -7,7 +7,7 @@
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",
-    "changeset":"changeset",
+    "changeset": "changeset",
     "changeset:done": "npm run changeset && npm run changeset version && npm run changeset publish "
   },
   "devDependencies": {
@@ -19,5 +19,10 @@
   "packageManager": "pnpm@9.0.0",
   "engines": {
     "node": ">=18"
+  },
+  "pnpm": {
+    "overrides": {
+      "nanoid": "^4.0.2"
+    }
   }
 }
