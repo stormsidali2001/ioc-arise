@@ -61,7 +61,7 @@ const userService: IUserService = {
 };
 ```
 
-**Factory Functions:**
+**Factory Functions (Separate Parameters):**
 
 ```typescript
 /**
@@ -73,6 +73,23 @@ function createService(repo: IRepo1, config: IConfig) {
       return new ProductionService(repo, userId);
     }
     return new DevelopmentService(repo, userId);
+  };
+}
+```
+
+**Factory Functions (Context Object):**
+
+```typescript
+/**
+ * @factory
+ */
+function createTodoUseCase(
+  context: { userRepo: IUserRepository, todoRepo: ITodoRepository }
+) {
+  return (userId: string, title: string): void => {
+    const user = context.userRepo.getUser(userId);
+    console.log(`Creating todo for ${user}`);
+    context.todoRepo.saveTodo(title);
   };
 }
 ```

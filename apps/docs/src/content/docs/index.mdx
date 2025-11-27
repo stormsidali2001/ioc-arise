@@ -111,7 +111,7 @@ Write your classes, interfaces, value objects, and factory functions in pure Typ
     ```
   </Card>
   
-  <Card title="🏭 Factory Functions" icon="puzzle">
+  <Card title="🏭 Factory Functions (Separate Params)" icon="puzzle">
     ```typescript
     /**
      * @factory
@@ -122,6 +122,23 @@ Write your classes, interfaces, value objects, and factory functions in pure Typ
           return new ProductionService(repo, userId);
         }
         return new DevelopmentService(repo, userId);
+      };
+    }
+    ```
+  </Card>
+  
+  <Card title="🏭 Factory Functions (Context Object)" icon="puzzle">
+    ```typescript
+    /**
+     * @factory
+     */
+    function createTodoUseCase(
+      context: { userRepo: IUserRepository, todoRepo: ITodoRepository }
+    ) {
+      return (userId: string, title: string): void => {
+        const user = context.userRepo.getUser(userId);
+        console.log(`Creating todo for ${user}`);
+        context.todoRepo.saveTodo(title);
       };
     }
     ```
