@@ -3,7 +3,6 @@ import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import sitemap from '@astrojs/sitemap';
 import mermaid from 'astro-mermaid';
-import astroLlmsTxt from '@4hse/astro-llms-txt';
 // import astroLlmsTxt from '@4hse/astro-llms-txt';
 
 import tailwindcss from '@tailwindcss/vite';
@@ -110,30 +109,7 @@ export default defineConfig({
         }),
         sitemap(),
         partytown(),
-        astroLlmsTxt({
-            title: 'IoC Arise',
-            description: 'A lightweight, type-safe dependency injection framework for TypeScript. Auto-generate container registration. Zero decorators. ~4KB runtime.',
-            details: 'IoC Arise provides a lightweight container framework that works with pure TypeScript. Use it standalone or with optional code generation for automated setup.',
-            notes: '- This content is auto-generated from the official documentation.',
-            docSet: [
-                {
-                    title: 'Complete Documentation',
-                    description: 'The full IoC Arise documentation',
-                    url: '/llms-full.txt',
-                    include: ['/', 'guides/**', 'examples/**', 'core-features/**', 'error-detection/**', 'reference/**'],
-                    promote: ['/guides/', '/examples/', '/core-features/'],
-                },
-                {
-                    title: 'Documentation Index',
-                    description: 'Index of key documentation pages',
-                    url: '/llms-small.txt',
-                    include: ['/', 'guides/**', 'examples/**', 'core-features/**', 'error-detection/**', 'reference/**'],
-                    onlyStructure: true,
-                    promote: ['/guides/', '/examples/', '/core-features/'],
-                },
-            ],
-            pageSeparator: '\n\n---\n\n',
-        }),
+
     ],
 
     vite: {
