@@ -1,5 +1,11 @@
 # @notjustcoders/ioc-arise
 
+## 1.1.27
+
+### Patch Changes
+
+- fix: bug in module resolotion
+
 ## 1.1.26
 
 ### Patch Changes

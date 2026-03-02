@@ -26,7 +26,7 @@ export class IoCContainerGenerator {
     ): void {
         // Check for name collisions before generating
         // If moduleGroupedClasses is provided, check all classes from all modules
-        const allClassesToCheck = moduleGroupedClasses && moduleGroupedClasses.size > 1
+        const allClassesToCheck = moduleGroupedClasses && moduleGroupedClasses.size > 0
             ? Array.from(moduleGroupedClasses.values()).flat()
             : classes;
         this.checkForNameCollisions(allClassesToCheck);
@@ -35,9 +35,18 @@ export class IoCContainerGenerator {
         const outputDir = dirname(outputPath);
         mkdirSync(outputDir, { recursive: true });
 
-        if (moduleGroupedClasses && moduleGroupedClasses.size > 1) {
+        // Use modular generation if any of the three grouped maps are present.
+        // moduleGroupedFactories / moduleGroupedValues are only set when a module resolver
+        // is active, so their presence alone is sufficient to trigger modular mode even when
+        // all classes happen to land in a single module (or there are no classes at all).
+        const isModular =
+            (moduleGroupedClasses !== undefined && moduleGroupedClasses.size > 0) ||
+            (moduleGroupedFactories !== undefined && moduleGroupedFactories.size > 0) ||
+            (moduleGroupedValues !== undefined && moduleGroupedValues.size > 0);
+
+        if (isModular) {
             // Generate modular code with separate files for each module
-            this.generateModularFiles(moduleGroupedClasses, outputPath, factories, values, moduleGroupedFactories, moduleGroupedValues);
+            this.generateModularFiles(moduleGroupedClasses ?? new Map(), outputPath, factories, values, moduleGroupedFactories, moduleGroupedValues);
         } else {
             // Generate single flat file
             const containerCode = this.generateFlatCode(classes, outputPath, factories, values);
