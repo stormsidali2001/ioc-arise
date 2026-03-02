@@ -14,8 +14,8 @@ import { ClassInfo } from '../types';
 
 export const generateCommand = new Command('generate')
   .description('Generate IoC container from TypeScript classes')
-  .option('-s, --source <dir>', 'Source directory to scan', '.')
-  .option('-o, --output <file>', 'Output file path', 'container.gen.ts')
+  .option('-s, --source <dir>', 'Source directory to scan')
+  .option('-o, --output <file>', 'Output file path')
   .option('-i, --interface <pattern>', 'Interface name pattern to match (regex)')
   .option('-e, --exclude <patterns...>', 'Exclude patterns for files')
   .option('--factory-pattern <pattern>', 'Factory function name pattern to match (regex). Default: functions with @factory JSDoc comment')
@@ -28,7 +28,7 @@ export const generateCommand = new Command('generate')
       Logger.initialize({ verbose: options.verbose ?? false });
 
       // Initialize config manager with the source directory
-      const initialSourceDir = resolve(options.source);
+      const initialSourceDir = resolve(options.source || '.');
       const configManager = new ConfigManager(initialSourceDir);
 
       // Validate config if present

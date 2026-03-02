@@ -1,5 +1,11 @@
 # @notjustcoders/ioc-arise
 
+## 1.1.20
+
+### Patch Changes
+
+- Fix: Fixed a bug concerning the CLI output path, it was always defaulting to .
+
 ## 1.1.19
 
 ### Patch Changes
