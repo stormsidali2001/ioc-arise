@@ -1,5 +1,11 @@
 # @notjustcoders/ioc-arise
 
+## 1.1.26
+
+### Patch Changes
+
+- refactor: more details for console output
+
 ## 1.1.25
 
 ### Patch Changes

@@ -94,69 +94,40 @@ export const generateCommand = new Command('generate')
         return;
       }
 
-      // Group classes by modules if module resolver is available
+      // Group everything by module
       let moduleGroupedClasses: Map<string, ClassInfo[]> | undefined;
       let moduleGroupedFactories: Map<string, FactoryInfo[]> | undefined;
       let moduleGroupedValues: Map<string, ValueInfo[]> | undefined;
-      if (moduleResolver && classes.length > 0) {
-        moduleGroupedClasses = moduleResolver.groupClassesByModule(classes);
 
-        if (mergedOptions.verbose) {
-          Logger.newline();
-          Logger.custom('📋', `Found ${classes.length} classes organized into ${moduleGroupedClasses.size} modules:`);
-          for (const [moduleName, moduleClasses] of moduleGroupedClasses) {
-            Logger.log(`\n   📦 ${moduleName} (${moduleClasses.length} classes):`);
-            moduleClasses.forEach(cls => {
-              Logger.log(`      • ${cls.name} (${cls.dependencies.length} dependencies)`);
-              if (cls.dependencies.length > 0) {
-                Logger.log(`        Dependencies: ${cls.dependencies.map(dep => dep.name).join(', ')}`);
-              }
-            });
-          }
-        }
-      } else {
-        // Backward compatibility: single default module (only if we have classes)
-        if (classes.length > 0) {
-          moduleGroupedClasses = new Map([['CoreModule', classes]]);
-        }
-
-        if (mergedOptions.verbose) {
-          if (classes.length > 0) {
-            Logger.newline();
-            Logger.custom('📋', `Found ${classes.length} classes:`);
-            classes.forEach(cls => {
-              Logger.log(`   • ${cls.name} (${cls.dependencies.length} dependencies)`);
-              if (cls.dependencies.length > 0) {
-                Logger.log(`     Dependencies: ${cls.dependencies.map(dep => dep.name).join(', ')}`);
-              }
-            });
-          }
-          if (factories && factories.length > 0) {
-            Logger.newline();
-            Logger.custom('🏭', `Found ${factories.length} factories:`);
-            factories.forEach(factory => {
-              Logger.log(`   • ${factory.name} (${factory.dependencies.length} dependencies)`);
-            });
-          }
-          if (values && values.length > 0) {
-            Logger.newline();
-            Logger.custom('📦', `Found ${values.length} values:`);
-            values.forEach(value => {
-              Logger.log(`   • ${value.name}${value.interfaceName ? ` (${value.interfaceName})` : ''}`);
-            });
-          }
-        }
-      }
-
-      // Group factories and values by module if module resolver is available
       if (moduleResolver) {
+        if (classes.length > 0) {
+          moduleGroupedClasses = moduleResolver.groupClassesByModule(classes);
+        }
         if (factories && factories.length > 0) {
           moduleGroupedFactories = moduleResolver.groupFactoriesByModule(factories);
         }
         if (values && values.length > 0) {
           moduleGroupedValues = moduleResolver.groupValuesByModule(values);
         }
+      } else {
+        if (classes.length > 0) {
+          moduleGroupedClasses = new Map([['CoreModule', classes]]);
+        }
       }
+
+      // Print structured analysis summary
+      Logger.newline();
+      printAnalysisSummary(
+        moduleResolver !== null,
+        moduleGroupedClasses,
+        moduleGroupedFactories,
+        moduleGroupedValues,
+        classes,
+        factories,
+        values,
+        mergedOptions.verbose ?? false
+      );
+      Logger.newline();
 
       // Check for circular dependencies between classes
       const cycles = CircularDependencyDetector.detect(classes);
@@ -208,23 +179,22 @@ export const generateCommand = new Command('generate')
       const pathsResolver = new TsConfigPathsResolver(sourceDir);
       IoCContainerGenerator.generate(classes, outputPath, moduleGroupedClasses, factories, values, moduleGroupedFactories, moduleGroupedValues, pathsResolver);
 
-      Logger.success('Container generated successfully!');
-      Logger.log(Logger.colorizeText(`   File: ${outputPath}`, Logger.getColors().gray));
-      Logger.log(Logger.colorizeText(`   Classes: ${classes.length}`, Logger.getColors().gray));
-      if (factories && factories.length > 0) {
-        Logger.log(Logger.colorizeText(`   Factories: ${factories.length}`, Logger.getColors().gray));
-      }
-      if (values && values.length > 0) {
-        Logger.log(Logger.colorizeText(`   Values: ${values.length}`, Logger.getColors().gray));
+      const statParts: string[] = [];
+      if (classes.length > 0) statParts.push(`${classes.length} class${classes.length !== 1 ? 'es' : ''}`);
+      if (factories && factories.length > 0) statParts.push(`${factories.length} factor${factories.length !== 1 ? 'ies' : 'y'}`);
+      if (values && values.length > 0) statParts.push(`${values.length} value${values.length !== 1 ? 's' : ''}`);
+      if (moduleResolver) {
+        const moduleCount = new Set([
+          ...(moduleGroupedClasses?.keys() ?? []),
+          ...(moduleGroupedFactories?.keys() ?? []),
+          ...(moduleGroupedValues?.keys() ?? []),
+        ]).size;
+        statParts.unshift(`${moduleCount} module${moduleCount !== 1 ? 's' : ''}`);
       }
 
-      if (mergedOptions.verbose) {
-        Logger.newline();
-        Logger.custom('🎉', 'You can now import and use your container:', Logger.getColors().green + Logger.getColors().bright);
-        Logger.log(Logger.colorizeText('   import { container } from "./container.gen";', Logger.getColors().gray));
-        Logger.log(Logger.colorizeText('   // Usage examples:', Logger.getColors().gray));
-        Logger.log(Logger.colorizeText('   // const userService = container.resolve(\'IUserService\');', Logger.getColors().gray));
-      }
+      Logger.success('Container generated successfully!');
+      Logger.log(Logger.colorizeText(`   📁 ${outputPath}`, Logger.getColors().gray));
+      Logger.log(Logger.colorizeText(`   ${statParts.join(' · ')}`, Logger.getColors().gray));
 
       process.exit(0);
 
@@ -238,3 +208,84 @@ export const generateCommand = new Command('generate')
       process.exit(1);
     }
   });
+
+function printAnalysisSummary(
+  isModular: boolean,
+  moduleGroupedClasses: Map<string, ClassInfo[]> | undefined,
+  moduleGroupedFactories: Map<string, FactoryInfo[]> | undefined,
+  moduleGroupedValues: Map<string, ValueInfo[]> | undefined,
+  classes: ClassInfo[],
+  factories: FactoryInfo[] | undefined,
+  values: ValueInfo[] | undefined,
+  _verbose: boolean
+): void {
+  const c = Logger.getColors();
+
+  const printClass = (cls: ClassInfo, indent: string) => {
+    const name = Logger.colorizeText(`${indent}🏗️  ${cls.name}`, c.white);
+    if (cls.interfaceName) {
+      Logger.log(name + Logger.colorizeText(' ──implements──▶ ', c.gray) + Logger.colorizeText(cls.interfaceName, c.green));
+    } else if (cls.abstractClassName) {
+      Logger.log(name + Logger.colorizeText(' ──extends──▶ ', c.gray) + Logger.colorizeText(cls.abstractClassName, c.green));
+    } else {
+      Logger.log(name);
+    }
+  };
+
+  const printFactory = (factory: FactoryInfo, indent: string) => {
+    if (factory.instanceFactoryFor) {
+      Logger.log(
+        Logger.colorizeText(`${indent}🔌 ${factory.name}()`, c.white) +
+        Logger.colorizeText(' ──returns──▶ ', c.gray) +
+        Logger.colorizeText(factory.instanceFactoryFor, c.green)
+      );
+    } else {
+      const token = factory.token || factory.name;
+      Logger.log(
+        Logger.colorizeText(`${indent}🏭 ${factory.name}()`, c.white) +
+        Logger.colorizeText(' ──factory──▶ ', c.gray) +
+        Logger.colorizeText(`'${token}'`, c.magenta)
+      );
+    }
+  };
+
+  const printValue = (value: ValueInfo, indent: string) => {
+    const label = value.interfaceName || value.token || value.name;
+    Logger.log(
+      Logger.colorizeText(`${indent}💎 ${value.name}`, c.white) +
+      Logger.colorizeText(' ──value──▶ ', c.gray) +
+      Logger.colorizeText(label, c.green)
+    );
+  };
+
+  if (isModular) {
+    const allModuleNames = new Set<string>([
+      ...(moduleGroupedClasses?.keys() ?? []),
+      ...(moduleGroupedFactories?.keys() ?? []),
+      ...(moduleGroupedValues?.keys() ?? []),
+    ]);
+
+    for (const moduleName of allModuleNames) {
+      Logger.log(Logger.colorizeText(`📦 ${moduleName}`, c.cyan + c.bright));
+      for (const cls of (moduleGroupedClasses?.get(moduleName) ?? [])) {
+        printClass(cls, '   ');
+      }
+      for (const factory of (moduleGroupedFactories?.get(moduleName) ?? [])) {
+        printFactory(factory, '   ');
+      }
+      for (const value of (moduleGroupedValues?.get(moduleName) ?? [])) {
+        printValue(value, '   ');
+      }
+    }
+  } else {
+    for (const cls of classes) {
+      printClass(cls, '   ');
+    }
+    for (const factory of (factories ?? [])) {
+      printFactory(factory, '   ');
+    }
+    for (const value of (values ?? [])) {
+      printValue(value, '   ');
+    }
+  }
+}

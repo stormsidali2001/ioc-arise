@@ -5,8 +5,8 @@
  * Module: ProductModule
  */
 import { ContainerModule, Lifecycle } from '@notjustcoders/di-container';
-import { ProductService } from '../product/ProductService';
-import { createProductRepository } from '../product/createProductRepository';
+import { ProductService } from '../../product/ProductService';
+import { createProductRepository } from '../../product/createProductRepository';
 
 export const productModule = new ContainerModule()
   .register('IProductService', { useClass: ProductService, dependencies: ['IProductRepository', 'IUserService'], lifecycle: Lifecycle.Singleton })

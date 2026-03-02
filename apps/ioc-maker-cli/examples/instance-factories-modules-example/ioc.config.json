@@ -1,6 +1,6 @@
 {
-  "source": ".",
-  "output": "container.gen.ts",
+  "source": "src",
+  "output": "src/di/container.gen.ts",
   "modules": {
     "CoreModule": ["core/**"],
     "UserModule": ["user/**"],

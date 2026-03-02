@@ -4,13 +4,13 @@
  * 
  * This file provides type-safe resolution for string-based tokens.
  */
-import type { IUserService } from './user/IUserService';
-import type { IProductService } from './product/IProductService';
-import type { IUserRepository } from './user/IUserRepository';
-import type { IProductRepository } from './product/IProductRepository';
-import type { ICache } from './core/ICache';
-import type { ILogger } from './core/ILogger';
-import type { IAppConfig } from './core/IAppConfig';
+import type { IUserService } from '../user/IUserService';
+import type { IProductService } from '../product/IProductService';
+import type { IUserRepository } from '../user/IUserRepository';
+import type { IProductRepository } from '../product/IProductRepository';
+import type { ICache } from '../core/ICache';
+import type { ILogger } from '../core/ILogger';
+import type { IAppConfig } from '../core/IAppConfig';
 
 export interface ContainerRegistry {
   'IUserService': IUserService;

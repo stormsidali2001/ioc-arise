@@ -5,9 +5,9 @@
  * Module: CoreModule
  */
 import { ContainerModule, Lifecycle } from '@notjustcoders/di-container';
-import { createCache } from '../core/createCache';
-import { consoleLogger } from '../core/consoleLogger';
-import { appConfig } from '../core/appConfig';
+import { createCache } from '../../core/createCache';
+import { consoleLogger } from '../../core/consoleLogger';
+import { appConfig } from '../../core/appConfig';
 
 export const coreModule = new ContainerModule()
   .register('ICache', { useFactory: createCache, lifecycle: Lifecycle.Singleton })
