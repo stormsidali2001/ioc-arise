@@ -1,5 +1,11 @@
 # @notjustcoders/ioc-arise
 
+## 1.1.28
+
+### Patch Changes
+
+- refactor: instance factories default to transient scope instead of singleton, @scope jsdoc comment works on all injectables
+
 ## 1.1.27
 
 ### Patch Changes

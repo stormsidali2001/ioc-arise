@@ -10,4 +10,4 @@ import { createUserRepository } from '../../user/createUserRepository';
 
 export const userModule = new ContainerModule()
   .register('IUserService', { useClass: UserService, dependencies: ['IUserRepository', 'ICache'], lifecycle: Lifecycle.Singleton })
-  .register('IUserRepository', { useFactory: createUserRepository, dependencies: ['IAppConfig', 'ILogger'], lifecycle: Lifecycle.Singleton });
+  .register('IUserRepository', { useFactory: createUserRepository, dependencies: ['IAppConfig', 'ILogger'], lifecycle: Lifecycle.Transient });

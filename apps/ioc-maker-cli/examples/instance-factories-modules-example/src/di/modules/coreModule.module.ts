@@ -10,6 +10,6 @@ import { consoleLogger } from '../../core/consoleLogger';
 import { appConfig } from '../../core/appConfig';
 
 export const coreModule = new ContainerModule()
-  .register('ICache', { useFactory: createCache, lifecycle: Lifecycle.Singleton })
+  .register('ICache', { useFactory: createCache, lifecycle: Lifecycle.Transient })
   .register('ILogger', { useValue: consoleLogger, lifecycle: Lifecycle.Singleton })
   .register('IAppConfig', { useValue: appConfig, lifecycle: Lifecycle.Singleton });

@@ -62,6 +62,8 @@ export class ValueAnalyzer {
             const exportedValues = this.astParser.findAllExportedValues(root);
             Logger.debug(`Found ${exportedValues.length} exported values in ${filePath}`);
 
+            const jsDocScopes = this.astParser.extractJSDocComments(root);
+
             for (const valueNode of exportedValues) {
                 const valueName = this.astParser.extractValueName(valueNode);
                 if (!valueName) {
@@ -69,7 +71,7 @@ export class ValueAnalyzer {
                 }
 
                 const interfaceName = this.astParser.extractValueType(valueNode);
-                
+
                 // Check if value should be included
                 // Values are detected by:
                 // 1. @value JSDoc annotation (default behavior)
@@ -88,8 +90,8 @@ export class ValueAnalyzer {
                 // Determine token - use interface name if available, otherwise use value name
                 const token = interfaceName || valueName;
 
-                // useValue is always singleton
-                const scope: InjectionScope = 'singleton';
+                // Default to singleton; can be overridden with /** @scope transient */
+                const scope: InjectionScope = jsDocScopes.get(valueName) || 'singleton';
 
                 values.push({
                     name: valueName,

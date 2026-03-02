@@ -105,8 +105,11 @@ export class FactoryAnalyzer {
                 }
 
                 const parameters = this.astParser.extractFunctionParameters(functionNode);
-                // Try to get scope from JSDoc, default to singleton
-                const scope = jsDocScopes.get(functionName) || 'singleton';
+                // Instance factories default to transient (they produce new instances on demand).
+                // Regular @factory / pattern-matched factories default to singleton.
+                // Either default can be overridden with /** @scope transient|singleton */
+                const defaultScope: InjectionScope = instanceFactoryFor ? 'transient' : 'singleton';
+                const scope = jsDocScopes.get(functionName) || defaultScope;
 
                 // Check if this is a context object pattern (single parameter with object type)
                 const isContextObjectPattern = parameters.length === 1 &&

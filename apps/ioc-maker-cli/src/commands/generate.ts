@@ -177,7 +177,7 @@ export const generateCommand = new Command('generate')
       // Generate container file
       Logger.custom('🚀', 'Generating container...', Logger.getColors().cyan + Logger.getColors().bright);
       const pathsResolver = new TsConfigPathsResolver(sourceDir);
-      IoCContainerGenerator.generate(classes, outputPath, moduleGroupedClasses, factories, values, moduleGroupedFactories, moduleGroupedValues, pathsResolver);
+      IoCContainerGenerator.generate(classes, outputPath, moduleGroupedClasses, factories, values, moduleGroupedFactories, moduleGroupedValues, pathsResolver, moduleResolver !== null);
 
       const statParts: string[] = [];
       if (classes.length > 0) statParts.push(`${classes.length} class${classes.length !== 1 ? 'es' : ''}`);

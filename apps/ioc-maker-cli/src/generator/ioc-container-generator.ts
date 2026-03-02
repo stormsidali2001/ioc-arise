@@ -22,7 +22,8 @@ export class IoCContainerGenerator {
         values?: ValueInfo[],
         moduleGroupedFactories?: Map<string, FactoryInfo[]>,
         moduleGroupedValues?: Map<string, ValueInfo[]>,
-        pathsResolver?: TsConfigPathsResolver
+        pathsResolver?: TsConfigPathsResolver,
+        isModular?: boolean
     ): void {
         // Check for name collisions before generating
         // If moduleGroupedClasses is provided, check all classes from all modules
@@ -34,15 +35,6 @@ export class IoCContainerGenerator {
         // Ensure directory exists
         const outputDir = dirname(outputPath);
         mkdirSync(outputDir, { recursive: true });
-
-        // Use modular generation if any of the three grouped maps are present.
-        // moduleGroupedFactories / moduleGroupedValues are only set when a module resolver
-        // is active, so their presence alone is sufficient to trigger modular mode even when
-        // all classes happen to land in a single module (or there are no classes at all).
-        const isModular =
-            (moduleGroupedClasses !== undefined && moduleGroupedClasses.size > 0) ||
-            (moduleGroupedFactories !== undefined && moduleGroupedFactories.size > 0) ||
-            (moduleGroupedValues !== undefined && moduleGroupedValues.size > 0);
 
         if (isModular) {
             // Generate modular code with separate files for each module
@@ -657,10 +649,9 @@ ${indent}});`;
                     ? `'${value.interfaceName}'`
                     : `'${value.name}'`;
 
-            // Determine lifecycle enum value (always singleton for useValue)
             const lifecycle = value.scope === 'singleton'
                 ? 'Lifecycle.Singleton'
-                : 'Lifecycle.Singleton';
+                : 'Lifecycle.Transient';
 
             return `${indent}container.register(${token}, {
 ${indent}  useValue: ${value.name},

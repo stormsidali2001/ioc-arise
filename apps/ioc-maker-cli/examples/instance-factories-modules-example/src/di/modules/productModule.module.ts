@@ -10,4 +10,4 @@ import { createProductRepository } from '../../product/createProductRepository';
 
 export const productModule = new ContainerModule()
   .register('IProductService', { useClass: ProductService, dependencies: ['IProductRepository', 'IUserService'], lifecycle: Lifecycle.Singleton })
-  .register('IProductRepository', { useFactory: (config, logger) => createProductRepository({ config, logger }), dependencies: ['IAppConfig', 'ILogger'], lifecycle: Lifecycle.Singleton });
+  .register('IProductRepository', { useFactory: (config, logger) => createProductRepository({ config, logger }), dependencies: ['IAppConfig', 'ILogger'], lifecycle: Lifecycle.Transient });

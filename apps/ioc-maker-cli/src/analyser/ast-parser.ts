@@ -178,67 +178,71 @@ export class ASTParser {
   }
 
   extractJSDocComments(root: any): Map<string, InjectionScope> {
-    const classScopes = new Map<string, InjectionScope>();
+    const entityScopes = new Map<string, InjectionScope>();
 
     try {
-      // Find all JSDoc comments in the file
-      const comments = root.findAll({
-        rule: {
-          kind: 'comment'
-        }
-      });
-
+      const comments = root.findAll({ rule: { kind: 'comment' } });
       Logger.debug(`Found ${comments.length} comments in file`);
 
-      // Find all class declarations
-      const classDeclarations = root.findAll({
-        rule: {
-          kind: 'class_declaration'
-        }
-      });
+      // Build a sorted list of all named entities: classes, functions, and const/let declarations.
+      // We sort by start line so we can find the first entity that follows each @scope comment.
+      const entities: { name: string; startLine: number }[] = [];
 
+      // Class declarations
+      const classDeclarations = root.findAll({ rule: { kind: 'class_declaration' } });
       Logger.debug(`Found ${classDeclarations.length} class declarations in file`);
+      for (const classDecl of classDeclarations) {
+        const name = this.extractClassName(classDecl);
+        if (name) entities.push({ name, startLine: classDecl.range().start.line });
+      }
+
+      // Function declarations (export function foo() { ... })
+      const functionDeclarations = root.findAll({ rule: { kind: 'function_declaration' } });
+      Logger.debug(`Found ${functionDeclarations.length} function declarations in file`);
+      for (const funcDecl of functionDeclarations) {
+        const name = this.extractFunctionName(funcDecl);
+        if (name) entities.push({ name, startLine: funcDecl.range().start.line });
+      }
+
+      // Lexical declarations (export const foo = ... / export const foo: IFoo = ...)
+      const lexicalDeclarations = root.findAll({ rule: { kind: 'lexical_declaration' } });
+      Logger.debug(`Found ${lexicalDeclarations.length} lexical declarations in file`);
+      for (const lexDecl of lexicalDeclarations) {
+        const text = lexDecl.text();
+        const varMatch = text.match(/(?:const|let)\s+([A-Za-z_][A-Za-z0-9_]*)/);
+        if (varMatch?.[1]) entities.push({ name: varMatch[1], startLine: lexDecl.range().start.line });
+      }
+
+      // Sort ascending by line so binary/linear search gives "first entity after comment"
+      entities.sort((a, b) => a.startLine - b.startLine);
 
       for (const comment of comments) {
         const commentText = comment.text();
         Logger.debug(`Comment text: ${commentText}`);
 
-        if (commentText.includes('/**') && commentText.includes('@scope')) {
-          Logger.debug(`Found @scope comment: ${commentText}`);
-          const scopeMatch = commentText.match(/@scope\s+(singleton|transient)/);
-          if (scopeMatch) {
-            const scope = scopeMatch[1] as InjectionScope;
-            const commentRange = comment.range();
-            Logger.debug(`Comment range: line ${commentRange.start.line} to ${commentRange.end.line}`);
+        if (!commentText.includes('/**') || !commentText.includes('@scope')) continue;
 
-            // Find the class declaration that comes immediately after this comment
-            for (const classDecl of classDeclarations) {
-              const classRange = classDecl.range();
-              Logger.debug(`Class range: line ${classRange.start.line} to ${classRange.end.line}`);
+        Logger.debug(`Found @scope comment: ${commentText}`);
+        const scopeMatch = commentText.match(/@scope\s+(singleton|transient)/);
+        if (!scopeMatch) continue;
 
-              // Check if the class comes after the comment
-              if (classRange.start.line > commentRange.end.line) {
-                const className = this.extractClassName(classDecl);
-                Logger.debug(`Attempting to extract class name from class at line ${classRange.start.line}`);
-                Logger.debug(`Extracted class name: ${className}`);
-                if (className) {
-                  Logger.debug(`Found JSDoc scope annotation: ${className} -> ${scope}`);
-                  classScopes.set(className, scope);
-                  break; // Take the first class after this comment
-                } else {
-                  Logger.debug(`Failed to extract class name from class declaration`);
-                }
-              }
-            }
-          }
+        const scope = scopeMatch[1] as InjectionScope;
+        const commentEndLine = comment.range().end.line;
+        Logger.debug(`Comment end line: ${commentEndLine}, scope: ${scope}`);
+
+        // First entity whose start line is strictly after the comment's last line
+        const entity = entities.find(e => e.startLine > commentEndLine);
+        if (entity) {
+          Logger.debug(`Found JSDoc scope annotation: ${entity.name} -> ${scope}`);
+          entityScopes.set(entity.name, scope);
         }
       }
     } catch (error) {
       Logger.warn('Warning: Could not extract JSDoc comments:', { error });
     }
 
-    Logger.debug(`Final classScopes map:`, { classScopes });
-    return classScopes;
+    Logger.debug(`Final entityScopes map:`, { entityScopes });
+    return entityScopes;
   }
 
   extractScopeFromJSDoc(className: string, jsDocScopes: Map<string, InjectionScope>): InjectionScope {
