@@ -1,5 +1,11 @@
 # @notjustcoders/ioc-arise
 
+## 1.1.21
+
+### Patch Changes
+
+- Fix: output path, relative paths issue
+
 ## 1.1.20
 
 ### Patch Changes

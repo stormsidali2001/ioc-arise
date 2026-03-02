@@ -43,7 +43,7 @@ export const generateCommand = new Command('generate')
       const mergedOptions = configManager.mergeWithCliOptions(options);
 
       const sourceDir = resolve(mergedOptions.source!);
-      const outputPath = resolve(sourceDir, mergedOptions.output!);
+      const outputPath = resolve(initialSourceDir, mergedOptions.output!);
 
       if (configManager.hasConfigFile() && mergedOptions.verbose) {
         Logger.info(`Using config file: ${configManager.getConfigPath()}`);
