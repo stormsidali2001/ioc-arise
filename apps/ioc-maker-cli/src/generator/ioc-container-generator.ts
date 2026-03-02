@@ -164,13 +164,23 @@ ${allRegistrations}
             });
         }
 
+        // Collect the union of all module names (a module may have only factories/values, no classes)
+        const allModuleNames = new Set<string>([
+            ...moduleGroupedClasses.keys(),
+            ...(moduleGroupedFactories?.keys() ?? []),
+            ...(moduleGroupedValues?.keys() ?? []),
+        ]);
+
         // Generate each module file
         const moduleImports: string[] = [];
-        for (const [moduleName, classes] of moduleGroupedClasses.entries()) {
-            const moduleFilename = `${moduleName.charAt(0).toLowerCase() + moduleName.slice(1)}.module.ts`;
-            const moduleFilePath = join(modulesDir, moduleFilename);
+        const moduleNames: string[] = [];
+        for (const moduleName of allModuleNames) {
+            const classes = moduleGroupedClasses.get(moduleName) ?? [];
             const moduleFactories = moduleGroupedFactories?.get(moduleName);
             const moduleValues = moduleGroupedValues?.get(moduleName);
+
+            const moduleFilename = `${moduleName.charAt(0).toLowerCase() + moduleName.slice(1)}.module.ts`;
+            const moduleFilePath = join(modulesDir, moduleFilename);
             const moduleCode = this.generateModuleFile(moduleName, classes, interfaceNames, moduleFilePath, moduleFactories, moduleValues);
 
             writeFileSync(moduleFilePath, moduleCode);
@@ -178,11 +188,12 @@ ${allRegistrations}
             // Add import for main container file
             const moduleVarName = moduleName.charAt(0).toLowerCase() + moduleName.slice(1);
             moduleImports.push(`import { ${moduleVarName} } from './modules/${moduleFilename.replace('.ts', '')}';`);
+            moduleNames.push(moduleName);
         }
 
         // Generate main container file
         const dtsFilename = baseFilename.replace(/\.gen$/, '.gen.d');
-        const mainContainerCode = this.generateMainContainerFile(moduleGroupedClasses, moduleImports, dtsFilename);
+        const mainContainerCode = this.generateMainContainerFile(allModuleNames, moduleImports, dtsFilename);
         writeFileSync(outputPath, mainContainerCode);
     }
 
@@ -281,11 +292,11 @@ ${allRegistrations};
     }
 
     private static generateMainContainerFile(
-        moduleGroupedClasses: Map<string, ClassInfo[]>,
+        moduleNames: Set<string> | Map<string, ClassInfo[]>,
         moduleImports: string[],
         dtsFilename: string
     ): string {
-        const moduleInstantiations = Array.from(moduleGroupedClasses.keys())
+        const moduleInstantiations = Array.from(moduleNames.keys())
             .map(name => {
                 const varName = name.charAt(0).toLowerCase() + name.slice(1);
                 return `container.registerModule(${varName});`;

@@ -1,6 +1,6 @@
 {
   "name": "@notjustcoders/ioc-arise",
-  "version": "1.1.24",
+  "version": "1.1.25",
   "description": "Arise type-safe IoC containers from your code. Zero overhead, zero coupling.",
   "main": "dist/index.js",
   "bin": {
@@ -45,7 +45,8 @@
     "test14:generate": "npm run build && cd examples/tsconfig-paths-example && node ../../dist/index.js generate",
     "test15:generate": "npm run build && cd examples/instance-factories-example && node ../../dist/index.js generate",
     "test16:generate": "npm run build && cd examples/instance-factory-with-context-example && node ../../dist/index.js generate",
-    "test17:generate": "npm run build && cd examples/instance-factory-separate-params-example && node ../../dist/index.js generate"
+    "test17:generate": "npm run build && cd examples/instance-factory-separate-params-example && node ../../dist/index.js generate",
+    "test18:generate": "npm run build && cd examples/instance-factories-modules-example && node ../../dist/index.js generate"
   },
   "keywords": [
     "ioc",

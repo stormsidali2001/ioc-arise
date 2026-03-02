@@ -1,0 +1,9 @@
+{
+  "source": ".",
+  "output": "container.gen.ts",
+  "modules": {
+    "CoreModule": ["core/**"],
+    "UserModule": ["user/**"],
+    "ProductModule": ["product/**"]
+  }
+}

@@ -1,5 +1,11 @@
 # @notjustcoders/ioc-arise
 
+## 1.1.25
+
+### Patch Changes
+
+- Fix: modules are not getting creating when using instance factories
+
 ## 1.1.24
 
 ### Patch Changes
