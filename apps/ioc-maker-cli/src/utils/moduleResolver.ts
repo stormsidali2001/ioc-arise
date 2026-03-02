@@ -1,6 +1,6 @@
 import { minimatch } from 'minimatch';
 import { relative, normalize } from 'path';
-import { ClassInfo } from '../types';
+import { ClassInfo, FactoryInfo, ValueInfo } from '../types';
 import { ErrorFactory } from '../errors/errorFactory';
 import { IoCError } from '../errors/IoCError';
 
@@ -50,6 +50,48 @@ export class ModuleResolver {
       moduleGroups.get(moduleName)!.push(classInfo);
     }
     
+    return moduleGroups;
+  }
+
+  /**
+   * Groups factory functions by their assigned modules
+   * @param factories - Array of FactoryInfo objects
+   * @returns Map of module names to their factories
+   */
+  public groupFactoriesByModule(factories: FactoryInfo[]): Map<string, FactoryInfo[]> {
+    const moduleGroups = new Map<string, FactoryInfo[]>();
+
+    for (const factoryInfo of factories) {
+      const moduleName = this.getModuleForFile(factoryInfo.filePath) || 'CoreModule';
+
+      if (!moduleGroups.has(moduleName)) {
+        moduleGroups.set(moduleName, []);
+      }
+
+      moduleGroups.get(moduleName)!.push(factoryInfo);
+    }
+
+    return moduleGroups;
+  }
+
+  /**
+   * Groups values by their assigned modules
+   * @param values - Array of ValueInfo objects
+   * @returns Map of module names to their values
+   */
+  public groupValuesByModule(values: ValueInfo[]): Map<string, ValueInfo[]> {
+    const moduleGroups = new Map<string, ValueInfo[]>();
+
+    for (const valueInfo of values) {
+      const moduleName = this.getModuleForFile(valueInfo.filePath) || 'CoreModule';
+
+      if (!moduleGroups.has(moduleName)) {
+        moduleGroups.set(moduleName, []);
+      }
+
+      moduleGroups.get(moduleName)!.push(valueInfo);
+    }
+
     return moduleGroups;
   }
 

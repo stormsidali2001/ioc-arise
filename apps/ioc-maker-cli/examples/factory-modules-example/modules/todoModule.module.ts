@@ -5,11 +5,9 @@
  * Module: TodoModule
  */
 import { ContainerModule, Lifecycle } from '@notjustcoders/di-container';
-import { TodoService } from '../todo/TodoService';
 import { TodoRepository } from '../todo/TodoRepository';
-import { Todo } from '../todo/Todo';
+import { createAddTodoUseCase } from '../todo/factories/createAddTodoUseCase';
 
 export const todoModule = new ContainerModule()
-  .register('ITodoService', { useClass: TodoService, dependencies: ['ITodoRepository', 'IUserRepository'], lifecycle: Lifecycle.Singleton })
   .register('ITodoRepository', { useClass: TodoRepository, lifecycle: Lifecycle.Singleton })
-  .register(Todo, { useClass: Todo, lifecycle: Lifecycle.Singleton });
+  .register('createAddTodoUseCase', { useFactory: (userRepo, todoRepo) => createAddTodoUseCase({ userRepo, todoRepo }), dependencies: ['IUserRepository', 'ITodoRepository'], lifecycle: Lifecycle.Singleton });

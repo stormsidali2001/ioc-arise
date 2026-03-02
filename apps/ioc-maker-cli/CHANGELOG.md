@@ -1,5 +1,11 @@
 # @notjustcoders/ioc-arise
 
+## 1.1.22
+
+### Patch Changes
+
+- Fix: factory code generation with modules
+
 ## 1.1.21
 
 ### Patch Changes

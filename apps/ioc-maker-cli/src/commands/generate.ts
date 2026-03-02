@@ -10,7 +10,7 @@ import { ErrorFactory } from '../errors/errorFactory';
 import { ErrorUtils } from '../errors/IoCError';
 import { ModuleResolver } from '../utils/moduleResolver';
 import { Logger } from '../utils/logger';
-import { ClassInfo } from '../types';
+import { ClassInfo, FactoryInfo, ValueInfo } from '../types';
 
 export const generateCommand = new Command('generate')
   .description('Generate IoC container from TypeScript classes')
@@ -95,6 +95,8 @@ export const generateCommand = new Command('generate')
 
       // Group classes by modules if module resolver is available
       let moduleGroupedClasses: Map<string, ClassInfo[]> | undefined;
+      let moduleGroupedFactories: Map<string, FactoryInfo[]> | undefined;
+      let moduleGroupedValues: Map<string, ValueInfo[]> | undefined;
       if (moduleResolver && classes.length > 0) {
         moduleGroupedClasses = moduleResolver.groupClassesByModule(classes);
 
@@ -145,6 +147,16 @@ export const generateCommand = new Command('generate')
         }
       }
 
+      // Group factories and values by module if module resolver is available
+      if (moduleResolver) {
+        if (factories && factories.length > 0) {
+          moduleGroupedFactories = moduleResolver.groupFactoriesByModule(factories);
+        }
+        if (values && values.length > 0) {
+          moduleGroupedValues = moduleResolver.groupValuesByModule(values);
+        }
+      }
+
       // Check for circular dependencies between classes
       const cycles = CircularDependencyDetector.detect(classes);
       if (cycles.length > 0) {
@@ -192,7 +204,7 @@ export const generateCommand = new Command('generate')
 
       // Generate container file
       Logger.custom('🚀', 'Generating container...', Logger.getColors().cyan + Logger.getColors().bright);
-      IoCContainerGenerator.generate(classes, outputPath, moduleGroupedClasses, factories, values);
+      IoCContainerGenerator.generate(classes, outputPath, moduleGroupedClasses, factories, values, moduleGroupedFactories, moduleGroupedValues);
 
       Logger.success('Container generated successfully!');
       Logger.log(Logger.colorizeText(`   File: ${outputPath}`, Logger.getColors().gray));

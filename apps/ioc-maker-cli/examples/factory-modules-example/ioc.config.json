@@ -1,0 +1,8 @@
+{
+  "source": ".",
+  "output": "container.gen.ts",
+  "modules": {
+    "UserModule": ["user/**"],
+    "TodoModule": ["todo/**"]
+  }
+}
