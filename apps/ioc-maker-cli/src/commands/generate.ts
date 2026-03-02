@@ -9,6 +9,7 @@ import { ConfigValidator } from '../utils/configValidator';
 import { ErrorFactory } from '../errors/errorFactory';
 import { ErrorUtils } from '../errors/IoCError';
 import { ModuleResolver } from '../utils/moduleResolver';
+import { TsConfigPathsResolver } from '../utils/tsConfigPathsResolver';
 import { Logger } from '../utils/logger';
 import { ClassInfo, FactoryInfo, ValueInfo } from '../types';
 
@@ -204,7 +205,8 @@ export const generateCommand = new Command('generate')
 
       // Generate container file
       Logger.custom('🚀', 'Generating container...', Logger.getColors().cyan + Logger.getColors().bright);
-      IoCContainerGenerator.generate(classes, outputPath, moduleGroupedClasses, factories, values, moduleGroupedFactories, moduleGroupedValues);
+      const pathsResolver = new TsConfigPathsResolver(sourceDir);
+      IoCContainerGenerator.generate(classes, outputPath, moduleGroupedClasses, factories, values, moduleGroupedFactories, moduleGroupedValues, pathsResolver);
 
       Logger.success('Container generated successfully!');
       Logger.log(Logger.colorizeText(`   File: ${outputPath}`, Logger.getColors().gray));

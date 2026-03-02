@@ -3,6 +3,7 @@ import { relative, dirname, join, basename } from 'path';
 import { writeFileSync, mkdirSync } from 'fs';
 import { TypeDeclarationGenerator } from './type-declaration-generator';
 import { ErrorFactory } from '../errors/errorFactory';
+import { TsConfigPathsResolver } from '../utils/tsConfigPathsResolver';
 
 export class IoCContainerGenerator {
     /**
@@ -20,7 +21,8 @@ export class IoCContainerGenerator {
         factories?: FactoryInfo[],
         values?: ValueInfo[],
         moduleGroupedFactories?: Map<string, FactoryInfo[]>,
-        moduleGroupedValues?: Map<string, ValueInfo[]>
+        moduleGroupedValues?: Map<string, ValueInfo[]>,
+        pathsResolver?: TsConfigPathsResolver
     ): void {
         // Check for name collisions before generating
         // If moduleGroupedClasses is provided, check all classes from all modules
@@ -46,7 +48,7 @@ export class IoCContainerGenerator {
         const typesPath = outputPath.endsWith('.gen.ts')
             ? outputPath.replace(/\.gen\.ts$/, '.gen.d.ts')
             : outputPath.replace(/\.ts$/, '.d.ts');
-        TypeDeclarationGenerator.generate(classes, typesPath, factories, values);
+        TypeDeclarationGenerator.generate(classes, typesPath, factories, values, pathsResolver);
     }
 
     private static generateFlatCode(classes: ClassInfo[], outputPath: string, factories?: FactoryInfo[], values?: ValueInfo[]): string {

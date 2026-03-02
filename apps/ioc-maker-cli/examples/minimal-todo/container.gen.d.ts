@@ -4,12 +4,12 @@
  * 
  * This file provides type-safe resolution for string-based tokens.
  */
-import type { ITodoService } from './services/ITodoService';
 import type { ITodoRepository } from './repositories/ITodoRepository';
+import type { ITodoService } from './services/ITodoService';
 import type { Todo } from './entities/Todo';
 
 export interface ContainerRegistry {
-  'ITodoService': ITodoService;
   'ITodoRepository': ITodoRepository;
+  'ITodoService': ITodoService;
   'Todo': Todo;
 }

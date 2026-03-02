@@ -1,5 +1,11 @@
 # @notjustcoders/ioc-arise
 
+## 1.1.23
+
+### Patch Changes
+
+- Feat: tsconfig support
+
 ## 1.1.22
 
 ### Patch Changes

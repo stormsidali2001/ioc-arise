@@ -3,19 +3,20 @@ import { relative, dirname, join } from 'path';
 import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'fs';
 import { glob } from 'glob';
 import { ErrorFactory } from '../errors/errorFactory';
+import { TsConfigPathsResolver } from '../utils/tsConfigPathsResolver';
 
 export class TypeDeclarationGenerator {
-    static generate(classes: ClassInfo[], outputPath: string, factories?: FactoryInfo[], values?: ValueInfo[]): void {
+    static generate(classes: ClassInfo[], outputPath: string, factories?: FactoryInfo[], values?: ValueInfo[], pathsResolver?: TsConfigPathsResolver): void {
         // Check for name collisions before generating
         this.checkForNameCollisions(classes);
 
         // outputPath already has .d.ts extension from the generator
-        const typeDeclarations = this.generateTypeDeclarations(classes, outputPath, factories, values);
+        const typeDeclarations = this.generateTypeDeclarations(classes, outputPath, factories, values, pathsResolver);
         mkdirSync(dirname(outputPath), { recursive: true });
         writeFileSync(outputPath, typeDeclarations);
     }
 
-    private static generateTypeDeclarations(classes: ClassInfo[], outputPath: string, factories?: FactoryInfo[], values?: ValueInfo[]): string {
+    private static generateTypeDeclarations(classes: ClassInfo[], outputPath: string, factories?: FactoryInfo[], values?: ValueInfo[], pathsResolver?: TsConfigPathsResolver): string {
         // Filter classes that have interface implementations or abstract class implementations
         const interfaceClasses = classes.filter(cls => cls.interfaceName);
         const abstractClasses = classes.filter(cls => cls.abstractClassName);
@@ -38,7 +39,7 @@ export interface ContainerRegistry {}
 `;
         }
 
-        const typeImports = this.generateTypeImports(interfaceClasses, abstractClasses, directClasses, outputPath, factories, values);
+        const typeImports = this.generateTypeImports(interfaceClasses, abstractClasses, directClasses, outputPath, factories, values, pathsResolver);
 
         // Build registry entries for interfaces, abstract classes, direct classes, and factories
         const registryEntries: string[] = [];
@@ -96,13 +97,14 @@ ${registryEntries.join('\n')}
         directClasses: ClassInfo[],
         outputPath: string,
         factories?: FactoryInfo[],
-        values?: ValueInfo[]
+        values?: ValueInfo[],
+        pathsResolver?: TsConfigPathsResolver
     ): string {
         const outputDir = dirname(outputPath);
         const imports: string[] = [];
 
         // Build a map of interface names to their actual file paths by searching the source
-        const interfaceLocations = this.findInterfaceLocations(interfaceClasses, outputDir);
+        const interfaceLocations = this.findInterfaceLocations(interfaceClasses, outputDir, pathsResolver);
 
         interfaceClasses.forEach(cls => {
             if (!cls.interfaceName) return;
@@ -156,7 +158,7 @@ ${registryEntries.join('\n')}
                 // Only import the interface type, not the value itself
                 if (value.interfaceName) {
                     // Find interface location by checking imports in the value file
-                    const interfacePath = this.findInterfaceLocationForValue(value, outputDir);
+                    const interfacePath = this.findInterfaceLocationForValue(value, outputDir, pathsResolver);
                     if (interfacePath) {
                         imports.push(`import type { ${value.interfaceName} } from '${interfacePath}';`);
                     }
@@ -167,7 +169,7 @@ ${registryEntries.join('\n')}
         return imports.join('\n');
     }
 
-    private static findInterfaceLocationForValue(value: ValueInfo, outputDir: string): string | null {
+    private static findInterfaceLocationForValue(value: ValueInfo, outputDir: string, pathsResolver?: TsConfigPathsResolver): string | null {
         try {
             // Read the value file to find where the interface is imported from
             const fileContent = readFileSync(value.filePath, 'utf-8');
@@ -181,12 +183,13 @@ ${registryEntries.join('\n')}
 
             const match = importRegex.exec(fileContent);
             if (match && match[1]) {
-                // Found the import path relative to the value file
-                const valueDir = dirname(value.filePath);
                 const interfacePathFromValue = match[1];
 
-                // Resolve the absolute path of the interface file
-                const absoluteInterfacePath = join(valueDir, interfacePathFromValue);
+                // Try to resolve as a path alias first
+                const absoluteFromAlias = pathsResolver?.resolveImportToAbsolute(interfacePathFromValue) ?? null;
+                const absoluteInterfacePath = absoluteFromAlias
+                    ?? join(dirname(value.filePath), interfacePathFromValue);
+
                 const normalizedInterfacePath = absoluteInterfacePath.endsWith('.ts')
                     ? absoluteInterfacePath
                     : absoluteInterfacePath + '.ts';
@@ -223,7 +226,7 @@ ${registryEntries.join('\n')}
         }
     }
 
-    private static findInterfaceLocations(classes: ClassInfo[], outputDir: string): Map<string, string> {
+    private static findInterfaceLocations(classes: ClassInfo[], outputDir: string, pathsResolver?: TsConfigPathsResolver): Map<string, string> {
         const interfaceLocations = new Map<string, string>();
         const interfaceNames = new Set(classes.filter(c => c.interfaceName).map(c => c.interfaceName!));
 
@@ -244,15 +247,16 @@ ${registryEntries.join('\n')}
 
                 const match = importRegex.exec(fileContent);
                 if (match && match[1]) {
-                    // Found the import path relative to the class file
-                    const classDir = dirname(cls.filePath);
                     const interfacePathFromClass = match[1];
 
-                    // Resolve the absolute path of the interface file
-                    const interfaceAbsPath = require('path').resolve(classDir, interfacePathFromClass);
+                    // Try path alias resolution first, fall back to relative resolution
+                    const resolvedFromAlias = pathsResolver?.resolveImportToAbsolute(interfacePathFromClass) ?? null;
+                    const interfaceAbsPath = resolvedFromAlias
+                        ?? require('path').resolve(dirname(cls.filePath), interfacePathFromClass);
 
                     // Calculate relative path from output directory
                     let relativePath = relative(outputDir, interfaceAbsPath);
+                    relativePath = relativePath.replace(/\.ts$/, '');
 
                     // Normalize
                     if (!relativePath.startsWith('.')) {
