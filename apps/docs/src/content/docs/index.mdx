@@ -143,7 +143,39 @@ Write your classes, interfaces, value objects, and factory functions in pure Typ
     }
     ```
   </Card>
-  
+
+  <Card title="🔌 Instance Factories (Separate Params)" icon="puzzle">
+    ```typescript
+    export function createUserRepository(
+      config: IAppConfig,
+      logger: ILogger,
+    ): IUserRepository {
+      if (config.getStorageType() === 'persistent') {
+        logger.info('Using persistent storage');
+        return new PersistentUserRepository(config.getDbPath());
+      }
+      logger.info('Using in-memory storage');
+      return new InMemoryUserRepository();
+    }
+    ```
+  </Card>
+
+  <Card title="🔌 Instance Factories (Context Object)" icon="puzzle">
+    ```typescript
+    export function createUserRepository(
+      context: { config: IAppConfig, logger: ILogger }
+    ): IUserRepository {
+      const { config, logger } = context;
+      if (config.getStorageType() === 'persistent') {
+        logger.info('Using persistent storage');
+        return new PersistentUserRepository(config.getDbPath());
+      }
+      logger.info('Using in-memory storage');
+      return new InMemoryUserRepository();
+    }
+    ```
+  </Card>
+
   <Card title="🏗️ Classes" icon="rocket">
     ```typescript
     interface IService1 {

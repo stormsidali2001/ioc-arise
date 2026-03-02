@@ -35,6 +35,7 @@ export interface FactoryInfo {
   useContextObject?: boolean; // Whether factory uses context object pattern
   contextObjectName?: string; // Name of the context parameter (e.g., "context")
   contextObjectProperties?: { name: string; type: string }[]; // Properties in the context object
+  instanceFactoryFor?: string; // Interface name this factory acts as an implementation provider for
 }
 
 export interface ValueInfo {

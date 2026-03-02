@@ -658,9 +658,10 @@ export class ASTParser {
     try {
       const functionText = functionNode.text();
 
-      // Try to extract return type annotation
-      const returnTypeMatch = functionText.match(/:\s*([A-Za-z_][A-Za-z0-9_<>[\],\s]*)/);
-      if (returnTypeMatch) {
+      // Extract return type annotation after the closing ) and before { or =>
+      // This correctly captures the function return type, not parameter types
+      const returnTypeMatch = functionText.match(/\)\s*:\s*([A-Za-z_][A-Za-z0-9_<>[\],.\s]*?)\s*(?:\{|=>)/);
+      if (returnTypeMatch && returnTypeMatch[1]) {
         return returnTypeMatch[1].trim();
       }
 

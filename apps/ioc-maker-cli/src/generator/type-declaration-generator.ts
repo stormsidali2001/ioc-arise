@@ -61,9 +61,14 @@ export interface ContainerRegistry {}
         // For factories, use the function name as the token
         if (factories) {
             factories.forEach(factory => {
-                const token = factory.token || factory.name;
-                // Use ReturnType<typeof factoryName> as the type
-                registryEntries.push(`  '${token}': ReturnType<typeof ${factory.name}>;`);
+                if (factory.instanceFactoryFor) {
+                    // Instance factory: registered under the interface name with the interface type
+                    registryEntries.push(`  '${factory.instanceFactoryFor}': ${factory.instanceFactoryFor};`);
+                } else {
+                    const token = factory.token || factory.name;
+                    // Use ReturnType<typeof factoryName> as the type
+                    registryEntries.push(`  '${token}': ReturnType<typeof ${factory.name}>;`);
+                }
             });
         }
 
@@ -139,16 +144,29 @@ ${registryEntries.join('\n')}
             imports.push(`import type { ${cls.name} } from '${relativePath}';`);
         });
 
-        // Import factory functions for ReturnType
+        // Import factory functions for ReturnType (or interface types for instance factories)
         if (factories) {
             factories.forEach(factory => {
-                let relativePath = relative(outputDir, factory.filePath);
-                relativePath = relativePath.replace(/\.ts$/, '');
-                if (!relativePath.startsWith('.')) {
-                    relativePath = `./${relativePath}`;
+                if (factory.instanceFactoryFor) {
+                    // For instance factories: import the interface type, not the factory function
+                    const interfacePath = this.findInterfaceLocationInFile(
+                        factory.filePath,
+                        factory.instanceFactoryFor,
+                        outputDir,
+                        pathsResolver
+                    );
+                    if (interfacePath) {
+                        imports.push(`import type { ${factory.instanceFactoryFor} } from '${interfacePath}';`);
+                    }
+                } else {
+                    let relativePath = relative(outputDir, factory.filePath);
+                    relativePath = relativePath.replace(/\.ts$/, '');
+                    if (!relativePath.startsWith('.')) {
+                        relativePath = `./${relativePath}`;
+                    }
+                    relativePath = relativePath.replace(/\\/g, '/');
+                    imports.push(`import { ${factory.name} } from '${relativePath}';`);
                 }
-                relativePath = relativePath.replace(/\\/g, '/');
-                imports.push(`import { ${factory.name} } from '${relativePath}';`);
             });
         }
 
@@ -167,6 +185,64 @@ ${registryEntries.join('\n')}
         }
 
         return imports.join('\n');
+    }
+
+    /**
+     * Finds the relative import path for an interface name by scanning a given source file's imports.
+     * Used by instance factories to locate the interface type they implement.
+     */
+    private static findInterfaceLocationInFile(
+        sourceFilePath: string,
+        interfaceName: string,
+        outputDir: string,
+        pathsResolver?: TsConfigPathsResolver
+    ): string | null {
+        try {
+            const fileContent = readFileSync(sourceFilePath, 'utf-8');
+
+            const importRegex = new RegExp(
+                `import\\s+(?:type\\s+)?\\{[^}]*\\b${interfaceName}\\b[^}]*\\}\\s+from\\s+['"]([^'"]+)['"]`,
+                'g'
+            );
+
+            const match = importRegex.exec(fileContent);
+            if (match && match[1]) {
+                const importedFrom = match[1];
+
+                const absoluteFromAlias = pathsResolver?.resolveImportToAbsolute(importedFrom) ?? null;
+                const absolutePath = absoluteFromAlias
+                    ?? join(dirname(sourceFilePath), importedFrom);
+
+                const normalizedPath = absolutePath.endsWith('.ts')
+                    ? absolutePath
+                    : absolutePath + '.ts';
+
+                if (existsSync(normalizedPath)) {
+                    let relativePath = relative(outputDir, normalizedPath);
+                    relativePath = relativePath.replace(/\.ts$/, '');
+                    if (!relativePath.startsWith('.')) {
+                        relativePath = `./${relativePath}`;
+                    }
+                    return relativePath.replace(/\\/g, '/');
+                }
+            }
+
+            // Fallback: look for a file named {InterfaceName}.ts in the same directory
+            const sameDir = dirname(sourceFilePath);
+            const candidatePath = join(sameDir, interfaceName + '.ts');
+            if (existsSync(candidatePath)) {
+                let relativePath = relative(outputDir, candidatePath);
+                relativePath = relativePath.replace(/\.ts$/, '');
+                if (!relativePath.startsWith('.')) {
+                    relativePath = `./${relativePath}`;
+                }
+                return relativePath.replace(/\\/g, '/');
+            }
+
+            return null;
+        } catch {
+            return null;
+        }
     }
 
     private static findInterfaceLocationForValue(value: ValueInfo, outputDir: string, pathsResolver?: TsConfigPathsResolver): string | null {

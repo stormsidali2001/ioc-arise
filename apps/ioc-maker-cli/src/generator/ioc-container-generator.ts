@@ -59,6 +59,22 @@ export class IoCContainerGenerator {
                 interfaceNames.add(cls.interfaceName);
             }
         });
+        // Also add interface names from instance factories so their dependencies resolve correctly
+        if (factories) {
+            factories.forEach(factory => {
+                if (factory.instanceFactoryFor) {
+                    interfaceNames.add(factory.instanceFactoryFor);
+                }
+            });
+        }
+        // Add value tokens — values are always registered as string tokens, so any dependency
+        // on a value interface/name must also use a string token
+        if (values) {
+            values.forEach(value => {
+                const token = value.token || value.interfaceName || value.name;
+                if (token) interfaceNames.add(token);
+            });
+        }
 
         // Collect abstract class names from dependencies
         const abstractClassNames = new Set<string>();
@@ -128,6 +144,25 @@ ${allRegistrations}
                 interfaceNames.add(cls.interfaceName);
             }
         });
+        // Also add interface names from instance factories
+        if (moduleGroupedFactories) {
+            moduleGroupedFactories.forEach(moduleFactories => {
+                moduleFactories.forEach(factory => {
+                    if (factory.instanceFactoryFor) {
+                        interfaceNames.add(factory.instanceFactoryFor);
+                    }
+                });
+            });
+        }
+        // Add value tokens so dependencies on values use string tokens
+        if (moduleGroupedValues) {
+            moduleGroupedValues.forEach(moduleValues => {
+                moduleValues.forEach(value => {
+                    const token = value.token || value.interfaceName || value.name;
+                    if (token) interfaceNames.add(token);
+                });
+            });
+        }
 
         // Generate each module file
         const moduleImports: string[] = [];

@@ -34,6 +34,10 @@ export class ProjectAnalyzer {
     // Validate that no abstract class is extended by multiple classes
     this.validateUniqueAbstractClassExtensions(allClasses);
 
+    // Validate that no interface has both a class implementation and an instance factory,
+    // or multiple instance factories
+    this.validateInstanceFactoryConflicts(allClasses, allFactories);
+
     return { classes: allClasses, factories: allFactories, values: allValues };
   }
 
@@ -81,6 +85,51 @@ export class ProjectAnalyzer {
         duplicateInterfaces.join(', '),
         allClassNames
       );
+    }
+  }
+
+  private validateInstanceFactoryConflicts(classes: ClassInfo[], factories: FactoryInfo[]): void {
+    const interfaceToImplementors = new Map<string, string[]>();
+
+    // Collect class implementations
+    for (const cls of classes) {
+      if (cls.interfaceName) {
+        if (!interfaceToImplementors.has(cls.interfaceName)) {
+          interfaceToImplementors.set(cls.interfaceName, []);
+        }
+        interfaceToImplementors.get(cls.interfaceName)!.push(`class:${cls.name}`);
+      }
+    }
+
+    // Collect instance factory implementations
+    for (const factory of factories) {
+      if (factory.instanceFactoryFor) {
+        if (!interfaceToImplementors.has(factory.instanceFactoryFor)) {
+          interfaceToImplementors.set(factory.instanceFactoryFor, []);
+        }
+        interfaceToImplementors.get(factory.instanceFactoryFor)!.push(`factory:${factory.name}`);
+      }
+    }
+
+    // Check for conflicts: more than one implementation provider for an interface
+    const conflicts: string[] = [];
+    for (const [interfaceName, implementors] of interfaceToImplementors.entries()) {
+      if (implementors.length > 1) {
+        conflicts.push(interfaceName);
+        const { Logger } = require('../utils/logger');
+        Logger.error(`Multiple implementation providers found for interface '${interfaceName}':`);
+        for (const impl of implementors) {
+          Logger.log(`   • ${impl}`);
+        }
+      }
+    }
+
+    if (conflicts.length > 0) {
+      const allNames: string[] = [];
+      for (const interfaceName of conflicts) {
+        allNames.push(...(interfaceToImplementors.get(interfaceName) ?? []));
+      }
+      throw ErrorFactory.duplicateInterfaceImplementation(conflicts.join(', '), allNames);
     }
   }
 

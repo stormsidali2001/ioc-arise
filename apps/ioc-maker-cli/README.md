@@ -12,6 +12,7 @@ A command-line tool that automatically generates type-safe IoC (Inversion of Con
   - [Priority Order](#priority-order)
 - [Examples](#examples)
   - [Basic Example](#basic-example)
+  - [Instance Factories](#instance-factories)
 - [Usage in Your Code](#usage-in-your-code)
 - [Development](#development)
 - [Limitations](#limitations)
@@ -19,11 +20,15 @@ A command-line tool that automatically generates type-safe IoC (Inversion of Con
 
 ## Features
 
-- 🔍 **Automatic Detection**: Finds classes to be registered
-- 🧠 **Dependency Analysis**: Parses constructor dependencies from TypeScript code
+- 🔍 **Automatic Detection**: Finds classes, factory functions, and value objects to register
+- 🧠 **Dependency Analysis**: Parses constructor and function dependencies from TypeScript code
 - 🛡️ **Type Safety**: Uses the type-safe `ioc-arise` runtime library
 - 🚫 **No Decorators**: Pure static analysis, no runtime decorators required
 - ⚠️ **Circular Dependency Detection**: Warns about dependency cycles
+- 🏭 **Factory Functions**: Supports `@factory`-annotated functions with separate params or context object pattern
+- 🔌 **Instance Factories**: Functions with an explicit interface return type automatically act as implementation providers for that interface
+- 💎 **Value Objects**: Supports `@value`-annotated constants registered with `useValue`
+- 📦 **Modular Containers**: Generates per-module files with `ContainerModule` for large projects
 
 ## Installation
 
@@ -120,6 +125,70 @@ container.register(TodoService, {
   lifecycle: Lifecycle.Transient,
 });
 ```
+
+### Instance Factories
+
+An **instance factory** is any exported function whose explicit return type annotation resolves to a registered interface. No `@factory` annotation is needed — the return type is the signal. The function is registered under the interface name as the token (just like a class that `implements` the interface).
+
+**Separate params:**
+
+```typescript
+// repositories/createUserRepository.ts
+import { IAppConfig } from '../config/IAppConfig';
+import { ILogger } from '../logger/ILogger';
+import { IUserRepository } from './IUserRepository';
+
+export function createUserRepository(
+  config: IAppConfig,
+  logger: ILogger,
+): IUserRepository {
+  if (config.getStorageType() === 'persistent') {
+    logger.info('Using persistent storage');
+    return new PersistentUserRepository(config.getDbPath());
+  }
+  logger.info('Using in-memory storage');
+  return new InMemoryUserRepository();
+}
+```
+
+Generated registration:
+
+```typescript
+container.register('IUserRepository', {
+  useFactory: createUserRepository,
+  dependencies: ['IAppConfig', 'ILogger'],
+  lifecycle: Lifecycle.Singleton,
+});
+```
+
+**Context object:**
+
+```typescript
+// repositories/createUserRepository.ts
+export function createUserRepository(
+  context: { config: IAppConfig; logger: ILogger },
+): IUserRepository {
+  const { config, logger } = context;
+  if (config.getStorageType() === 'persistent') {
+    logger.info('Using persistent storage');
+    return new PersistentUserRepository(config.getDbPath());
+  }
+  logger.info('Using in-memory storage');
+  return new InMemoryUserRepository();
+}
+```
+
+Generated registration:
+
+```typescript
+container.register('IUserRepository', {
+  useFactory: (config, logger) => createUserRepository({ config, logger }),
+  dependencies: ['IAppConfig', 'ILogger'],
+  lifecycle: Lifecycle.Singleton,
+});
+```
+
+> **Uniqueness rule**: an interface can have at most one implementation provider — either a class that `implements` it, or an instance factory that returns it. Registering both throws an error at generation time.
 
 ## Usage in Your Code
 

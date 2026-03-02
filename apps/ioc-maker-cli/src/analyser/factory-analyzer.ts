@@ -91,14 +91,20 @@ export class FactoryAnalyzer {
                 const hasFactoryAnnotation = this.hasFactoryAnnotation(root, functionNode);
                 const matchesFactoryPattern = this.factoryPattern ? this.factoryPattern.test(functionName) : false;
 
-                Logger.debug(`Function ${functionName}: isExported=${isExported}, hasFactoryAnnotation=${hasFactoryAnnotation}, matchesFactoryPattern=${matchesFactoryPattern}`);
-                if (!isExported || (!hasFactoryAnnotation && !matchesFactoryPattern)) {
+                // Detect instance factories: exported functions with an explicit return type
+                // matching a known interface (e.g., ): IUserRepository {)
+                const returnType = this.astParser.extractFunctionReturnType(functionNode);
+                const instanceFactoryFor = returnType
+                    ? this.extractCoreInterfaceName(returnType, allInterfaces)
+                    : undefined;
+
+                Logger.debug(`Function ${functionName}: isExported=${isExported}, hasFactoryAnnotation=${hasFactoryAnnotation}, matchesFactoryPattern=${matchesFactoryPattern}, instanceFactoryFor=${instanceFactoryFor}`);
+                if (!isExported || (!hasFactoryAnnotation && !matchesFactoryPattern && !instanceFactoryFor)) {
                     Logger.debug(`Skipping function ${functionName}`);
                     continue;
                 }
 
                 const parameters = this.astParser.extractFunctionParameters(functionNode);
-                const returnType = this.astParser.extractFunctionReturnType(functionNode);
                 // Try to get scope from JSDoc, default to singleton
                 const scope = jsDocScopes.get(functionName) || 'singleton';
 
@@ -133,8 +139,10 @@ export class FactoryAnalyzer {
                 // Calculate import path
                 const importPath = this.calculateImportPath(filePath);
 
-                // Determine token - use the function name directly
-                const token = functionName;
+                // Determine token:
+                // - Instance factories use the interface name as the token (they are implementation providers)
+                // - Regular factories use the function name as the token
+                const token = instanceFactoryFor || functionName;
 
                 factories.push({
                     name: functionName,
@@ -148,6 +156,7 @@ export class FactoryAnalyzer {
                     useContextObject: isContextObjectPattern,
                     contextObjectName,
                     contextObjectProperties,
+                    instanceFactoryFor,
                 });
             }
         } catch (error) {
@@ -263,6 +272,34 @@ export class FactoryAnalyzer {
             .replace(/\.ts$/, '')
             .replace(/\\/g, '/')
             .replace(/^\.\//, '');
+    }
+
+    /**
+     * Extracts the core interface name from a return type annotation.
+     * Handles: IFoo, Promise<IFoo>, Awaited<IFoo>, Awaited<Promise<IFoo>>
+     * Returns the interface name if it matches a known interface, otherwise null.
+     */
+    private extractCoreInterfaceName(returnType: string, allInterfaces: Set<string>): string | undefined {
+        const trimmed = returnType.trim();
+
+        // Direct: IFoo
+        if (allInterfaces.has(trimmed)) {
+            return trimmed;
+        }
+
+        // Promise<IFoo>
+        const promiseMatch = trimmed.match(/^Promise\s*<\s*([A-Za-z_][A-Za-z0-9_]*)\s*>$/);
+        if (promiseMatch?.[1] && allInterfaces.has(promiseMatch[1])) {
+            return promiseMatch[1];
+        }
+
+        // Awaited<IFoo> or Awaited<Promise<IFoo>>
+        const awaitedMatch = trimmed.match(/^Awaited\s*<\s*(?:Promise\s*<\s*)?([A-Za-z_][A-Za-z0-9_]*)\s*>?\s*>$/);
+        if (awaitedMatch?.[1] && allInterfaces.has(awaitedMatch[1])) {
+            return awaitedMatch[1];
+        }
+
+        return undefined;
     }
 }
 

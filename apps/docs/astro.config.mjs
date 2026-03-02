@@ -92,6 +92,10 @@ export default defineConfig({
               link: "/core-features/factory-functions-example/",
             },
             {
+              label: "Instance Factories",
+              link: "/core-features/instance-factories/",
+            },
+            {
               label: "Class Injection",
               link: "/core-features/use-cases-example/",
             },

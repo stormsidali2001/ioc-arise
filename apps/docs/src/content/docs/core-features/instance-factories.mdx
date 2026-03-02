@@ -1,0 +1,135 @@
+---
+title: Instance Factories
+description: Use functions with explicit interface return types as implementation providers
+sidebar:
+  order: 6
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+An **instance factory** is an exported function whose explicit return type annotation resolves to a registered interface. No `@factory` annotation is needed — the return type is the detection signal. The function is registered under the interface name as the token, exactly like a class that `implements` the interface.
+
+<Aside type="tip">
+  Use instance factories when you need conditional logic at construction time — e.g. picking between in-memory and persistent implementations based on config.
+</Aside>
+
+## Step 1: Write Your Code
+
+**Separate Parameters Pattern:**
+
+```typescript
+// repositories/createUserRepository.ts
+import { IAppConfig } from '../config/IAppConfig';
+import { ILogger } from '../logger/ILogger';
+import { IUserRepository } from './IUserRepository';
+
+// The `: IUserRepository` return type is enough — no @factory needed.
+export function createUserRepository(
+  config: IAppConfig,
+  logger: ILogger,
+): IUserRepository {
+  if (config.getStorageType() === 'persistent') {
+    logger.info('Using persistent storage');
+    return new PersistentUserRepository(config.getDbPath());
+  }
+  logger.info('Using in-memory storage');
+  return new InMemoryUserRepository();
+}
+```
+
+**Context Object Pattern:**
+
+```typescript
+// repositories/createUserRepository.ts
+import { IAppConfig } from '../config/IAppConfig';
+import { ILogger } from '../logger/ILogger';
+import { IUserRepository } from './IUserRepository';
+
+export function createUserRepository(
+  context: { config: IAppConfig; logger: ILogger },
+): IUserRepository {
+  const { config, logger } = context;
+  if (config.getStorageType() === 'persistent') {
+    logger.info('Using persistent storage');
+    return new PersistentUserRepository(config.getDbPath());
+  }
+  logger.info('Using in-memory storage');
+  return new InMemoryUserRepository();
+}
+```
+
+`Promise<IInterface>` and `Awaited<Promise<IInterface>>` return types are also detected.
+
+## Step 2: Generate Container
+
+```bash
+npx @notjustcoders/ioc-arise generate
+```
+
+## Step 3: Generated Code
+
+**`container.gen.d.ts`:**
+
+```typescript
+import type { IUserRepository } from './repositories/IUserRepository';
+import type { IAppConfig } from './config/IAppConfig';
+import type { ILogger } from './logger/ILogger';
+
+export interface ContainerRegistry {
+  'IUserRepository': IUserRepository;
+  'IAppConfig': IAppConfig;
+  'ILogger': ILogger;
+}
+```
+
+**`container.gen.ts` (separate params):**
+
+```typescript
+import { Container, Lifecycle } from '@notjustcoders/di-container';
+import type { ContainerRegistry } from './container.gen.d';
+import { createUserRepository } from './repositories/createUserRepository';
+import { appConfig } from './config/appConfig';
+import { consoleLogger } from './logger/consoleLogger';
+
+export const container = new Container<ContainerRegistry>();
+
+container.register('IUserRepository', {
+  useFactory: createUserRepository,
+  dependencies: ['IAppConfig', 'ILogger'],
+  lifecycle: Lifecycle.Singleton,
+});
+
+container.register('IAppConfig', { useValue: appConfig, lifecycle: Lifecycle.Singleton });
+container.register('ILogger', { useValue: consoleLogger, lifecycle: Lifecycle.Singleton });
+```
+
+**`container.gen.ts` (context object):**
+
+```typescript
+container.register('IUserRepository', {
+  useFactory: (config, logger) => createUserRepository({ config, logger }),
+  dependencies: ['IAppConfig', 'ILogger'],
+  lifecycle: Lifecycle.Singleton,
+});
+```
+
+## Step 4: Use It
+
+```typescript
+import { container } from './container.gen';
+
+const repo = container.resolve('IUserRepository');
+//    ^? IUserRepository — full type safety
+```
+
+## Uniqueness Rule
+
+<Aside type="caution">
+  An interface can have **at most one** implementation provider — either a class that `implements` it, or an instance factory that returns it. Registering both throws an error at generation time.
+</Aside>
+
+```
+❌ Multiple implementation providers found for interface 'IUserRepository':
+   • class:InMemoryUserRepository
+   • factory:createUserRepository
+```

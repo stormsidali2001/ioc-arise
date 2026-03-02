@@ -1,5 +1,11 @@
 # @notjustcoders/ioc-arise
 
+## 1.1.24
+
+### Patch Changes
+
+- Feat: Instance factories support
+
 ## 1.1.23
 
 ### Patch Changes
