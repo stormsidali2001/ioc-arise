@@ -16,45 +16,98 @@ export class ClassAnalyzer {
     this.interfacePattern = interfacePattern;
   }
 
-  async analyzeFiles(filePaths: string[]): Promise<ClassInfo[]> {
-    const allClasses: ClassInfo[] = [];
-    const allInterfaces = new Set<string>();
-    const allClassNames = new Set<string>();
-    const allAbstractClasses = new Set<string>();
-    const fileASTMap = new Map<string, any>();
+  async collectTokens(filePaths: string[]): Promise<{ interfaces: Set<string>; classNames: Set<string>; abstractClasses: Set<string> }> {
+    const interfaces = new Set<string>();
+    const classNames = new Set<string>();
+    const abstractClasses = new Set<string>();
 
-    // First pass: Parse all files and collect interface, class names, and abstract classes
     for (const filePath of filePaths) {
       try {
         const root = this.astParser.parseFile(filePath);
-        fileASTMap.set(filePath, root);
-
+        
         // Collect interfaces
-        const interfaces = this.astParser.extractInterfaces(root);
-        interfaces.forEach(interfaceName => allInterfaces.add(interfaceName));
+        const extractedInterfaces = this.astParser.extractInterfaces(root);
+        extractedInterfaces.forEach(i => interfaces.add(i));
+
+        // Collect type aliases
+        const typeAliases = this.astParser.extractTypeAliases(root);
+        for (const [alias] of typeAliases.entries()) {
+          interfaces.add(alias);
+        }
 
         // Collect class names and abstract classes
         const classNodes = this.astParser.findAllClasses(root);
         for (const classNode of classNodes) {
           const className = this.astParser.extractClassName(classNode);
           if (className) {
-            allClassNames.add(className);
-            const isAbstract = this.astParser.isAbstractClass(classNode);
-            if (isAbstract) {
-              allAbstractClasses.add(className);
+            classNames.add(className);
+            if (this.astParser.isAbstractClass(classNode)) {
+              abstractClasses.add(className);
             }
           }
         }
       } catch (error) {
-        Logger.warn(`Warning: Could not parse ${filePath}:`, { error });
+        Logger.warn(`Warning: Could not collect tokens from ${filePath}:`, { error });
+      }
+    }
+
+    return { interfaces, classNames, abstractClasses };
+  }
+
+  async analyzeFiles(filePaths: string[], tokens?: { interfaces: Set<string>; classNames: Set<string>; abstractClasses: Set<string>; factoryNames: Set<string>; valueNames: Set<string> }): Promise<ClassInfo[]> {
+    const allClasses: ClassInfo[] = [];
+    
+    // If tokens are provided, use them; otherwise, perform a first pass (legacy behavior)
+    let allInterfaces = tokens?.interfaces || new Set<string>();
+    let allClassNames = tokens?.classNames || new Set<string>();
+    let allAbstractClasses = tokens?.abstractClasses || new Set<string>();
+    let allFactoryNames = tokens?.factoryNames || new Set<string>();
+    let allValueNames = tokens?.valueNames || new Set<string>();
+
+    const fileASTMap = new Map<string, any>();
+
+    if (!tokens) {
+      // First pass: Parse all files and collect interface, class names, and abstract classes
+      for (const filePath of filePaths) {
+        try {
+          const root = this.astParser.parseFile(filePath);
+          fileASTMap.set(filePath, root);
+
+          // Collect interfaces
+          const interfaces = this.astParser.extractInterfaces(root);
+          interfaces.forEach(interfaceName => allInterfaces.add(interfaceName));
+
+          // Collect class names and abstract classes
+          const classNodes = this.astParser.findAllClasses(root);
+          for (const classNode of classNodes) {
+            const className = this.astParser.extractClassName(classNode);
+            if (className) {
+              allClassNames.add(className);
+              const isAbstract = this.astParser.isAbstractClass(classNode);
+              if (isAbstract) {
+                allAbstractClasses.add(className);
+              }
+            }
+          }
+        } catch (error) {
+          Logger.warn(`Warning: Could not parse ${filePath}:`, { error });
+        }
       }
     }
 
     // Second pass: Analyze each file using the cached ASTs and collected types
     for (const filePath of filePaths) {
-      const root = fileASTMap.get(filePath);
+      let root = fileASTMap.get(filePath);
+      if (!root) {
+          try {
+              root = this.astParser.parseFile(filePath);
+          } catch (e) {
+              continue;
+          }
+      }
+      
       if (root) {
-        const classes = await this.analyzeFileFromAST(filePath, root, allInterfaces, allClassNames, allAbstractClasses);
+        const classes = await this.analyzeFileFromAST(filePath, root, allInterfaces, allClassNames, allAbstractClasses, allFactoryNames, allValueNames);
         allClasses.push(...classes);
       }
     }
@@ -78,7 +131,7 @@ export class ClassAnalyzer {
     }
   }
 
-  private async analyzeFileFromAST(filePath: string, root: any, allInterfaces: Set<string>, allClassNames: Set<string>, allAbstractClasses: Set<string>): Promise<ClassInfo[]> {
+  private async analyzeFileFromAST(filePath: string, root: any, allInterfaces: Set<string>, allClassNames: Set<string>, allAbstractClasses: Set<string>, allFactoryNames: Set<string> = new Set(), allValueNames: Set<string> = new Set()): Promise<ClassInfo[]> {
     const classes: ClassInfo[] = [];
 
     try {
@@ -112,7 +165,7 @@ export class ClassAnalyzer {
         }
 
         const constructorParams = this.astParser.extractConstructorParameters(classNode);
-        const dependencies = this.resolveDependencies(constructorParams, typeAliases, importMappings, allInterfaces, allClassNames, allAbstractClasses);
+        const dependencies = this.resolveDependencies(constructorParams, typeAliases, importMappings, allInterfaces, allClassNames, allAbstractClasses, allFactoryNames, allValueNames);
         const importPath = this.generateImportPath(filePath, className);
         const scope = this.astParser.extractScopeFromJSDoc(className, jsDocScopes);
         const isAbstract = this.astParser.isAbstractClass(classNode);
@@ -158,7 +211,7 @@ export class ClassAnalyzer {
         // Only process if parent is abstract
         if (isParentAbstract) {
           const constructorParams = this.astParser.extractConstructorParameters(classNode);
-          const dependencies = this.resolveDependencies(constructorParams, typeAliases, importMappings, allInterfaces, allClassNames, allAbstractClasses);
+          const dependencies = this.resolveDependencies(constructorParams, typeAliases, importMappings, allInterfaces, allClassNames, allAbstractClasses, allFactoryNames, allValueNames);
           const importPath = this.generateImportPath(filePath, className);
           const scope = this.astParser.extractScopeFromJSDoc(className, jsDocScopes);
           const isAbstract = this.astParser.isAbstractClass(classNode);
@@ -203,7 +256,7 @@ export class ClassAnalyzer {
         if (classText.includes('implements') || classText.includes('extends')) continue;
 
         const constructorParams = this.astParser.extractConstructorParameters(classNode);
-        const dependencies = this.resolveDependencies(constructorParams, typeAliases, importMappings, allInterfaces, allClassNames, allAbstractClasses);
+        const dependencies = this.resolveDependencies(constructorParams, typeAliases, importMappings, allInterfaces, allClassNames, allAbstractClasses, allFactoryNames, allValueNames);
         const importPath = this.generateImportPath(filePath, className);
         const scope = this.astParser.extractScopeFromJSDoc(className, jsDocScopes);
         const isAbstract = this.astParser.isAbstractClass(classNode);
@@ -248,7 +301,9 @@ export class ClassAnalyzer {
     importMappings: Map<string, string>,
     allInterfaces: Set<string>,
     allClassNames: Set<string>,
-    allAbstractClasses?: Set<string>
+    allAbstractClasses: Set<string> = new Set(),
+    allFactoryNames: Set<string> = new Set(),
+    allValueNames: Set<string> = new Set()
   ): DependencyInfo[] {
 
     const result = constructorParams
@@ -263,9 +318,11 @@ export class ClassAnalyzer {
       .filter(typeInfo => {
         const isValidInterface = allInterfaces.has(typeInfo.resolvedType);
         const isValidClass = allClassNames.has(typeInfo.resolvedType);
-        const isValidAbstractClass = allAbstractClasses?.has(typeInfo.resolvedType) || false;
+        const isValidAbstractClass = allAbstractClasses.has(typeInfo.resolvedType);
+        const isValidFactory = allFactoryNames.has(typeInfo.resolvedType);
+        const isValidValue = allValueNames.has(typeInfo.resolvedType);
 
-        return isValidClass || isValidInterface || isValidAbstractClass;
+        return isValidClass || isValidInterface || isValidAbstractClass || isValidFactory || isValidValue;
       })
       .map(typeInfo => {
         // Get import path from import mappings, fallback to resolvedType if not found

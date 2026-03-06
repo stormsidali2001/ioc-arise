@@ -1,4 +1,4 @@
-import { ClassInfo, FactoryInfo, ValueInfo } from '../types';
+import { ClassInfo, DependencyInfo, FactoryInfo, ValueInfo } from '../types';
 import { relative, dirname, join, basename } from 'path';
 import { writeFileSync, mkdirSync } from 'fs';
 import { TypeDeclarationGenerator } from './type-declaration-generator';
@@ -60,12 +60,14 @@ export class IoCContainerGenerator {
                 interfaceNames.add(cls.interfaceName);
             }
         });
-        // Also add interface names from instance factories so their dependencies resolve correctly
+        // Also add interface names from instance factories and factory tokens
         if (factories) {
             factories.forEach(factory => {
                 if (factory.instanceFactoryFor) {
                     interfaceNames.add(factory.instanceFactoryFor);
                 }
+                const token = factory.token || factory.name;
+                if (token) interfaceNames.add(token);
             });
         }
         // Add value tokens — values are always registered as string tokens, so any dependency
@@ -89,7 +91,7 @@ export class IoCContainerGenerator {
             });
         });
 
-        const imports = this.generateImports(classes, outputPath, factories, values);
+        const imports = this.generateImports(classes, outputPath, factories, values, classes, interfaceNames, abstractClassNames);
         const classRegistrations = this.generateRegistrations(classes, interfaceNames, '', abstractClassNames);
         const factoryRegistrations = factories && factories.length > 0
             ? this.generateFactoryRegistrations(factories, interfaceNames, '', abstractClassNames)
@@ -145,13 +147,15 @@ ${allRegistrations}
                 interfaceNames.add(cls.interfaceName);
             }
         });
-        // Also add interface names from instance factories
+        // Also add interface names from instance factories and factory tokens
         if (moduleGroupedFactories) {
             moduleGroupedFactories.forEach(moduleFactories => {
                 moduleFactories.forEach(factory => {
                     if (factory.instanceFactoryFor) {
                         interfaceNames.add(factory.instanceFactoryFor);
                     }
+                    const token = factory.token || factory.name;
+                    if (token) interfaceNames.add(token);
                 });
             });
         }
@@ -182,7 +186,7 @@ ${allRegistrations}
 
             const moduleFilename = `${moduleName.charAt(0).toLowerCase() + moduleName.slice(1)}.module.ts`;
             const moduleFilePath = join(modulesDir, moduleFilename);
-            const moduleCode = this.generateModuleFile(moduleName, classes, interfaceNames, moduleFilePath, moduleFactories, moduleValues);
+            const moduleCode = this.generateModuleFile(moduleName, classes, interfaceNames, moduleFilePath, moduleFactories, moduleValues, allClasses);
 
             writeFileSync(moduleFilePath, moduleCode);
 
@@ -204,10 +208,9 @@ ${allRegistrations}
         interfaceNames: Set<string>,
         moduleFilePath: string,
         factories?: FactoryInfo[],
-        values?: ValueInfo[]
+        values?: ValueInfo[],
+        allClasses: ClassInfo[] = []
     ): string {
-        const imports = this.generateImports(classes, moduleFilePath, factories, values);
-
         // Collect abstract class names that are dependencies
         const abstractClassNames = new Set<string>();
         classes.forEach(cls => {
@@ -219,6 +222,8 @@ ${allRegistrations}
                 }
             });
         });
+
+        const imports = this.generateImports(classes, moduleFilePath, factories, values, allClasses, interfaceNames, abstractClassNames);
 
         const classRegistrations = this.generateModuleRegistrations(classes, interfaceNames, abstractClassNames);
         const factoryRegistrations = factories && factories.length > 0
@@ -320,7 +325,9 @@ ${moduleInstantiations}
 
     private static generateModularCode(
         moduleGroupedClasses: Map<string, ClassInfo[]>,
-        outputPath: string
+        outputPath: string,
+        factories?: FactoryInfo[],
+        values?: ValueInfo[]
     ): string {
         const allClasses = Array.from(moduleGroupedClasses.values()).flat();
 
@@ -332,8 +339,39 @@ ${moduleInstantiations}
             }
         });
 
-        const imports = this.generateImports(allClasses, outputPath);
-        const moduleDefinitions = this.generateModuleDefinitions(moduleGroupedClasses, interfaceNames);
+        // Also add factory tokens
+        if (factories) {
+            factories.forEach(factory => {
+                if (factory.instanceFactoryFor) {
+                    interfaceNames.add(factory.instanceFactoryFor);
+                }
+                const token = factory.token || factory.name;
+                if (token) interfaceNames.add(token);
+            });
+        }
+
+        // Add value tokens
+        if (values) {
+            values.forEach(value => {
+                const token = value.token || value.interfaceName || value.name;
+                if (token) interfaceNames.add(token);
+            });
+        }
+
+        // Collect abstract class names from dependencies
+        const abstractClassNames = new Set<string>();
+        allClasses.forEach(cls => {
+            cls.dependencies.forEach(dep => {
+                const isInCurrentClasses = allClasses.some(c => c.name === dep.name);
+                const looksLikeAbstractClass = dep.name.startsWith('Abstract') || dep.name.includes('Abstract');
+                if (!isInCurrentClasses && looksLikeAbstractClass) {
+                    abstractClassNames.add(dep.name);
+                }
+            });
+        });
+
+        const imports = this.generateImports(allClasses, outputPath, undefined, undefined, allClasses, interfaceNames, abstractClassNames);
+        const moduleDefinitions = this.generateModuleDefinitions(moduleGroupedClasses, interfaceNames, abstractClassNames);
         const moduleInstantiations = this.generateModuleInstantiations(moduleGroupedClasses);
 
         const filename = outputPath.split('/').pop()?.replace(/\.ts$/, '') || 'container.gen';
@@ -358,12 +396,13 @@ ${moduleInstantiations}
 
     private static generateModuleDefinitions(
         moduleGroupedClasses: Map<string, ClassInfo[]>,
-        interfaceNames: Set<string>
+        interfaceNames: Set<string>,
+        abstractClassNames: Set<string> = new Set()
     ): string {
         const modules: string[] = [];
 
         for (const [moduleName, classes] of moduleGroupedClasses.entries()) {
-            const registrations = this.generateModuleRegistrations(classes, interfaceNames);
+            const registrations = this.generateModuleRegistrations(classes, interfaceNames, abstractClassNames);
 
             modules.push(`const ${moduleName.charAt(0).toLowerCase() + moduleName.slice(1)} = new ContainerModule()
 ${registrations};`);
@@ -424,15 +463,23 @@ ${registrations};`);
         }).join('\n');
     }
 
-    private static generateImports(classes: ClassInfo[], outputPath: string, factories?: FactoryInfo[], values?: ValueInfo[]): string {
+    private static generateImports(
+        classes: ClassInfo[],
+        outputPath: string,
+        factories?: FactoryInfo[],
+        values?: ValueInfo[],
+        allProjectClasses: ClassInfo[] = [],
+        interfaceNames: Set<string> = new Set(),
+        abstractClassNames: Set<string> = new Set()
+    ): string {
         const outputDir = dirname(outputPath);
         const importStatements: string[] = [];
         const importMap = new Map<string, Set<string>>();
 
-        // Collect class imports
-        classes.forEach(cls => {
-            // Calculate relative path from output file to class file
-            let relativePath = relative(outputDir, cls.filePath);
+        // Helper to add an import to the map
+        const addImportToMap = (filePath: string, name: string) => {
+            // Calculate relative path from output file to file
+            let relativePath = relative(outputDir, filePath);
 
             // Remove extension (.ts)
             relativePath = relativePath.replace(/\.ts$/, '');
@@ -448,56 +495,56 @@ ${registrations};`);
             if (!importMap.has(relativePath)) {
                 importMap.set(relativePath, new Set());
             }
-            importMap.get(relativePath)!.add(cls.name);
+            importMap.get(relativePath)!.add(name);
+        };
+
+        // Collect class imports
+        classes.forEach(cls => {
+            addImportToMap(cls.filePath, cls.name);
         });
 
         // Collect factory imports
         if (factories) {
             factories.forEach(factory => {
-                // Calculate relative path from output file to factory file
-                let relativePath = relative(outputDir, factory.filePath);
-
-                // Remove extension (.ts)
-                relativePath = relativePath.replace(/\.ts$/, '');
-
-                // Add ./ if it doesn't start with . or /
-                if (!relativePath.startsWith('.')) {
-                    relativePath = `./${relativePath}`;
-                }
-
-                // Use forward slashes for imports
-                relativePath = relativePath.replace(/\\/g, '/');
-
-                if (!importMap.has(relativePath)) {
-                    importMap.set(relativePath, new Set());
-                }
-                importMap.get(relativePath)!.add(factory.name);
+                addImportToMap(factory.filePath, factory.name);
             });
         }
 
         // Collect value imports
         if (values) {
             values.forEach(value => {
-                // Calculate relative path from output file to value file
-                let relativePath = relative(outputDir, value.filePath);
-
-                // Remove extension (.ts)
-                relativePath = relativePath.replace(/\.ts$/, '');
-
-                // Add ./ if it doesn't start with . or /
-                if (!relativePath.startsWith('.')) {
-                    relativePath = `./${relativePath}`;
-                }
-
-                // Use forward slashes for imports
-                relativePath = relativePath.replace(/\\/g, '/');
-
-                if (!importMap.has(relativePath)) {
-                    importMap.set(relativePath, new Set());
-                }
-                importMap.get(relativePath)!.add(value.name);
+                addImportToMap(value.filePath, value.name);
             });
         }
+
+        // Collect dependencies that need class token imports
+        // (those not registered as string tokens via interfaces or abstract classes)
+        const allEntities = [...classes, ...(factories || [])];
+        const registeredNamesInModule = new Set([
+            ...classes.map(c => c.name),
+            ...(factories?.map(f => f.name) ?? []),
+            ...(values?.map(v => v.name) ?? [])
+        ]);
+
+        allEntities.forEach(entity => {
+            entity.dependencies.forEach(dep => {
+                // Skip if it's already registered in this module, or if it's a string token
+                // (registered via interfaces, abstract classes, factories or values)
+                if (registeredNamesInModule.has(dep.name) ||
+                    interfaceNames.has(dep.name) ||
+                    abstractClassNames.has(dep.name)) {
+                    return;
+                }
+
+                // If it's a project class, import it using its actual file path
+                const depClass = allProjectClasses.find(c => c.name === dep.name);
+                if (depClass) {
+                    addImportToMap(depClass.filePath, depClass.name);
+                }
+                // Note: If not found in project classes, it might be an external dependency.
+                // For now we don't handle external class token imports as we don't have their absolute paths.
+            });
+        });
 
         // Generate import statements
         for (const [importPath, names] of importMap.entries()) {

@@ -1,5 +1,11 @@
 # @notjustcoders/ioc-arise
 
+## 1.1.30
+
+### Patch Changes
+
+- Fix a bunch of bugs related to injectables compositions
+
 ## 1.1.29
 
 ### Patch Changes

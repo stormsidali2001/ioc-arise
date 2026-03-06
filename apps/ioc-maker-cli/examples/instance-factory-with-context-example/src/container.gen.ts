@@ -19,7 +19,7 @@ container.register('IUserService', {
 container.register('IUserRepository', {
   useFactory: (config) => createUserRepository({ config }),
   dependencies: ['IAppConfig'],
-  lifecycle: Lifecycle.Singleton,
+  lifecycle: Lifecycle.Transient,
 });
 
 container.register('IAppConfig', {

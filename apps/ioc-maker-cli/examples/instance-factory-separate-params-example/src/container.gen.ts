@@ -20,7 +20,7 @@ container.register('IProductService', {
 container.register('IProductRepository', {
   useFactory: createProductRepository,
   dependencies: ['IAppConfig', 'ILogger'],
-  lifecycle: Lifecycle.Singleton,
+  lifecycle: Lifecycle.Transient,
 });
 
 container.register('ILogger', {

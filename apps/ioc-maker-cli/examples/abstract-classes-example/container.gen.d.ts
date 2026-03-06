@@ -9,8 +9,6 @@ import type { ProductRepository } from './implementations/ProductRepository';
 import type { UserUseCase } from './use-cases/UserUseCase';
 import type { ProductUseCase } from './use-cases/ProductUseCase';
 import type { InternalProductNestedUseCase } from './use-cases/InternalProductNestedUseCase';
-import { createUserModuleContainer } from './UserModule.gen';
-import { createProductModuleContainer } from './ProductModule.gen';
 
 export interface ContainerRegistry {
   'AbstractUserRepository': UserRepository;
@@ -18,6 +16,4 @@ export interface ContainerRegistry {
   'UserUseCase': UserUseCase;
   'ProductUseCase': ProductUseCase;
   'InternalProductNestedUseCase': InternalProductNestedUseCase;
-  'createUserModuleContainer': ReturnType<typeof createUserModuleContainer>;
-  'createProductModuleContainer': ReturnType<typeof createProductModuleContainer>;
 }

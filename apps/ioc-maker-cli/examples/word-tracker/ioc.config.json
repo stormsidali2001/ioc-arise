@@ -1,0 +1,38 @@
+{
+  "source": "src",
+  "output": "src/di/container.gen.ts",
+  "exclude": [
+    "node_modules",
+    "**/__tests__/**",
+    "**/*.test.ts",
+    "**/di/**",
+    "**/stores/**",
+    "**/events/**",
+    "**/Sqlite*.ts",
+    "**/Dexie*.ts"
+  ],
+  "modules": {
+    "VocabularyModule": [
+      "src/domain/vocabulary/**",
+      "src/application/vocabulary/**",
+      "src/infra/persistence/vocabulary/**",
+      "src/infra/persistence/source/**"
+    ],
+    "ReviewModule": [
+      "src/domain/review/**",
+      "src/application/review/**",
+      "src/infra/persistence/review/**",
+      "src/infra/services/**"
+    ],
+    "SharedModule": [
+      "src/application/shared/**",
+      "src/infra/event-bus/**",
+      "src/infra/shared/**"
+    ],
+    "NotificationModule": [
+      "src/application/notifications/**",
+      "src/infra/notifications/**"
+    ],
+    "StatisticsModule": ["src/application/statistics/**", "src/infra/statistics/**"]
+  }
+}

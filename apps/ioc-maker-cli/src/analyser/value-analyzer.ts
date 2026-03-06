@@ -21,27 +21,82 @@ export class ValueAnalyzer {
         }
     }
 
-    async analyzeFiles(filePaths: string[]): Promise<ValueInfo[]> {
-        const allValues: ValueInfo[] = [];
-        const allInterfaces = new Set<string>();
-        const fileASTMap = new Map<string, any>();
+    async collectTokens(filePaths: string[]): Promise<{ valueNames: Set<string>; interfaces: Set<string> }> {
+        const valueNames = new Set<string>();
+        const interfaces = new Set<string>();
 
-        // First pass: Collect interfaces for type checking
         for (const filePath of filePaths) {
             try {
                 const root = this.astParser.parseFile(filePath);
-                fileASTMap.set(filePath, root);
+                
+                // Collect interfaces
+                const extractedInterfaces = this.astParser.extractInterfaces(root);
+                extractedInterfaces.forEach(i => interfaces.add(i));
 
-                const interfaces = this.astParser.extractInterfaces(root);
-                interfaces.forEach(interfaceName => allInterfaces.add(interfaceName));
+                // Collect type aliases (export type Foo = ...)
+                const typeAliases = this.astParser.extractTypeAliases(root);
+                for (const [alias] of typeAliases.entries()) {
+                    interfaces.add(alias);
+                }
+
+                // Collect exported values
+                const exportedValues = this.astParser.findAllExportedValues(root);
+                for (const valueNode of exportedValues) {
+                    const valueName = this.astParser.extractValueName(valueNode);
+                    if (valueName) {
+                        const hasValueAnnotation = this.hasValueAnnotation(root, valueNode);
+                        const matchesValuePattern = this.valuePattern ? this.valuePattern.test(valueName) : false;
+
+                        if (hasValueAnnotation || matchesValuePattern) {
+                            valueNames.add(valueName);
+                            
+                            // Also check if it has a type that might be an interface
+                            const interfaceName = this.astParser.extractValueType(valueNode);
+                            if (interfaceName) {
+                                interfaces.add(interfaceName);
+                            }
+                        }
+                    }
+                }
             } catch (error) {
-                Logger.warn(`Warning: Could not parse ${filePath}:`, { error });
+                Logger.warn(`Warning: Could not collect tokens from ${filePath}:`, { error });
+            }
+        }
+
+        return { valueNames, interfaces };
+    }
+
+    async analyzeFiles(filePaths: string[], tokens?: { interfaces: Set<string> }): Promise<ValueInfo[]> {
+        const allValues: ValueInfo[] = [];
+        let allInterfaces = tokens?.interfaces || new Set<string>();
+        const fileASTMap = new Map<string, any>();
+
+        if (!tokens) {
+            // First pass: Collect interfaces for type checking
+            for (const filePath of filePaths) {
+                try {
+                    const root = this.astParser.parseFile(filePath);
+                    fileASTMap.set(filePath, root);
+
+                    const interfaces = this.astParser.extractInterfaces(root);
+                    interfaces.forEach(interfaceName => allInterfaces.add(interfaceName));
+                } catch (error) {
+                    Logger.warn(`Warning: Could not parse ${filePath}:`, { error });
+                }
             }
         }
 
         // Second pass: Analyze exported const values
         for (const filePath of filePaths) {
-            const root = fileASTMap.get(filePath);
+            let root = fileASTMap.get(filePath);
+            if (!root) {
+                try {
+                    root = this.astParser.parseFile(filePath);
+                } catch (e) {
+                    continue;
+                }
+            }
+            
             if (root) {
                 const values = await this.analyzeFileFromAST(filePath, root, allInterfaces);
                 allValues.push(...values);

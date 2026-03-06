@@ -23,10 +23,30 @@ export class ProjectAnalyzer {
   async analyzeProject(): Promise<{ classes: ClassInfo[]; factories: FactoryInfo[]; values: ValueInfo[] }> {
     const tsFiles = await this.fileDiscovery.findTypeScriptFiles();
 
-    // Analyze all files in a single batch operation for better performance
-    const allClasses = await this.classAnalyzer.analyzeFiles(tsFiles);
-    const allFactories = await this.factoryAnalyzer.analyzeFiles(tsFiles);
-    const allValues = await this.valueAnalyzer.analyzeFiles(tsFiles);
+    // First pass: Collect all tokens from all files
+    const classTokens = await this.classAnalyzer.collectTokens(tsFiles);
+    const factoryTokens = await this.factoryAnalyzer.collectTokens(tsFiles);
+    const valueTokens = await this.valueAnalyzer.collectTokens(tsFiles);
+
+    // Merge all interfaces from all analyzers
+    const allInterfaces = new Set<string>([
+        ...classTokens.interfaces,
+        ...factoryTokens.interfaces,
+        ...valueTokens.interfaces
+    ]);
+
+    const tokens = {
+        interfaces: allInterfaces,
+        classNames: classTokens.classNames,
+        abstractClasses: classTokens.abstractClasses,
+        factoryNames: factoryTokens.factoryNames,
+        valueNames: valueTokens.valueNames
+    };
+
+    // Second pass: Perform full analysis using collected tokens
+    const allClasses = await this.classAnalyzer.analyzeFiles(tsFiles, tokens);
+    const allFactories = await this.factoryAnalyzer.analyzeFiles(tsFiles, tokens);
+    const allValues = await this.valueAnalyzer.analyzeFiles(tsFiles, { interfaces: allInterfaces });
 
     // Validate that no interface is implemented by multiple classes
     this.validateUniqueInterfaceImplementations(allClasses);

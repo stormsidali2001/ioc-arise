@@ -22,38 +22,111 @@ export class FactoryAnalyzer {
         }
     }
 
-    async analyzeFiles(filePaths: string[]): Promise<FactoryInfo[]> {
-        const allFactories: FactoryInfo[] = [];
-        const allInterfaces = new Set<string>();
-        const allClassNames = new Set<string>();
-        const fileASTMap = new Map<string, any>();
+    async collectTokens(filePaths: string[]): Promise<{ factoryNames: Set<string>; interfaces: Set<string> }> {
+        const factoryNames = new Set<string>();
+        const interfaces = new Set<string>();
 
-        // First pass: Collect types for dependency resolution
         for (const filePath of filePaths) {
             try {
                 const root = this.astParser.parseFile(filePath);
-                fileASTMap.set(filePath, root);
+                
+                // Collect interfaces
+                const extractedInterfaces = this.astParser.extractInterfaces(root);
+                extractedInterfaces.forEach(i => interfaces.add(i));
 
-                const interfaces = this.astParser.extractInterfaces(root);
-                interfaces.forEach(interfaceName => allInterfaces.add(interfaceName));
+                // Collect type aliases
+                const typeAliases = this.astParser.extractTypeAliases(root);
+                for (const [alias] of typeAliases.entries()) {
+                    interfaces.add(alias);
+                }
 
-                const classNodes = this.astParser.findAllClasses(root);
-                for (const classNode of classNodes) {
-                    const className = this.astParser.extractClassName(classNode);
-                    if (className) {
-                        allClassNames.add(className);
+                // Collect factory names (exported functions with @factory or pattern match)
+                const functionNodes = this.astParser.findAllFunctions(root);
+                for (const functionNode of functionNodes) {
+                    const functionName = this.astParser.extractFunctionName(functionNode);
+                    if (functionName) {
+                        const isExported = this.astParser.isExportedFunction(functionNode);
+                        const hasFactoryAnnotation = this.hasFactoryAnnotation(root, functionNode);
+                        const matchesFactoryPattern = this.factoryPattern ? this.factoryPattern.test(functionName) : false;
+                        const returnType = this.astParser.extractFunctionReturnType(functionNode);
+                        const instanceFactoryFor = returnType ? this.extractCoreInterfaceName(returnType, interfaces) : undefined;
+
+                        if (isExported && (hasFactoryAnnotation || matchesFactoryPattern || instanceFactoryFor)) {
+                            factoryNames.add(functionName);
+                            if (instanceFactoryFor) {
+                                interfaces.add(instanceFactoryFor);
+                            }
+                        }
                     }
                 }
             } catch (error) {
-                Logger.warn(`Warning: Could not parse ${filePath}:`, { error });
+                Logger.warn(`Warning: Could not collect tokens from ${filePath}:`, { error });
+            }
+        }
+
+        return { factoryNames, interfaces };
+    }
+
+    async analyzeFiles(filePaths: string[], tokens?: { interfaces: Set<string>; classNames: Set<string>; factoryNames: Set<string> }): Promise<FactoryInfo[]> {
+        const allFactories: FactoryInfo[] = [];
+        let allInterfaces = tokens?.interfaces || new Set<string>();
+        let allClassNames = tokens?.classNames || new Set<string>();
+        let allFactoryNames = tokens?.factoryNames || new Set<string>();
+        const fileASTMap = new Map<string, any>();
+
+        if (!tokens) {
+            // First pass: Collect types for dependency resolution
+            for (const filePath of filePaths) {
+                try {
+                    const root = this.astParser.parseFile(filePath);
+                    fileASTMap.set(filePath, root);
+
+                    const interfaces = this.astParser.extractInterfaces(root);
+                    interfaces.forEach(interfaceName => allInterfaces.add(interfaceName));
+
+                    const classNodes = this.astParser.findAllClasses(root);
+                    for (const classNode of classNodes) {
+                        const className = this.astParser.extractClassName(classNode);
+                        if (className) {
+                            allClassNames.add(className);
+                        }
+                    }
+
+                    // Collect factory names (exported functions with @factory or pattern match)
+                    const functionNodes = this.astParser.findAllFunctions(root);
+                    for (const functionNode of functionNodes) {
+                        const functionName = this.astParser.extractFunctionName(functionNode);
+                        if (functionName) {
+                            const isExported = this.astParser.isExportedFunction(functionNode);
+                            const hasFactoryAnnotation = this.hasFactoryAnnotation(root, functionNode);
+                            const matchesFactoryPattern = this.factoryPattern ? this.factoryPattern.test(functionName) : false;
+                            const returnType = this.astParser.extractFunctionReturnType(functionNode);
+                            const instanceFactoryFor = returnType ? this.extractCoreInterfaceName(returnType, allInterfaces) : undefined;
+
+                            if (isExported && (hasFactoryAnnotation || matchesFactoryPattern || instanceFactoryFor)) {
+                                allFactoryNames.add(functionName);
+                            }
+                        }
+                    }
+                } catch (error) {
+                    Logger.warn(`Warning: Could not parse ${filePath}:`, { error });
+                }
             }
         }
 
         // Second pass: Analyze factory functions
         for (const filePath of filePaths) {
-            const root = fileASTMap.get(filePath);
+            let root = fileASTMap.get(filePath);
+            if (!root) {
+                try {
+                    root = this.astParser.parseFile(filePath);
+                } catch (e) {
+                    continue;
+                }
+            }
+            
             if (root) {
-                const factories = await this.analyzeFileFromAST(filePath, root, allInterfaces, allClassNames);
+                const factories = await this.analyzeFileFromAST(filePath, root, allInterfaces, allClassNames, allFactoryNames);
                 allFactories.push(...factories);
             }
         }
@@ -65,7 +138,8 @@ export class FactoryAnalyzer {
         filePath: string,
         root: any,
         allInterfaces: Set<string>,
-        allClassNames: Set<string>
+        allClassNames: Set<string>,
+        allFactoryNames: Set<string>
     ): Promise<FactoryInfo[]> {
         const factories: FactoryInfo[] = [];
 
@@ -132,11 +206,12 @@ export class FactoryAnalyzer {
                         contextObjectProperties || [],
                         allInterfaces,
                         allClassNames,
+                        allFactoryNames,
                         importMappings
                     );
                 } else {
                     // Resolve dependencies from individual parameters (existing behavior)
-                    dependencies = this.resolveDependencies(parameters, allInterfaces, allClassNames, importMappings);
+                    dependencies = this.resolveDependencies(parameters, allInterfaces, allClassNames, allFactoryNames, importMappings);
                 }
 
                 // Calculate import path
@@ -179,15 +254,18 @@ export class FactoryAnalyzer {
             });
 
             const functionRange = functionNode.range();
+            const functionStartLine = functionRange.start.line;
 
             // Find the JSDoc comment that appears immediately before this function
             for (const comment of comments) {
                 const commentText = comment.text();
                 if (commentText.includes('/**') && commentText.includes('@factory')) {
                     const commentRange = comment.range();
+                    const commentEndLine = commentRange.end.line;
+
                     // Check if the comment comes before the function (within a few lines)
-                    if (commentRange.end.line < functionRange.start.line &&
-                        functionRange.start.line - commentRange.end.line <= 2) {
+                    if (commentEndLine < functionStartLine &&
+                        functionStartLine - commentEndLine <= 2) {
                         return true;
                     }
                 }
@@ -198,11 +276,11 @@ export class FactoryAnalyzer {
             return false;
         }
     }
-
     private resolveDependencies(
         parameters: ConstructorParameter[],
         allInterfaces: Set<string>,
         allClassNames: Set<string>,
+        allFactoryNames: Set<string>,
         importMappings: Map<string, string>
     ): DependencyInfo[] {
         const dependencies: DependencyInfo[] = [];
@@ -220,11 +298,12 @@ export class FactoryAnalyzer {
                 continue;
             }
 
-            // Determine if it's an interface or class
+            // Determine if it's an interface, class, or factory
             const isInterface = allInterfaces.has(typeName);
             const isClass = allClassNames.has(typeName);
+            const isFactory = allFactoryNames.has(typeName);
 
-            if (isInterface || isClass) {
+            if (isInterface || isClass || isFactory) {
                 const importPath = importMappings.get(typeName) || './';
                 dependencies.push({
                     name: typeName,
@@ -240,6 +319,7 @@ export class FactoryAnalyzer {
         properties: { name: string; type: string }[],
         allInterfaces: Set<string>,
         allClassNames: Set<string>,
+        allFactoryNames: Set<string>,
         importMappings: Map<string, string>
     ): DependencyInfo[] {
         const dependencies: DependencyInfo[] = [];
@@ -252,11 +332,12 @@ export class FactoryAnalyzer {
                 continue;
             }
 
-            // Determine if it's an interface or class
+            // Determine if it's an interface, class, or factory
             const isInterface = allInterfaces.has(typeName);
             const isClass = allClassNames.has(typeName);
+            const isFactory = allFactoryNames.has(typeName);
 
-            if (isInterface || isClass) {
+            if (isInterface || isClass || isFactory) {
                 const importPath = importMappings.get(typeName) || './';
                 dependencies.push({
                     name: typeName,

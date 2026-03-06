@@ -5,11 +5,19 @@
  * Module: CoreModule
  */
 import { ContainerModule, Lifecycle } from '@notjustcoders/di-container';
+import { UserService } from '../../user/UserService';
+import { ProductService } from '../../product/ProductService';
+import { createUserRepository } from '../../user/createUserRepository';
+import { createProductRepository } from '../../product/createProductRepository';
 import { createCache } from '../../core/createCache';
 import { consoleLogger } from '../../core/consoleLogger';
 import { appConfig } from '../../core/appConfig';
 
 export const coreModule = new ContainerModule()
+  .register('IUserService', { useClass: UserService, dependencies: ['IUserRepository', 'ICache'], lifecycle: Lifecycle.Singleton })
+  .register('IProductService', { useClass: ProductService, dependencies: ['IProductRepository', 'IUserService'], lifecycle: Lifecycle.Singleton })
+  .register('IUserRepository', { useFactory: createUserRepository, dependencies: ['IAppConfig', 'ILogger'], lifecycle: Lifecycle.Transient })
+  .register('IProductRepository', { useFactory: (config, logger) => createProductRepository({ config, logger }), dependencies: ['IAppConfig', 'ILogger'], lifecycle: Lifecycle.Transient })
   .register('ICache', { useFactory: createCache, lifecycle: Lifecycle.Transient })
   .register('ILogger', { useValue: consoleLogger, lifecycle: Lifecycle.Singleton })
   .register('IAppConfig', { useValue: appConfig, lifecycle: Lifecycle.Singleton });

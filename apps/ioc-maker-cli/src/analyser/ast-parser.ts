@@ -253,25 +253,37 @@ export class ASTParser {
     const typeAliases = new Map<string, string>();
 
     try {
-      // Find all import statements and parse them manually
+      // 1. Find all import statements and parse 'as' aliases
       const allImports = root.findAll({
         rule: {
           kind: 'import_statement'
         }
       });
 
-      Logger.debug(`Found ${allImports.length} total import statements`);
-
       for (const importNode of allImports) {
         const importText = importNode.text();
-        Logger.debug(`Import statement: ${importText}`);
-
-        // Manual regex parsing - handles variable whitespace
         const aliasMatch = importText.match(/import\s*{\s*([\w]+)\s+as\s+([\w]+)\s*}\s+from/);
         if (aliasMatch) {
           const [, original, alias] = aliasMatch;
           typeAliases.set(alias.trim(), original.trim());
-          Logger.debug(`Manual regex found type alias: ${alias.trim()} -> ${original.trim()}`);
+        }
+      }
+
+      // 2. Find type alias declarations (export type Foo = ...)
+      const typeDeclarations = root.findAll({
+        rule: {
+          kind: 'type_alias_declaration'
+        }
+      });
+
+      for (const typeDecl of typeDeclarations) {
+        const typeText = typeDecl.text();
+        // Match: export type Name = ... or type Name = ...
+        const typeMatch = typeText.match(/(?:export\s+)?type\s+([\w]+)\s*=/);
+        if (typeMatch) {
+          const [, name] = typeMatch;
+          // For type aliases, we map them to themselves so they are recognized as valid tokens
+          typeAliases.set(name.trim(), name.trim());
         }
       }
     } catch (error) {
@@ -602,8 +614,8 @@ export class ASTParser {
           continue;
         }
 
-        // Try to parse simple parameter: name: type
-        const simpleParamMatch = paramText.match(/(\w+)(\?)?\s*:\s*(\w+)/);
+        // Try to parse simple parameter: name: type (handles typeof and ReturnType<typeof ...>)
+        const simpleParamMatch = paramText.match(/(\w+)(\?)?\s*:\s*(?:ReturnType\s*<\s*typeof\s+)?(?:typeof\s+)?(\w+)/);
         if (simpleParamMatch) {
           const [, name, optional, type] = simpleParamMatch;
           parameters.push({

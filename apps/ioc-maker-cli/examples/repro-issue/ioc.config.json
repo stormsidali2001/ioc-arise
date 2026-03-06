@@ -1,0 +1,10 @@
+{
+  "source": "src",
+  "output": "container.gen.ts",
+  "exclude": ["**/Loggers.ts"],
+  "modules": {
+    "StatsModule": ["src/application/stats/**"],
+    "NotificationModule": ["src/application/notifications/**"],
+    "InfraModule": ["src/infra/**"]
+  }
+}

@@ -17,5 +17,5 @@ container.register('IUserService', {
 
 container.register('IUserRepository', {
   useFactory: createInMemoryUserRepository,
-  lifecycle: Lifecycle.Singleton,
+  lifecycle: Lifecycle.Transient,
 });
