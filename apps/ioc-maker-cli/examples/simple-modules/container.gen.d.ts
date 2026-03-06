@@ -4,18 +4,18 @@
  * 
  * This file provides type-safe resolution for string-based tokens.
  */
-import type { ITodoService } from './todo/ITodoService';
-import type { ITodoRepository } from './todo/ITodoRepository';
 import type { IUserService } from './user/IUserService';
 import type { IUserRepository } from './user/IUserRepository';
-import type { Todo } from './todo/Todo';
+import type { ITodoService } from './todo/ITodoService';
+import type { ITodoRepository } from './todo/ITodoRepository';
 import type { User } from './user/User';
+import type { Todo } from './todo/Todo';
 
 export interface ContainerRegistry {
-  'ITodoService': ITodoService;
-  'ITodoRepository': ITodoRepository;
   'IUserService': IUserService;
   'IUserRepository': IUserRepository;
-  'Todo': Todo;
+  'ITodoService': ITodoService;
+  'ITodoRepository': ITodoRepository;
   'User': User;
+  'Todo': Todo;
 }

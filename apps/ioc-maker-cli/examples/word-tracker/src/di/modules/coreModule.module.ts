@@ -5,22 +5,27 @@
  * Module: CoreModule
  */
 import { ContainerModule, Lifecycle } from '@notjustcoders/di-container';
-import { PriorityReviewSessionBuilderService, Sm2SpacedRepetitionService, sm2StateStore } from '../../infra/services/ReviewServices';
+import { PriorityReviewSessionBuilderService, Sm2SpacedRepetitionService, createEndReviewSessionUseCase, createOnReviewSessionEnded, createRecordAnswerUseCase, createReviewSessionRepository, createStartReviewSessionUseCase, sm2StateStore } from '../../infra/services/ReviewServices';
 import { GetStatisticsUseCase } from '../../application/statistics/GetStatisticsUseCase';
-import { AsyncStorageNotificationPreferencesRepository, ExpoLocalNotificationScheduler, NotificationContentBuilder, NotificationDecisionService, ScheduleDailyReviewReminderUseCase, createOnReviewSessionEndedDailyReminder } from '../../application/notifications/NotificationEntities';
+import { AsyncStorageNotificationPreferencesRepository, ExpoLocalNotificationScheduler, NotificationContentBuilder, NotificationDecisionService, createOnReviewSessionEndedDailyReminder, createScheduleDailyReviewReminderUseCase } from '../../application/notifications/NotificationEntities';
 import { createAddWordUseCase, createCreateSourceUseCase, createDeleteSourceUseCase, createDeleteWordUseCase, createGetAllSourcesUseCase, createGetAllWordsUseCase, createGetWordUseCase, createSearchWordsUseCase, createSourceRepository, createUpdateSourceUseCase, createUpdateWordUseCase, createWordEntryRepository } from '../../infra/persistence/vocabulary/VocabularyFactories';
 import { eventBus, uuidGenerator } from '../../infra/shared/shared';
 
 export const coreModule = new ContainerModule()
   .register('SpacedRepetitionService', { useClass: Sm2SpacedRepetitionService, lifecycle: Lifecycle.Singleton })
   .register('ReviewSessionBuilderService', { useClass: PriorityReviewSessionBuilderService, lifecycle: Lifecycle.Singleton })
-  .register(GetStatisticsUseCase, { useClass: GetStatisticsUseCase, dependencies: ['IWordEntryRepository', IReviewSessionRepository], lifecycle: Lifecycle.Singleton })
+  .register(GetStatisticsUseCase, { useClass: GetStatisticsUseCase, dependencies: ['IWordEntryRepository', 'IReviewSessionRepository'], lifecycle: Lifecycle.Singleton })
   .register('INotificationDecisionService', { useClass: NotificationDecisionService, dependencies: ['IUserNotificationPreferencesRepository'], lifecycle: Lifecycle.Singleton })
   .register('INotificationContentBuilder', { useClass: NotificationContentBuilder, lifecycle: Lifecycle.Singleton })
   .register('ILocalNotificationScheduler', { useClass: ExpoLocalNotificationScheduler, lifecycle: Lifecycle.Singleton })
   .register('IUserNotificationPreferencesRepository', { useClass: AsyncStorageNotificationPreferencesRepository, lifecycle: Lifecycle.Singleton })
-  .register(ScheduleDailyReviewReminderUseCase, { useClass: ScheduleDailyReviewReminderUseCase, dependencies: ['INotificationDecisionService', 'IUserNotificationPreferencesRepository', GetStatisticsUseCase, 'INotificationContentBuilder', 'ILocalNotificationScheduler'], lifecycle: Lifecycle.Singleton })
-  .register('createOnReviewSessionEndedDailyReminder', { useFactory: createOnReviewSessionEndedDailyReminder, dependencies: [ScheduleDailyReviewReminderUseCase], lifecycle: Lifecycle.Singleton })
+  .register('IReviewSessionRepository', { useFactory: createReviewSessionRepository, lifecycle: Lifecycle.Transient })
+  .register('createStartReviewSessionUseCase', { useFactory: createStartReviewSessionUseCase, dependencies: ['IWordEntryRepository', 'IReviewSessionRepository', 'ReviewSessionBuilderService', 'IUuidGenerator'], lifecycle: Lifecycle.Singleton })
+  .register('createRecordAnswerUseCase', { useFactory: createRecordAnswerUseCase, dependencies: ['IReviewSessionRepository', 'IEventBus'], lifecycle: Lifecycle.Singleton })
+  .register('createEndReviewSessionUseCase', { useFactory: createEndReviewSessionUseCase, dependencies: ['IReviewSessionRepository', 'IEventBus'], lifecycle: Lifecycle.Singleton })
+  .register('createOnReviewSessionEnded', { useFactory: createOnReviewSessionEnded, dependencies: ['IWordEntryRepository', 'SpacedRepetitionService'], lifecycle: Lifecycle.Singleton })
+  .register('ScheduleDailyReviewReminderUseCase', { useFactory: createScheduleDailyReviewReminderUseCase, dependencies: ['INotificationDecisionService', 'IUserNotificationPreferencesRepository', GetStatisticsUseCase, 'INotificationContentBuilder', 'ILocalNotificationScheduler'], lifecycle: Lifecycle.Transient })
+  .register('createOnReviewSessionEndedDailyReminder', { useFactory: createOnReviewSessionEndedDailyReminder, dependencies: ['ScheduleDailyReviewReminderUseCase'], lifecycle: Lifecycle.Singleton })
   .register('IWordEntryRepository', { useFactory: createWordEntryRepository, lifecycle: Lifecycle.Transient })
   .register('ISourceRepository', { useFactory: createSourceRepository, lifecycle: Lifecycle.Transient })
   .register('createAddWordUseCase', { useFactory: createAddWordUseCase, dependencies: ['IWordEntryRepository', 'IEventBus', 'IUuidGenerator'], lifecycle: Lifecycle.Singleton })

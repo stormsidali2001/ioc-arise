@@ -4,10 +4,10 @@
  * 
  * This file provides type-safe resolution for string-based tokens.
  */
-import type { IProductRepository } from '../repositories/IProductRepository';
 import type { IProductService } from '../services/IProductService';
+import type { IProductRepository } from '../repositories/IProductRepository';
 
 export interface ContainerRegistry {
-  'IProductRepository': IProductRepository;
   'IProductService': IProductService;
+  'IProductRepository': IProductRepository;
 }

@@ -4,10 +4,10 @@
  */
 import { Container } from '@notjustcoders/di-container';
 import type { ContainerRegistry } from './container.gen.d';
-import { todoModule } from './modules/todoModule.module';
 import { userModule } from './modules/userModule.module';
+import { todoModule } from './modules/todoModule.module';
 
 export const container = new Container<ContainerRegistry>();
 
-container.registerModule(todoModule);
 container.registerModule(userModule);
+container.registerModule(todoModule);

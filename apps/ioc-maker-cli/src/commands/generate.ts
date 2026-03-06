@@ -12,6 +12,7 @@ import { ModuleResolver } from "../utils/moduleResolver";
 import { TsConfigPathsResolver } from "../utils/tsConfigPathsResolver";
 import { Logger } from "../utils/logger";
 import { ClassInfo, FactoryInfo, ValueInfo } from "../types";
+import { GeneratedCodeValidator } from "../utils/generatedCodeValidator";
 
 export const generateCommand = new Command("generate")
   .description("Generate IoC container from TypeScript classes")
@@ -34,6 +35,7 @@ export const generateCommand = new Command("generate")
     "--check-cycles",
     "Only check for circular dependencies without generating",
   )
+  .option("--no-validate", "Disable validation of generated code")
   .option("--verbose", "Enable verbose logging")
   .action(async (options) => {
     try {
@@ -123,7 +125,6 @@ export const generateCommand = new Command("generate")
           "No classes, factories, or values found to generate a container.",
         );
         process.exit(1);
-        return;
       }
 
       // Group everything by module
@@ -215,7 +216,6 @@ export const generateCommand = new Command("generate")
       if (mergedOptions.checkCycles) {
         Logger.success("No circular dependencies found (classes or modules).");
         process.exit(0);
-        return;
       }
 
       // Generate container file
@@ -225,7 +225,7 @@ export const generateCommand = new Command("generate")
         Logger.getColors().cyan + Logger.getColors().bright,
       );
       const pathsResolver = new TsConfigPathsResolver(sourceDir);
-      IoCContainerGenerator.generate(
+      const generatedFiles = IoCContainerGenerator.generate(
         classes,
         outputPath,
         moduleGroupedClasses,
@@ -236,6 +236,16 @@ export const generateCommand = new Command("generate")
         pathsResolver,
         moduleResolver !== null,
       );
+
+      // Validate generated code
+      if (mergedOptions.validate !== false) {
+        try {
+          GeneratedCodeValidator.validate(generatedFiles, sourceDir);
+        } catch (validationError) {
+          Logger.error("Validation failed. Generated code may be invalid.");
+          // We don't exit here to allow user to see stats and output path
+        }
+      }
 
       const statParts: string[] = [];
       if (classes.length > 0)

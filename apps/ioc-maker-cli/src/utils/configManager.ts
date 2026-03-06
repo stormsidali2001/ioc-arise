@@ -10,6 +10,7 @@ export interface IoCConfig {
   interface?: string;
   exclude?: string[];
   checkCycles?: boolean;
+  validate?: boolean;
   verbose?: boolean;
   modules?: Record<string, string[]>;
   factoryPattern?: string;
@@ -64,6 +65,7 @@ export class ConfigManager {
       interface: cliOptions.interface || this.config.interface,
       exclude: cliOptions.exclude || this.config.exclude,
       checkCycles: cliOptions.checkCycles || this.config.checkCycles || false,
+      validate: cliOptions.validate !== undefined ? cliOptions.validate : (this.config.validate !== undefined ? this.config.validate : true),
       verbose: cliOptions.verbose || this.config.verbose || false,
       modules: cliOptions.modules || this.config.modules,
       factoryPattern: cliOptions.factoryPattern || this.config.factoryPattern,

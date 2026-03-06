@@ -24,7 +24,8 @@ export class IoCContainerGenerator {
         moduleGroupedValues?: Map<string, ValueInfo[]>,
         pathsResolver?: TsConfigPathsResolver,
         isModular?: boolean
-    ): void {
+    ): string[] {
+        const generatedFiles: string[] = [];
         // Check for name collisions before generating
         // If moduleGroupedClasses is provided, check all classes from all modules
         const allClassesToCheck = moduleGroupedClasses && moduleGroupedClasses.size > 0
@@ -38,11 +39,13 @@ export class IoCContainerGenerator {
 
         if (isModular) {
             // Generate modular code with separate files for each module
-            this.generateModularFiles(moduleGroupedClasses ?? new Map(), outputPath, factories, values, moduleGroupedFactories, moduleGroupedValues);
+            const modularFiles = this.generateModularFiles(moduleGroupedClasses ?? new Map(), outputPath, factories, values, moduleGroupedFactories, moduleGroupedValues);
+            generatedFiles.push(...modularFiles);
         } else {
             // Generate single flat file
             const containerCode = this.generateFlatCode(classes, outputPath, factories, values);
             writeFileSync(outputPath, containerCode);
+            generatedFiles.push(outputPath);
         }
 
         // Generate type declarations (.d.ts file)
@@ -50,6 +53,9 @@ export class IoCContainerGenerator {
             ? outputPath.replace(/\.gen\.ts$/, '.gen.d.ts')
             : outputPath.replace(/\.ts$/, '.d.ts');
         TypeDeclarationGenerator.generate(classes, typesPath, factories, values, pathsResolver);
+        generatedFiles.push(typesPath);
+
+        return generatedFiles;
     }
 
     private static generateFlatCode(classes: ClassInfo[], outputPath: string, factories?: FactoryInfo[], values?: ValueInfo[]): string {
@@ -131,7 +137,8 @@ ${allRegistrations}
         _values?: ValueInfo[],
         moduleGroupedFactories?: Map<string, FactoryInfo[]>,
         moduleGroupedValues?: Map<string, ValueInfo[]>
-    ): void {
+    ): string[] {
+        const generatedFiles: string[] = [];
         const outputDir = dirname(outputPath);
         const baseFilename = basename(outputPath, '.ts');
         const modulesDir = join(outputDir, 'modules');
@@ -189,6 +196,7 @@ ${allRegistrations}
             const moduleCode = this.generateModuleFile(moduleName, classes, interfaceNames, moduleFilePath, moduleFactories, moduleValues, allClasses);
 
             writeFileSync(moduleFilePath, moduleCode);
+            generatedFiles.push(moduleFilePath);
 
             // Add import for main container file
             const moduleVarName = moduleName.charAt(0).toLowerCase() + moduleName.slice(1);
@@ -200,6 +208,9 @@ ${allRegistrations}
         const dtsFilename = baseFilename.replace(/\.gen$/, '.gen.d');
         const mainContainerCode = this.generateMainContainerFile(allModuleNames, moduleImports, dtsFilename);
         writeFileSync(outputPath, mainContainerCode);
+        generatedFiles.push(outputPath);
+
+        return generatedFiles;
     }
 
     private static generateModuleFile(

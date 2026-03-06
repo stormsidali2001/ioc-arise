@@ -13,26 +13,26 @@
   ],
   "modules": {
     "VocabularyModule": [
-      "src/domain/vocabulary/**",
-      "src/application/vocabulary/**",
-      "src/infra/persistence/vocabulary/**",
-      "src/infra/persistence/source/**"
+      "**/domain/vocabulary/**",
+      "**/application/vocabulary/**",
+      "**/infra/persistence/vocabulary/**",
+      "**/infra/persistence/source/**"
     ],
     "ReviewModule": [
-      "src/domain/review/**",
-      "src/application/review/**",
-      "src/infra/persistence/review/**",
-      "src/infra/services/**"
+      "**/domain/review/**",
+      "**/application/review/**",
+      "**/infra/persistence/review/**",
+      "**/infra/services/**"
     ],
     "SharedModule": [
-      "src/application/shared/**",
-      "src/infra/event-bus/**",
-      "src/infra/shared/**"
+      "**/application/shared/**",
+      "**/infra/event-bus/**",
+      "**/infra/shared/**"
     ],
     "NotificationModule": [
-      "src/application/notifications/**",
-      "src/infra/notifications/**"
+      "**/application/notifications/**",
+      "**/infra/notifications/**"
     ],
-    "StatisticsModule": ["src/application/statistics/**", "src/infra/statistics/**"]
+    "StatisticsModule": ["**/application/statistics/**", "**/infra/statistics/**"]
   }
 }

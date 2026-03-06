@@ -1,5 +1,11 @@
 # @notjustcoders/ioc-arise
 
+## 1.1.31
+
+### Patch Changes
+
+- Feat: implementing type checking for the generated container files
+
 ## 1.1.30
 
 ### Patch Changes

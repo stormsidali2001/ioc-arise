@@ -7,9 +7,9 @@ import type { ContainerRegistry } from './container.gen.d';
 import { UserController } from './use-cases/UserController';
 import { GetUserUseCase } from './use-cases/GetUserUseCase';
 import { CreateUserUseCase } from './use-cases/CreateUserUseCase';
+import { UserRepository } from './repositories/UserRepository';
 import { EmailService } from './services/EmailService';
 import { ApplicationService } from './services/ApplicationService';
-import { UserRepository } from './repositories/UserRepository';
 
 export const container = new Container<ContainerRegistry>();
 
@@ -31,6 +31,11 @@ container.register(CreateUserUseCase, {
   lifecycle: Lifecycle.Singleton,
 });
 
+container.register('IUserRepository', {
+  useClass: UserRepository,
+  lifecycle: Lifecycle.Singleton,
+});
+
 container.register('IEmailService', {
   useClass: EmailService,
   lifecycle: Lifecycle.Singleton,
@@ -39,10 +44,5 @@ container.register('IEmailService', {
 container.register('IApplicationService', {
   useClass: ApplicationService,
   dependencies: [UserController],
-  lifecycle: Lifecycle.Singleton,
-});
-
-container.register('IUserRepository', {
-  useClass: UserRepository,
   lifecycle: Lifecycle.Singleton,
 });
