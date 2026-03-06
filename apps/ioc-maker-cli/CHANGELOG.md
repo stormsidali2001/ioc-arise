@@ -1,5 +1,11 @@
 # @notjustcoders/ioc-arise
 
+## 1.1.29
+
+### Patch Changes
+
+- refactor: updating the print summary with dependencies
+
 ## 1.1.28
 
 ### Patch Changes
