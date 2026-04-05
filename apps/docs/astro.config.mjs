@@ -108,6 +108,10 @@ export default defineConfig({
               label: "Lifecycle Scopes",
               link: "/core-features/scope-example/",
             },
+            {
+              label: "External & Monorepo Types",
+              link: "/core-features/external-types/",
+            },
           ],
         },
         {
