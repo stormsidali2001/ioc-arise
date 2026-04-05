@@ -1,5 +1,11 @@
 # @notjustcoders/ioc-arise
 
+## 1.1.32
+
+### Patch Changes
+
+- feat: Support external packages declarations
+
 ## 1.1.31
 
 ### Patch Changes

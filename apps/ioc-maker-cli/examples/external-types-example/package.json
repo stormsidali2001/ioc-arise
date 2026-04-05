@@ -1,0 +1,9 @@
+{
+  "name": "external-types-example",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Demonstrates ioc-arise resolving DI tokens for types originating in external/sibling monorepo packages.",
+  "dependencies": {
+    "@word-tracker/sync": "workspace:*"
+  }
+}

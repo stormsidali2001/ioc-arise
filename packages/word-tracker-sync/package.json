@@ -1,0 +1,21 @@
+{
+  "name": "@word-tracker/sync",
+  "version": "0.0.1",
+  "description": "Shared sync/replication types for the word-tracker monorepo (example package for ioc-arise external-types feature).",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0"
+  }
+}

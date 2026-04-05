@@ -40,6 +40,10 @@ export class FactoryAnalyzer {
                     interfaces.add(alias);
                 }
 
+                // Collect names re-exported from external packages (e.g. from a monorepo sibling)
+                const externalReExports = this.astParser.extractExternalReExports(root);
+                externalReExports.forEach(name => interfaces.add(name));
+
                 // Collect factory names (exported functions with @factory or pattern match)
                 const functionNodes = this.astParser.findAllFunctions(root);
                 for (const functionNode of functionNodes) {
@@ -83,6 +87,10 @@ export class FactoryAnalyzer {
 
                     const interfaces = this.astParser.extractInterfaces(root);
                     interfaces.forEach(interfaceName => allInterfaces.add(interfaceName));
+
+                    // Collect names re-exported from external packages
+                    const externalReExports = this.astParser.extractExternalReExports(root);
+                    externalReExports.forEach(name => allInterfaces.add(name));
 
                     const classNodes = this.astParser.findAllClasses(root);
                     for (const classNode of classNodes) {
@@ -303,8 +311,12 @@ export class FactoryAnalyzer {
             const isClass = allClassNames.has(typeName);
             const isFactory = allFactoryNames.has(typeName);
 
-            if (isInterface || isClass || isFactory) {
-                const importPath = importMappings.get(typeName) || './';
+            // Also accept types imported directly from external packages (non-relative path)
+            const rawImportPath = importMappings.get(typeName);
+            const isExternalImport = rawImportPath !== undefined && !rawImportPath.startsWith('.');
+
+            if (isInterface || isClass || isFactory || isExternalImport) {
+                const importPath = rawImportPath || './';
                 dependencies.push({
                     name: typeName,
                     importPath,
@@ -337,8 +349,12 @@ export class FactoryAnalyzer {
             const isClass = allClassNames.has(typeName);
             const isFactory = allFactoryNames.has(typeName);
 
-            if (isInterface || isClass || isFactory) {
-                const importPath = importMappings.get(typeName) || './';
+            // Also accept types imported directly from external packages (non-relative path)
+            const rawImportPath = importMappings.get(typeName);
+            const isExternalImport = rawImportPath !== undefined && !rawImportPath.startsWith('.');
+
+            if (isInterface || isClass || isFactory || isExternalImport) {
+                const importPath = rawImportPath || './';
                 dependencies.push({
                     name: typeName,
                     importPath,

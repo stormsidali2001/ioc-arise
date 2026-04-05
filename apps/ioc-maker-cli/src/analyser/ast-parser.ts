@@ -318,7 +318,8 @@ export class ASTParser {
 
         // Handle different import patterns
         // Named imports: import { A, B } from './path'
-        const namedImportsMatch = importText.match(/import\s*{\s*([^}]+)\s*}\s*from/);
+        // Also handles: import type { A, B } from './path'
+        const namedImportsMatch = importText.match(/import(?:\s+type)?\s*{\s*([^}]+)\s*}\s*from/);
         if (namedImportsMatch) {
           const namedImports = namedImportsMatch[1].split(',');
           for (const namedImport of namedImports) {
@@ -878,5 +879,49 @@ export class ASTParser {
     } catch (error) {
       return false;
     }
+  }
+
+  /**
+   * Finds names that are re-exported from external (non-relative) packages.
+   * Handles: export type { IFoo, IBar } from 'some-package'
+   *          export { IFoo } from 'some-package'
+   * These names should be treated as valid DI tokens even though they have no
+   * local declaration.
+   */
+  extractExternalReExports(root: any): string[] {
+    const names: string[] = [];
+    try {
+      const exportStatements = root.findAll({
+        rule: { kind: 'export_statement' }
+      });
+
+      for (const exportNode of exportStatements) {
+        const text = exportNode.text();
+
+        // Only care about re-exports (must have a `from` clause)
+        const fromMatch = text.match(/from\s+['"]([^'"]+)['"]/);
+        if (!fromMatch) continue;
+
+        const fromPath = fromMatch[1];
+        // Skip local re-exports (they will be resolved by following the local file)
+        if (fromPath.startsWith('.')) continue;
+
+        // Extract named exports: export [type] { X, Y as Z } from ...
+        const namedMatch = text.match(/export\s+(?:type\s+)?\{\s*([^}]+)\s*\}/);
+        if (!namedMatch) continue;
+
+        const parts = namedMatch[1].split(',');
+        for (const part of parts) {
+          const trimmed = part.trim();
+          if (!trimmed) continue;
+          // 'OriginalName as LocalName' → use LocalName (the exported symbol)
+          const aliasMatch = trimmed.match(/^(\w+)\s+as\s+(\w+)$/);
+          names.push(aliasMatch ? aliasMatch[2] : trimmed);
+        }
+      }
+    } catch (error) {
+      Logger.warn('Warning: Could not extract external re-exports:', { error });
+    }
+    return names;
   }
 }

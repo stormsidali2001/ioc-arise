@@ -87,3 +87,74 @@ const createTodo = container.resolve('createTodoUseCase');
 createUser('user-1');
 createTodo('user-1', 'Buy groceries');
 ```
+
+## External Package Dependencies
+
+Factory functions can depend on interfaces originating in external npm packages or sibling monorepo packages. The tool handles two shapes automatically.
+
+**Shape 1 — Direct external import:**
+
+```typescript
+// use-cases/createOrderUseCase.ts
+import type { IPaymentGateway } from '@payments/sdk';
+import type { IOrderRepository } from './IOrderRepository';
+
+/**
+ * @factory
+ */
+export function createOrderUseCase(deps: {
+  orderRepository: IOrderRepository;
+  paymentGateway: IPaymentGateway;
+}) {
+  return (orderId: string) => {
+    // ...
+  };
+}
+```
+
+Generated registration:
+
+```typescript
+container.register('createOrderUseCase', {
+  useFactory: (orderRepository, paymentGateway) =>
+    createOrderUseCase({ orderRepository, paymentGateway }),
+  dependencies: ['IOrderRepository', 'IPaymentGateway'],
+  lifecycle: Lifecycle.Singleton
+});
+```
+
+**Shape 2 — Local re-export stub (common monorepo pattern):**
+
+```typescript
+// src/ports/ITombstoneRepository.ts — re-export stub
+export type { ITombstoneRepository } from '@word-tracker/sync';
+
+// src/PermanentlyDeleteWordUseCase.ts
+import type { IWordEntryRepository } from './IWordEntryRepository';        // local
+import type { ITombstoneRepository } from './ports/ITombstoneRepository';  // re-export stub
+
+/**
+ * @factory
+ */
+export function createPermanentlyDeleteWordUseCase(deps: {
+  wordEntryRepository: IWordEntryRepository;
+  tombstoneRepository: ITombstoneRepository;
+}) {
+  return (wordId: string) => {
+    // ...
+  };
+}
+```
+
+Generated registration:
+
+```typescript
+container.register('createPermanentlyDeleteWordUseCase', {
+  useFactory: (wordEntryRepository, tombstoneRepository) =>
+    createPermanentlyDeleteWordUseCase({ wordEntryRepository, tombstoneRepository }),
+  dependencies: ['IWordEntryRepository', 'ITombstoneRepository'],
+  lifecycle: Lifecycle.Singleton
+});
+```
+
+The DI token is always the TypeScript symbol name (`ITombstoneRepository`, `IPaymentGateway`, etc.), matching the convention used for local interfaces. You are responsible for registering a concrete implementation under that token — typically in another module of the same container.

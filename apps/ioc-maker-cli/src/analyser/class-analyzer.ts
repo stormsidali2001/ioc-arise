@@ -35,6 +35,10 @@ export class ClassAnalyzer {
           interfaces.add(alias);
         }
 
+        // Collect names re-exported from external packages (e.g. from a monorepo sibling)
+        const externalReExports = this.astParser.extractExternalReExports(root);
+        externalReExports.forEach(name => interfaces.add(name));
+
         // Collect class names and abstract classes
         const classNodes = this.astParser.findAllClasses(root);
         for (const classNode of classNodes) {
@@ -76,6 +80,10 @@ export class ClassAnalyzer {
           // Collect interfaces
           const interfaces = this.astParser.extractInterfaces(root);
           interfaces.forEach(interfaceName => allInterfaces.add(interfaceName));
+
+          // Collect names re-exported from external packages
+          const externalReExports = this.astParser.extractExternalReExports(root);
+          externalReExports.forEach(name => allInterfaces.add(name));
 
           // Collect class names and abstract classes
           const classNodes = this.astParser.findAllClasses(root);
@@ -322,7 +330,12 @@ export class ClassAnalyzer {
         const isValidFactory = allFactoryNames.has(typeInfo.resolvedType);
         const isValidValue = allValueNames.has(typeInfo.resolvedType);
 
-        return isValidClass || isValidInterface || isValidAbstractClass || isValidFactory || isValidValue;
+        // Also accept types imported directly from external packages (non-relative path).
+        // This covers: import type { IFoo } from 'some-package'
+        const rawImportPath = importMappings.get(typeInfo.originalType) || importMappings.get(typeInfo.resolvedType);
+        const isExternalImport = rawImportPath !== undefined && !rawImportPath.startsWith('.');
+
+        return isValidClass || isValidInterface || isValidAbstractClass || isValidFactory || isValidValue || isExternalImport;
       })
       .map(typeInfo => {
         // Get import path from import mappings, fallback to resolvedType if not found

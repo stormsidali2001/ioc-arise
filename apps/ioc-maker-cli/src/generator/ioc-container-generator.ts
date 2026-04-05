@@ -97,10 +97,15 @@ export class IoCContainerGenerator {
             });
         });
 
+        // Collect concrete class names — a dep whose name matches a registered class is
+        // referenced by its constructor (not a string token).  Everything else (interfaces,
+        // external types, factories, values) uses a string token.
+        const classNames = new Set(classes.map(c => c.name));
+
         const imports = this.generateImports(classes, outputPath, factories, values, classes, interfaceNames, abstractClassNames);
-        const classRegistrations = this.generateRegistrations(classes, interfaceNames, '', abstractClassNames);
+        const classRegistrations = this.generateRegistrations(classes, interfaceNames, '', abstractClassNames, classNames);
         const factoryRegistrations = factories && factories.length > 0
-            ? this.generateFactoryRegistrations(factories, interfaceNames, '', abstractClassNames)
+            ? this.generateFactoryRegistrations(factories, interfaceNames, '', abstractClassNames, classNames)
             : '';
         const valueRegistrations = values && values.length > 0
             ? this.generateValueRegistrations(values, '')
@@ -146,8 +151,9 @@ ${allRegistrations}
         // Create modules directory
         mkdirSync(modulesDir, { recursive: true });
 
-        // Collect all interface names across all modules
+        // Collect all interface names and class names across all modules
         const allClasses = Array.from(moduleGroupedClasses.values()).flat();
+        const classNames = new Set(allClasses.map(c => c.name));
         const interfaceNames = new Set<string>();
         allClasses.forEach(cls => {
             if (cls.interfaceName) {
@@ -193,7 +199,7 @@ ${allRegistrations}
 
             const moduleFilename = `${moduleName.charAt(0).toLowerCase() + moduleName.slice(1)}.module.ts`;
             const moduleFilePath = join(modulesDir, moduleFilename);
-            const moduleCode = this.generateModuleFile(moduleName, classes, interfaceNames, moduleFilePath, moduleFactories, moduleValues, allClasses);
+            const moduleCode = this.generateModuleFile(moduleName, classes, interfaceNames, moduleFilePath, moduleFactories, moduleValues, allClasses, classNames);
 
             writeFileSync(moduleFilePath, moduleCode);
             generatedFiles.push(moduleFilePath);
@@ -220,7 +226,8 @@ ${allRegistrations}
         moduleFilePath: string,
         factories?: FactoryInfo[],
         values?: ValueInfo[],
-        allClasses: ClassInfo[] = []
+        allClasses: ClassInfo[] = [],
+        classNames: Set<string> = new Set()
     ): string {
         // Collect abstract class names that are dependencies
         const abstractClassNames = new Set<string>();
@@ -236,9 +243,9 @@ ${allRegistrations}
 
         const imports = this.generateImports(classes, moduleFilePath, factories, values, allClasses, interfaceNames, abstractClassNames);
 
-        const classRegistrations = this.generateModuleRegistrations(classes, interfaceNames, abstractClassNames);
+        const classRegistrations = this.generateModuleRegistrations(classes, interfaceNames, abstractClassNames, classNames);
         const factoryRegistrations = factories && factories.length > 0
-            ? this.generateModuleFactoryRegistrations(factories, interfaceNames, abstractClassNames)
+            ? this.generateModuleFactoryRegistrations(factories, interfaceNames, abstractClassNames, classNames)
             : '';
         const valueRegistrations = values && values.length > 0
             ? this.generateModuleValueRegistrations(values)
@@ -267,7 +274,8 @@ ${allRegistrations};
     private static generateModuleFactoryRegistrations(
         factories: FactoryInfo[],
         interfaceNames: Set<string>,
-        abstractClassNames: Set<string> = new Set()
+        abstractClassNames: Set<string> = new Set(),
+        classNames: Set<string> = new Set()
     ): string {
         return factories.map(factory => {
             const token = factory.token ? `'${factory.token}'` : `'${factory.name}'`;
@@ -276,7 +284,8 @@ ${allRegistrations};
                 ? `, dependencies: [${factory.dependencies.map(dep => {
                     if (interfaceNames.has(dep.name)) return `'${dep.name}'`;
                     if (abstractClassNames.has(dep.name)) return `'${dep.name}'`;
-                    return dep.name;
+                    if (classNames.has(dep.name)) return dep.name;
+                    return `'${dep.name}'`;
                 }).join(', ')}]`
                 : '';
 
@@ -437,7 +446,8 @@ ${registrations};`);
     private static generateModuleRegistrations(
         classes: ClassInfo[],
         interfaceNames: Set<string>,
-        abstractClassNames: Set<string> = new Set()
+        abstractClassNames: Set<string> = new Set(),
+        classNames: Set<string> = new Set()
     ): string {
         return classes.map(cls => {
             // Determine registration token
@@ -450,18 +460,10 @@ ${registrations};`);
             // Generate dependencies array
             const dependencies = cls.dependencies.length > 0
                 ? `, dependencies: [${cls.dependencies.map(dep => {
-                    // If dependency is an interface, use string token
-                    if (interfaceNames.has(dep.name)) {
-                        return `'${dep.name}'`;
-                    }
-
-                    // If dependency is an abstract class, use string token
-                    if (abstractClassNames.has(dep.name)) {
-                        return `'${dep.name}'`;
-                    }
-
-                    // Use original class name
-                    return dep.name;
+                    if (interfaceNames.has(dep.name)) return `'${dep.name}'`;
+                    if (abstractClassNames.has(dep.name)) return `'${dep.name}'`;
+                    if (classNames.has(dep.name)) return dep.name;
+                    return `'${dep.name}'`;
                 }).join(', ')}]`
                 : '';
 
@@ -593,7 +595,8 @@ ${registrations};`);
         classes: ClassInfo[],
         interfaceNames: Set<string>,
         indent: string = '',
-        abstractClassNames: Set<string> = new Set()
+        abstractClassNames: Set<string> = new Set(),
+        classNames: Set<string> = new Set()
     ): string {
         return classes.map(cls => {
             // Determine registration token:
@@ -609,18 +612,10 @@ ${registrations};`);
             // Generate dependencies array
             const dependencies = cls.dependencies.length > 0
                 ? `\n${indent}  dependencies: [${cls.dependencies.map(dep => {
-                    // If dependency is an interface, use string token
-                    if (interfaceNames.has(dep.name)) {
-                        return `'${dep.name}'`;
-                    }
-
-                    // If dependency is an abstract class, use string token
-                    if (abstractClassNames.has(dep.name)) {
-                        return `'${dep.name}'`;
-                    }
-
-                    // Use original class name
-                    return dep.name;
+                    if (interfaceNames.has(dep.name)) return `'${dep.name}'`;
+                    if (abstractClassNames.has(dep.name)) return `'${dep.name}'`;
+                    if (classNames.has(dep.name)) return dep.name;
+                    return `'${dep.name}'`;
                 }).join(', ')}],`
                 : '';
 
@@ -640,7 +635,8 @@ ${indent}});`;
         factories: FactoryInfo[],
         interfaceNames: Set<string>,
         indent: string = '',
-        abstractClassNames: Set<string> = new Set()
+        abstractClassNames: Set<string> = new Set(),
+        classNames: Set<string> = new Set()
     ): string {
         return factories.map(factory => {
             // Use token if provided, otherwise use function name directly
@@ -651,18 +647,10 @@ ${indent}});`;
             // Generate dependencies array
             const dependencies = factory.dependencies.length > 0
                 ? `\n${indent}  dependencies: [${factory.dependencies.map(dep => {
-                    // If dependency is an interface, use string token
-                    if (interfaceNames.has(dep.name)) {
-                        return `'${dep.name}'`;
-                    }
-
-                    // If dependency is an abstract class, use string token
-                    if (abstractClassNames.has(dep.name)) {
-                        return `'${dep.name}'`;
-                    }
-
-                    // Use original class name
-                    return dep.name;
+                    if (interfaceNames.has(dep.name)) return `'${dep.name}'`;
+                    if (abstractClassNames.has(dep.name)) return `'${dep.name}'`;
+                    if (classNames.has(dep.name)) return dep.name;
+                    return `'${dep.name}'`;
                 }).join(', ')}],`
                 : '';
 

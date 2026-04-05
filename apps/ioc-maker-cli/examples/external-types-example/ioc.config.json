@@ -1,0 +1,4 @@
+{
+  "source": "./src",
+  "output": "./src/container.gen.ts"
+}

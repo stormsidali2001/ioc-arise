@@ -1,0 +1,154 @@
+---
+title: External & Monorepo Types
+description: Resolve DI tokens for interfaces that originate in external npm packages or sibling monorepo packages
+sidebar:
+  order: 7
+---
+
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+
+ioc-arise resolves DI tokens for constructor and factory dependencies typed with interfaces from **external npm packages** or **sibling monorepo packages** — not just interfaces defined in the analyzed source tree.
+
+The convention is identical to local interfaces: the **TypeScript symbol name** (e.g., `ITombstoneRepository`) becomes the DI token string. You are responsible for registering a concrete implementation under that token (e.g., in another module).
+
+<Aside type="tip">
+  This is the standard pattern for monorepo architectures where a shared-types or sync package exports the interfaces and each consuming package provides its own implementation.
+</Aside>
+
+## Two Supported Shapes
+
+### Shape 1 — Direct External Import
+
+Import the interface directly from the external package and use it as a constructor or factory parameter type.
+
+## Step 1: Write Your Code
+
+```typescript
+// services/OrderService.ts
+import type { IPaymentGateway } from '@payments/sdk';
+import type { IOrderService } from './IOrderService';
+
+export class OrderService implements IOrderService {
+  constructor(
+    private gateway: IPaymentGateway,
+  ) {}
+}
+```
+
+## Step 2: Generate Container
+
+```bash
+npx @notjustcoders/ioc-arise generate
+```
+
+## Step 3: Generated Code
+
+```typescript
+container.register('IOrderService', {
+  useClass: OrderService,
+  dependencies: ['IPaymentGateway'],
+  lifecycle: Lifecycle.Singleton,
+});
+```
+
+`IPaymentGateway` is included as a dependency token even though its definition lives in `@payments/sdk`. Register the concrete implementation under `'IPaymentGateway'` elsewhere in your container setup.
+
+---
+
+### Shape 2 — Local Re-export Stub
+
+This is the most common monorepo pattern. A local file re-exports a type from a sibling package, and consuming files import from that local stub.
+
+## Step 1: Write Your Code
+
+**Project layout:**
+
+```
+src/
+├── ports/
+│   └── ITombstoneRepository.ts   ← re-export stub
+├── IWordEntryRepository.ts        ← locally defined interface
+└── PermanentlyDeleteWordUseCase.ts
+```
+
+**Re-export stub:**
+
+```typescript
+// src/ports/ITombstoneRepository.ts
+export type { ITombstoneRepository } from '@word-tracker/sync';
+```
+
+**Factory using both a local and an external interface:**
+
+```typescript
+// src/PermanentlyDeleteWordUseCase.ts
+import type { IWordEntryRepository } from './IWordEntryRepository';        // local
+import type { ITombstoneRepository } from './ports/ITombstoneRepository';  // re-export stub
+
+/**
+ * @factory
+ */
+export function createPermanentlyDeleteWordUseCase(deps: {
+  wordEntryRepository: IWordEntryRepository;
+  tombstoneRepository: ITombstoneRepository;
+}) {
+  return (wordId: string) => {
+    const entry = deps.wordEntryRepository.findById(wordId);
+    deps.tombstoneRepository.markDeleted(wordId);
+  };
+}
+```
+
+## Step 2: Generate Container
+
+```bash
+npx @notjustcoders/ioc-arise generate
+```
+
+## Step 3: Generated Code
+
+**Before this feature (broken):**
+
+```typescript
+// tombstoneRepository was silently dropped
+container.register('createPermanentlyDeleteWordUseCase', {
+  useFactory: (wordEntryRepository) =>
+    createPermanentlyDeleteWordUseCase({ wordEntryRepository, tombstoneRepository }),
+  dependencies: ['IWordEntryRepository'],
+});
+```
+
+**After this feature (correct):**
+
+```typescript
+container.register('createPermanentlyDeleteWordUseCase', {
+  useFactory: (wordEntryRepository, tombstoneRepository) =>
+    createPermanentlyDeleteWordUseCase({ wordEntryRepository, tombstoneRepository }),
+  dependencies: ['IWordEntryRepository', 'ITombstoneRepository'],
+  lifecycle: Lifecycle.Singleton,
+});
+```
+
+## Step 4: Use It
+
+Register a concrete implementation under the external token in your container setup, then resolve normally:
+
+```typescript
+// Register the concrete sync implementation from the sibling package
+import { SyncTombstoneRepository } from '@word-tracker/sync';
+
+container.register('ITombstoneRepository', {
+  useClass: SyncTombstoneRepository,
+  lifecycle: Lifecycle.Singleton,
+});
+
+// Resolve the factory — all dependencies are satisfied
+const deleteWord = container.resolve('createPermanentlyDeleteWordUseCase');
+await deleteWord('word-123');
+```
+
+## Token Convention
+
+<Aside type="note">
+  The DI token for any interface — local, external, or re-exported — is always the **TypeScript symbol name**. ioc-arise traces re-export stubs back to the original symbol name, so `ITombstoneRepository` imported from `./ports/ITombstoneRepository` produces the token `'ITombstoneRepository'`, not a path-based identifier.
+</Aside>

@@ -13,6 +13,7 @@ A command-line tool that automatically generates type-safe IoC (Inversion of Con
 - [Examples](#examples)
   - [Basic Example](#basic-example)
   - [Instance Factories](#instance-factories)
+  - [External & Monorepo Types](#external--monorepo-types)
 - [Usage in Your Code](#usage-in-your-code)
 - [Development](#development)
 - [Limitations](#limitations)
@@ -29,6 +30,7 @@ A command-line tool that automatically generates type-safe IoC (Inversion of Con
 - 🔌 **Instance Factories**: Functions with an explicit interface return type automatically act as implementation providers for that interface
 - 💎 **Value Objects**: Supports `@value`-annotated constants registered with `useValue`
 - 📦 **Modular Containers**: Generates per-module files with `ContainerModule` for large projects
+- 🌐 **External Package Types**: Constructor and factory parameters typed with interfaces from external npm packages or sibling monorepo packages are correctly resolved using the TypeScript symbol name as the DI token
 
 ## Installation
 
@@ -190,6 +192,61 @@ container.register('IUserRepository', {
 
 > **Uniqueness rule**: an interface can have at most one implementation provider — either a class that `implements` it, or an instance factory that returns it. Registering both throws an error at generation time.
 
+### External & Monorepo Types
+
+Dependencies typed with interfaces from external npm packages or sibling monorepo packages are fully supported. The TypeScript symbol name is used as the DI token — the same convention as for local interfaces.
+
+**Shape 1 — Direct external import:**
+
+```typescript
+// services/OrderService.ts
+import type { IPaymentGateway } from '@payments/sdk';
+import type { IOrderService } from './IOrderService';
+
+export class OrderService implements IOrderService {
+  constructor(private gateway: IPaymentGateway) {}
+}
+```
+
+Generated registration:
+
+```typescript
+container.register('IOrderService', {
+  useClass: OrderService,
+  dependencies: ['IPaymentGateway'],
+  lifecycle: Lifecycle.Singleton,
+});
+```
+
+**Shape 2 — Local re-export stub (common monorepo pattern):**
+
+```typescript
+// src/ports/ITombstoneRepository.ts — re-export stub
+export type { ITombstoneRepository } from '@word-tracker/sync';
+
+// src/PermanentlyDeleteWordUseCase.ts — factory using it
+import type { IWordEntryRepository } from './IWordEntryRepository';        // local
+import type { ITombstoneRepository } from './ports/ITombstoneRepository';  // re-export stub
+
+/** @factory */
+export function createPermanentlyDeleteWordUseCase(deps: {
+  wordEntryRepository: IWordEntryRepository;
+  tombstoneRepository: ITombstoneRepository;
+}) { ... }
+```
+
+Generated registration:
+
+```typescript
+container.register('createPermanentlyDeleteWordUseCase', {
+  useFactory: (wordEntryRepository, tombstoneRepository) =>
+    createPermanentlyDeleteWordUseCase({ wordEntryRepository, tombstoneRepository }),
+  dependencies: ['IWordEntryRepository', 'ITombstoneRepository'],
+});
+```
+
+The token for the external type (`ITombstoneRepository`) is the TypeScript symbol name. You are responsible for registering a concrete implementation under that token elsewhere (e.g., in another module).
+
 ## Usage in Your Code
 
 ```typescript
@@ -213,7 +270,7 @@ pnpm run build
 
 ## Limitations
 
-- Constructor parameters must be typed with classes that are also analyzed
+- Constructor parameters typed with non-interface types (e.g., concrete classes from external packages) are not auto-resolved
 - Circular dependencies are detected and warned about
 - Only analyzes TypeScript files (`.ts` extension)
 
