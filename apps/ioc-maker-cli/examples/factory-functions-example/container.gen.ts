@@ -4,31 +4,31 @@
  */
 import { Container, Lifecycle } from '@notjustcoders/di-container';
 import type { ContainerRegistry } from './container.gen.d';
-import { UserRepository } from './repositories/UserRepository';
-import { TodoRepository } from './repositories/TodoRepository';
-import { createUserUseCase } from './factories/userUseCaseFactory';
 import { createTodoUseCase } from './factories/todoUseCaseFactory';
+import { createUserUseCase } from './factories/userUseCaseFactory';
+import { TodoRepository } from './repositories/TodoRepository';
+import { UserRepository } from './repositories/UserRepository';
 
 export const container = new Container<ContainerRegistry>();
-
-container.register('IUserRepository', {
-  useClass: UserRepository,
-  lifecycle: Lifecycle.Singleton,
-});
 
 container.register('ITodoRepository', {
   useClass: TodoRepository,
   lifecycle: Lifecycle.Singleton,
 });
 
-container.register('createUserUseCase', {
-  useFactory: createUserUseCase,
-  dependencies: ['IUserRepository'],
+container.register('IUserRepository', {
+  useClass: UserRepository,
   lifecycle: Lifecycle.Singleton,
 });
 
 container.register('createTodoUseCase', {
   useFactory: (userRepo, todoRepo) => createTodoUseCase({ userRepo, todoRepo }),
   dependencies: ['IUserRepository', 'ITodoRepository'],
+  lifecycle: Lifecycle.Singleton,
+});
+
+container.register('createUserUseCase', {
+  useFactory: createUserUseCase,
+  dependencies: ['IUserRepository'],
   lifecycle: Lifecycle.Singleton,
 });

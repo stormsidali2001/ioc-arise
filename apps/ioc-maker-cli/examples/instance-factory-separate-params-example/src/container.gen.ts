@@ -4,10 +4,10 @@
  */
 import { Container, Lifecycle } from '@notjustcoders/di-container';
 import type { ContainerRegistry } from './container.gen.d';
-import { ProductService } from './services/ProductService';
-import { createProductRepository } from './repositories/createProductRepository';
 import { appConfig } from './config/appConfig';
 import { consoleLogger } from './logger/consoleLogger';
+import { createProductRepository } from './repositories/createProductRepository';
+import { ProductService } from './services/ProductService';
 
 export const container = new Container<ContainerRegistry>();
 

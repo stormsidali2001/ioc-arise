@@ -5,8 +5,8 @@
  * Module: UserModule
  */
 import { ContainerModule, Lifecycle } from '@notjustcoders/di-container';
-import { UserRepository } from '../user/UserRepository';
 import { createFindUserUseCase } from '../user/factories/createFindUserUseCase';
+import { UserRepository } from '../user/UserRepository';
 
 export const userModule = new ContainerModule()
   .register('IUserRepository', { useClass: UserRepository, lifecycle: Lifecycle.Singleton })

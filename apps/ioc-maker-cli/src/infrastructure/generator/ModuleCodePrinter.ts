@@ -29,11 +29,13 @@ export class ModuleCodePrinter {
     const outputDir = outputPath.substring(0, outputPath.lastIndexOf('/'));
     const modulesDir = `${outputDir}/modules`;
 
-    const allModuleNames = new Set<string>([
-      ...moduleGroupedClasses.keys(),
-      ...(moduleGroupedFactories?.keys() ?? []),
-      ...(moduleGroupedValues?.keys() ?? []),
-    ]);
+    const allModuleNames = new Set<string>(
+      [
+        ...moduleGroupedClasses.keys(),
+        ...(moduleGroupedFactories?.keys() ?? []),
+        ...(moduleGroupedValues?.keys() ?? []),
+      ].sort()
+    );
 
     const moduleFiles: ModuleFile[] = [];
     const moduleImports: string[] = [];

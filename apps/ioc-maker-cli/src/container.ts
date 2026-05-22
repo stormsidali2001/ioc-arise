@@ -8,11 +8,18 @@ import { AnalyzeProjectUseCase } from './application/AnalyzeProjectUseCase';
 import { GenerateContainerUseCase } from './application/GenerateContainerUseCase';
 import { DetectCyclesUseCase } from './application/DetectCyclesUseCase';
 import { ValidateOutputUseCase } from './application/ValidateOutputUseCase';
+import type { ICodeWriter } from './application/ICodeWriter';
 
-function buildContainer(sourceDir: string, interfacePattern?: string, factoryPattern?: string, valuePattern?: string) {
+function buildContainer(
+  sourceDir: string,
+  interfacePattern?: string,
+  factoryPattern?: string,
+  valuePattern?: string,
+  codeWriter?: ICodeWriter
+) {
   const parser = new TsMorphTypeParser();
   const fileDiscovery = new GlobFileDiscovery();
-  const writer = new FsCodeWriter();
+  const writer = codeWriter ?? new FsCodeWriter();
   const classAnalyzer = new ClassAnalyzer(sourceDir, interfacePattern);
   const factoryAnalyzer = new FactoryAnalyzer(sourceDir, parser, factoryPattern);
   const valueAnalyzer = new ValueAnalyzer(sourceDir, valuePattern);

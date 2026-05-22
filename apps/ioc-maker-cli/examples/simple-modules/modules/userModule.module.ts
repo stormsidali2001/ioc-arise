@@ -5,11 +5,11 @@
  * Module: UserModule
  */
 import { ContainerModule, Lifecycle } from '@notjustcoders/di-container';
-import { UserService } from '../user/UserService';
-import { UserRepository } from '../user/UserRepository';
 import { User } from '../user/User';
+import { UserRepository } from '../user/UserRepository';
+import { UserService } from '../user/UserService';
 
 export const userModule = new ContainerModule()
-  .register('IUserService', { useClass: UserService, dependencies: ['IUserRepository'], lifecycle: Lifecycle.Singleton })
+  .register(User, { useClass: User, lifecycle: Lifecycle.Singleton })
   .register('IUserRepository', { useClass: UserRepository, lifecycle: Lifecycle.Singleton })
-  .register(User, { useClass: User, lifecycle: Lifecycle.Singleton });
+  .register('IUserService', { useClass: UserService, dependencies: ['IUserRepository'], lifecycle: Lifecycle.Singleton });

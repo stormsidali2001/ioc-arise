@@ -5,11 +5,11 @@
  * Module: CoreModule
  */
 import { ContainerModule, Lifecycle } from '@notjustcoders/di-container';
-import { createCache } from '../../core/createCache';
-import { consoleLogger } from '../../core/consoleLogger';
 import { appConfig } from '../../core/appConfig';
+import { consoleLogger } from '../../core/consoleLogger';
+import { createCache } from '../../core/createCache';
 
 export const coreModule = new ContainerModule()
   .register('ICache', { useFactory: createCache, lifecycle: Lifecycle.Transient })
-  .register('ILogger', { useValue: consoleLogger, lifecycle: Lifecycle.Singleton })
-  .register('IAppConfig', { useValue: appConfig, lifecycle: Lifecycle.Singleton });
+  .register('IAppConfig', { useValue: appConfig, lifecycle: Lifecycle.Singleton })
+  .register('ILogger', { useValue: consoleLogger, lifecycle: Lifecycle.Singleton });

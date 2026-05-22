@@ -4,16 +4,16 @@
  *
  * This file provides type-safe resolution for string-based tokens.
  */
-import type { UserRepository } from './implementations/UserRepository';
 import type { ProductRepository } from './implementations/ProductRepository';
-import type { UserUseCase } from './use-cases/UserUseCase';
-import type { ProductUseCase } from './use-cases/ProductUseCase';
+import type { UserRepository } from './implementations/UserRepository';
 import type { InternalProductNestedUseCase } from './use-cases/InternalProductNestedUseCase';
+import type { ProductUseCase } from './use-cases/ProductUseCase';
+import type { UserUseCase } from './use-cases/UserUseCase';
 
 export interface ContainerRegistry {
-  'AbstractUserRepository': UserRepository;
   'AbstractProductRepository': ProductRepository;
-  'UserUseCase': UserUseCase;
-  'ProductUseCase': ProductUseCase;
+  'AbstractUserRepository': UserRepository;
   'InternalProductNestedUseCase': InternalProductNestedUseCase;
+  'ProductUseCase': ProductUseCase;
+  'UserUseCase': UserUseCase;
 }

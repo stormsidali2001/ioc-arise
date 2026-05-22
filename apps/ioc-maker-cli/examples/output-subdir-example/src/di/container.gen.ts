@@ -4,18 +4,18 @@
  */
 import { Container, Lifecycle } from '@notjustcoders/di-container';
 import type { ContainerRegistry } from './container.gen.d';
-import { UserService } from '../services/UserService';
 import { InMemoryUserRepository } from '../repositories/InMemoryUserRepository';
+import { UserService } from '../services/UserService';
 
 export const container = new Container<ContainerRegistry>();
+
+container.register('IUserRepository', {
+  useClass: InMemoryUserRepository,
+  lifecycle: Lifecycle.Singleton,
+});
 
 container.register('IUserService', {
   useClass: UserService,
   dependencies: ['IUserRepository'],
-  lifecycle: Lifecycle.Singleton,
-});
-
-container.register('IUserRepository', {
-  useClass: InMemoryUserRepository,
   lifecycle: Lifecycle.Singleton,
 });

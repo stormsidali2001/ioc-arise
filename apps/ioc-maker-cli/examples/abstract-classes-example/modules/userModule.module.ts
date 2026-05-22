@@ -5,9 +5,9 @@
  * Module: UserModule
  */
 import { ContainerModule, Lifecycle } from '@notjustcoders/di-container';
-import { UserUseCase } from '../use-cases/UserUseCase';
 import { UserRepository } from '../implementations/UserRepository';
+import { UserUseCase } from '../use-cases/UserUseCase';
 
 export const userModule = new ContainerModule()
-  .register(UserUseCase, { useClass: UserUseCase, dependencies: ['AbstractUserRepository'], lifecycle: Lifecycle.Singleton })
-  .register('AbstractUserRepository', { useClass: UserRepository, lifecycle: Lifecycle.Singleton });
+  .register('AbstractUserRepository', { useClass: UserRepository, lifecycle: Lifecycle.Singleton })
+  .register(UserUseCase, { useClass: UserUseCase, dependencies: ['AbstractUserRepository'], lifecycle: Lifecycle.Singleton });

@@ -6,10 +6,6 @@
  */
 import type { GetStatisticsUseCase } from '../application/statistics/GetStatisticsUseCase';
 import { createOnReviewSessionEndedDailyReminder } from '../application/notifications/NotificationEntities';
-import { createStartReviewSessionUseCase } from '../infra/services/ReviewServices';
-import { createRecordAnswerUseCase } from '../infra/services/ReviewServices';
-import { createEndReviewSessionUseCase } from '../infra/services/ReviewServices';
-import { createOnReviewSessionEnded } from '../infra/services/ReviewServices';
 import { createAddWordUseCase } from '../infra/persistence/vocabulary/VocabularyFactories';
 import { createGetWordUseCase } from '../infra/persistence/vocabulary/VocabularyFactories';
 import { createSearchWordsUseCase } from '../infra/persistence/vocabulary/VocabularyFactories';
@@ -20,6 +16,10 @@ import { createCreateSourceUseCase } from '../infra/persistence/vocabulary/Vocab
 import { createGetAllSourcesUseCase } from '../infra/persistence/vocabulary/VocabularyFactories';
 import { createUpdateSourceUseCase } from '../infra/persistence/vocabulary/VocabularyFactories';
 import { createDeleteSourceUseCase } from '../infra/persistence/vocabulary/VocabularyFactories';
+import { createStartReviewSessionUseCase } from '../infra/services/ReviewServices';
+import { createRecordAnswerUseCase } from '../infra/services/ReviewServices';
+import { createEndReviewSessionUseCase } from '../infra/services/ReviewServices';
+import { createOnReviewSessionEnded } from '../infra/services/ReviewServices';
 
 export interface ContainerRegistry {
   'INotificationDecisionService': INotificationDecisionService;
@@ -31,11 +31,6 @@ export interface ContainerRegistry {
   'GetStatisticsUseCase': GetStatisticsUseCase;
   'ScheduleDailyReviewReminderUseCase': ScheduleDailyReviewReminderUseCase;
   'createOnReviewSessionEndedDailyReminder': ReturnType<typeof createOnReviewSessionEndedDailyReminder>;
-  'IReviewSessionRepository': IReviewSessionRepository;
-  'createStartReviewSessionUseCase': ReturnType<typeof createStartReviewSessionUseCase>;
-  'createRecordAnswerUseCase': ReturnType<typeof createRecordAnswerUseCase>;
-  'createEndReviewSessionUseCase': ReturnType<typeof createEndReviewSessionUseCase>;
-  'createOnReviewSessionEnded': ReturnType<typeof createOnReviewSessionEnded>;
   'IWordEntryRepository': IWordEntryRepository;
   'ISourceRepository': ISourceRepository;
   'createAddWordUseCase': ReturnType<typeof createAddWordUseCase>;
@@ -48,7 +43,12 @@ export interface ContainerRegistry {
   'createGetAllSourcesUseCase': ReturnType<typeof createGetAllSourcesUseCase>;
   'createUpdateSourceUseCase': ReturnType<typeof createUpdateSourceUseCase>;
   'createDeleteSourceUseCase': ReturnType<typeof createDeleteSourceUseCase>;
+  'IReviewSessionRepository': IReviewSessionRepository;
+  'createStartReviewSessionUseCase': ReturnType<typeof createStartReviewSessionUseCase>;
+  'createRecordAnswerUseCase': ReturnType<typeof createRecordAnswerUseCase>;
+  'createEndReviewSessionUseCase': ReturnType<typeof createEndReviewSessionUseCase>;
+  'createOnReviewSessionEnded': ReturnType<typeof createOnReviewSessionEnded>;
+  'sm2StateStore': typeof sm2StateStore;
   'IEventBus': IEventBus;
   'IUuidGenerator': IUuidGenerator;
-  'sm2StateStore': typeof sm2StateStore;
 }

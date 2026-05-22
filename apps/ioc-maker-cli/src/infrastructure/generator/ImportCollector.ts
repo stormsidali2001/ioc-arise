@@ -51,6 +51,7 @@ export class ImportCollector {
     });
 
     return Array.from(importMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
       .map(([path, names]) => {
         const sorted = Array.from(names).sort();
         return `import { ${sorted.join(', ')} } from '${path}';`;

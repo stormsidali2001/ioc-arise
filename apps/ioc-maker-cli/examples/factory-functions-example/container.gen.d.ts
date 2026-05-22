@@ -4,14 +4,14 @@
  *
  * This file provides type-safe resolution for string-based tokens.
  */
-import type { IUserRepository } from './repositories/IUserRepository';
 import type { ITodoRepository } from './repositories/ITodoRepository';
-import { createUserUseCase } from './factories/userUseCaseFactory';
+import type { IUserRepository } from './repositories/IUserRepository';
 import { createTodoUseCase } from './factories/todoUseCaseFactory';
+import { createUserUseCase } from './factories/userUseCaseFactory';
 
 export interface ContainerRegistry {
-  'IUserRepository': IUserRepository;
   'ITodoRepository': ITodoRepository;
-  'createUserUseCase': ReturnType<typeof createUserUseCase>;
+  'IUserRepository': IUserRepository;
   'createTodoUseCase': ReturnType<typeof createTodoUseCase>;
+  'createUserUseCase': ReturnType<typeof createUserUseCase>;
 }

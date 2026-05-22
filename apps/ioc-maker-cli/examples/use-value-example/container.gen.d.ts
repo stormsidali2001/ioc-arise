@@ -4,10 +4,10 @@
  *
  * This file provides type-safe resolution for string-based tokens.
  */
-import type { IUserService } from './services/IUserService';
 import type { IConfigService } from './services/IConfigService';
+import type { IUserService } from './services/IUserService';
 
 export interface ContainerRegistry {
-  'IUserService': IUserService;
   'IConfigService': IConfigService;
+  'IUserService': IUserService;
 }

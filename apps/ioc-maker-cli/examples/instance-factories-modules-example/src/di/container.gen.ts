@@ -4,12 +4,12 @@
  */
 import { Container } from '@notjustcoders/di-container';
 import type { ContainerRegistry } from './container.gen.d';
-import { userModule } from './modules/userModule.module';
-import { productModule } from './modules/productModule.module';
 import { coreModule } from './modules/coreModule.module';
+import { productModule } from './modules/productModule.module';
+import { userModule } from './modules/userModule.module';
 
 export const container = new Container<ContainerRegistry>();
 
-container.registerModule(userModule);
-container.registerModule(productModule);
 container.registerModule(coreModule);
+container.registerModule(productModule);
+container.registerModule(userModule);

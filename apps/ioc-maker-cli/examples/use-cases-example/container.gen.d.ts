@@ -4,18 +4,18 @@
  *
  * This file provides type-safe resolution for string-based tokens.
  */
-import type { IEmailService } from './services/IEmailService';
-import type { IApplicationService } from './services/IApplicationService';
 import type { IUserRepository } from './repositories/IUserRepository';
-import type { UserController } from './use-cases/UserController';
-import type { GetUserUseCase } from './use-cases/GetUserUseCase';
+import type { IApplicationService } from './services/IApplicationService';
+import type { IEmailService } from './services/IEmailService';
 import type { CreateUserUseCase } from './use-cases/CreateUserUseCase';
+import type { GetUserUseCase } from './use-cases/GetUserUseCase';
+import type { UserController } from './use-cases/UserController';
 
 export interface ContainerRegistry {
-  'IEmailService': IEmailService;
-  'IApplicationService': IApplicationService;
   'IUserRepository': IUserRepository;
-  'UserController': UserController;
-  'GetUserUseCase': GetUserUseCase;
+  'IApplicationService': IApplicationService;
+  'IEmailService': IEmailService;
   'CreateUserUseCase': CreateUserUseCase;
+  'GetUserUseCase': GetUserUseCase;
+  'UserController': UserController;
 }

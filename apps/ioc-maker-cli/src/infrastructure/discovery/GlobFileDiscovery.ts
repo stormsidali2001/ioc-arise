@@ -4,7 +4,7 @@ import { IFileDiscovery } from '../../application/IFileDiscovery';
 
 export class GlobFileDiscovery implements IFileDiscovery {
   async discover(sourceDir: string, excludePatterns: string[] = []): Promise<string[]> {
-    return glob(join(sourceDir, '**/*.ts'), {
+    const files = await glob(join(sourceDir, '**/*.ts'), {
       ignore: [
         '**/node_modules/**',
         '**/dist/**',
@@ -14,5 +14,6 @@ export class GlobFileDiscovery implements IFileDiscovery {
         ...excludePatterns,
       ],
     });
+    return files.sort();
   }
 }

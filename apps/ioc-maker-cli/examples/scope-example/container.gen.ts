@@ -4,15 +4,16 @@
  */
 import { Container, Lifecycle } from '@notjustcoders/di-container';
 import type { ContainerRegistry } from './container.gen.d';
-import { TransientService } from './services/TransientService';
-import { SingletonService } from './services/SingletonService';
 import { MixedService } from './services/MixedService';
+import { SingletonService } from './services/SingletonService';
+import { TransientService } from './services/TransientService';
 
 export const container = new Container<ContainerRegistry>();
 
-container.register('ITransientService', {
-  useClass: TransientService,
-  lifecycle: Lifecycle.Transient,
+container.register(MixedService, {
+  useClass: MixedService,
+  dependencies: ['ISingletonService', 'ITransientService'],
+  lifecycle: Lifecycle.Singleton,
 });
 
 container.register('ISingletonService', {
@@ -20,8 +21,7 @@ container.register('ISingletonService', {
   lifecycle: Lifecycle.Singleton,
 });
 
-container.register(MixedService, {
-  useClass: MixedService,
-  dependencies: ['ISingletonService', 'ITransientService'],
-  lifecycle: Lifecycle.Singleton,
+container.register('ITransientService', {
+  useClass: TransientService,
+  lifecycle: Lifecycle.Transient,
 });

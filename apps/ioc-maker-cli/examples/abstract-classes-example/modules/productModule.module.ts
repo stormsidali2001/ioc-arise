@@ -5,11 +5,11 @@
  * Module: ProductModule
  */
 import { ContainerModule, Lifecycle } from '@notjustcoders/di-container';
-import { ProductUseCase } from '../use-cases/ProductUseCase';
-import { InternalProductNestedUseCase } from '../use-cases/InternalProductNestedUseCase';
 import { ProductRepository } from '../implementations/ProductRepository';
+import { InternalProductNestedUseCase } from '../use-cases/InternalProductNestedUseCase';
+import { ProductUseCase } from '../use-cases/ProductUseCase';
 
 export const productModule = new ContainerModule()
-  .register(ProductUseCase, { useClass: ProductUseCase, dependencies: ['AbstractProductRepository', 'AbstractUserRepository', InternalProductNestedUseCase], lifecycle: Lifecycle.Singleton })
+  .register('AbstractProductRepository', { useClass: ProductRepository, lifecycle: Lifecycle.Singleton })
   .register(InternalProductNestedUseCase, { useClass: InternalProductNestedUseCase, dependencies: ['AbstractProductRepository'], lifecycle: Lifecycle.Singleton })
-  .register('AbstractProductRepository', { useClass: ProductRepository, lifecycle: Lifecycle.Singleton });
+  .register(ProductUseCase, { useClass: ProductUseCase, dependencies: ['AbstractProductRepository', 'AbstractUserRepository', InternalProductNestedUseCase], lifecycle: Lifecycle.Singleton });

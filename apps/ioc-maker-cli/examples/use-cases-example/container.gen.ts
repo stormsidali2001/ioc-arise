@@ -4,35 +4,17 @@
  */
 import { Container, Lifecycle } from '@notjustcoders/di-container';
 import type { ContainerRegistry } from './container.gen.d';
-import { UserController } from './use-cases/UserController';
-import { GetUserUseCase } from './use-cases/GetUserUseCase';
-import { CreateUserUseCase } from './use-cases/CreateUserUseCase';
-import { EmailService } from './services/EmailService';
-import { ApplicationService } from './services/ApplicationService';
 import { UserRepository } from './repositories/UserRepository';
+import { ApplicationService } from './services/ApplicationService';
+import { EmailService } from './services/EmailService';
+import { CreateUserUseCase } from './use-cases/CreateUserUseCase';
+import { GetUserUseCase } from './use-cases/GetUserUseCase';
+import { UserController } from './use-cases/UserController';
 
 export const container = new Container<ContainerRegistry>();
 
-container.register(UserController, {
-  useClass: UserController,
-  dependencies: [CreateUserUseCase, GetUserUseCase],
-  lifecycle: Lifecycle.Singleton,
-});
-
-container.register(GetUserUseCase, {
-  useClass: GetUserUseCase,
-  dependencies: ['IUserRepository'],
-  lifecycle: Lifecycle.Singleton,
-});
-
-container.register(CreateUserUseCase, {
-  useClass: CreateUserUseCase,
-  dependencies: ['IUserRepository', 'IEmailService'],
-  lifecycle: Lifecycle.Singleton,
-});
-
-container.register('IEmailService', {
-  useClass: EmailService,
+container.register('IUserRepository', {
+  useClass: UserRepository,
   lifecycle: Lifecycle.Singleton,
 });
 
@@ -42,7 +24,25 @@ container.register('IApplicationService', {
   lifecycle: Lifecycle.Singleton,
 });
 
-container.register('IUserRepository', {
-  useClass: UserRepository,
+container.register('IEmailService', {
+  useClass: EmailService,
+  lifecycle: Lifecycle.Singleton,
+});
+
+container.register(CreateUserUseCase, {
+  useClass: CreateUserUseCase,
+  dependencies: ['IUserRepository', 'IEmailService'],
+  lifecycle: Lifecycle.Singleton,
+});
+
+container.register(GetUserUseCase, {
+  useClass: GetUserUseCase,
+  dependencies: ['IUserRepository'],
+  lifecycle: Lifecycle.Singleton,
+});
+
+container.register(UserController, {
+  useClass: UserController,
+  dependencies: [CreateUserUseCase, GetUserUseCase],
   lifecycle: Lifecycle.Singleton,
 });

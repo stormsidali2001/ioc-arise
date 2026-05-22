@@ -4,16 +4,16 @@
  */
 import { Container } from '@notjustcoders/di-container';
 import type { ContainerRegistry } from './container.gen.d';
-import { statisticsModule } from './modules/statisticsModule.module';
 import { notificationModule } from './modules/notificationModule.module';
 import { reviewModule } from './modules/reviewModule.module';
-import { vocabularyModule } from './modules/vocabularyModule.module';
 import { sharedModule } from './modules/sharedModule.module';
+import { statisticsModule } from './modules/statisticsModule.module';
+import { vocabularyModule } from './modules/vocabularyModule.module';
 
 export const container = new Container<ContainerRegistry>();
 
-container.registerModule(statisticsModule);
 container.registerModule(notificationModule);
 container.registerModule(reviewModule);
-container.registerModule(vocabularyModule);
 container.registerModule(sharedModule);
+container.registerModule(statisticsModule);
+container.registerModule(vocabularyModule);

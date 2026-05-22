@@ -4,12 +4,12 @@
  *
  * This file provides type-safe resolution for string-based tokens.
  */
-import type { ITransientService } from './services/ITransientService';
 import type { ISingletonService } from './services/ISingletonService';
+import type { ITransientService } from './services/ITransientService';
 import type { MixedService } from './services/MixedService';
 
 export interface ContainerRegistry {
-  'ITransientService': ITransientService;
   'ISingletonService': ISingletonService;
+  'ITransientService': ITransientService;
   'MixedService': MixedService;
 }
