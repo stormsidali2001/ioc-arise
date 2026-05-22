@@ -33,29 +33,40 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a TypeScript IoC container generator CLI tool built as a monorepo using pnpm workspaces and Turbo.
 
-### Key Components
+### Layer Structure (`apps/ioc-maker-cli/src/`)
 
-**Core Analysis Engine** (`src/analyser/`):
-- `ProjectAnalyzer` - Main orchestrator that analyzes TypeScript projects
-- `ClassAnalyzer` - Uses AST-grep to parse TypeScript files and extract class information
-- `DependencyResolver` - Detects and validates dependencies, including circular dependency detection
-- `FileDiscovery` - Discovers TypeScript files in project directories
+The CLI follows a strict four-layer architecture. Inner layers never import from outer layers.
 
-**Container Generation** (`src/generator/`):
-- `ContainerGeneratorFactory` - Creates appropriate generator based on configuration
-- `BaseContainerGenerator` - Generates single-file containers for simple projects
-- `ModularContainerGenerator` - Generates modular containers with separate module files
-- Uses path injection utilities to handle different import patterns
+**`domain/`** — Pure value types with no dependencies (`ClassInfo`, `FactoryInfo`, `ValueInfo`, `ParsedFile`, etc.)
 
-**Configuration Management** (`src/utils/configManager.ts`):
+**`analysis/`** — Pure semantic analysis: no I/O, no AST library. Receives `ParsedFile[]` + a global token inventory and returns typed domain objects.
+- `ClassAnalyzer` — classifies raw class data into `ClassInfo[]` (interface-implementing, abstract-extending, standalone)
+- `FactoryAnalyzer` — classifies factory functions into `FactoryInfo[]`
+- `ValueAnalyzer` — classifies value constants into `ValueInfo[]`
+- `DependencyResolver` — builds dependency graph, detects class-level cycles
+- `ModuleDependencyResolver` — detects module-level cycles (DAG check)
+
+**`application/`** — Use-cases that orchestrate the pipeline via constructor-injected dependencies.
+- `AnalyzeProjectUseCase` — discover → parse → token collection → classify → validate
+- `GenerateContainerUseCase` — run the generator pipeline → write files
+- `DetectCyclesUseCase` — class cycles + module cycles
+- `ValidateOutputUseCase` — ts-morph diagnostics on generated files
+- `IFileDiscovery` / `ICodeWriter` — the two layer-boundary interfaces
+
+**`infrastructure/`** — Concrete I/O and third-party integrations.
+- `parser/TsMorphTypeParser` — replaces old ast-grep god-class; uses ts-morph typed AST API. `parseContent()` accepts in-memory source for unit testing without filesystem.
+- `generator/` — five stateless code-gen components: `RegistrationPlanner`, `ImportCollector`, `ContainerCodePrinter`, `ModuleCodePrinter`, `TypeDeclarationPrinter`
+- `discovery/GlobFileDiscovery` — implements `IFileDiscovery` using glob
+- `writer/FsCodeWriter` — implements `ICodeWriter` using `fs.writeFile`
+
+**`commands/`** — Thin CLI wiring: parse options, call `buildContainer()`, invoke use-cases.
+
+**`container.ts`** — `buildContainer()` factory that wires the full dependency graph for the CLI.
+
+### Configuration Management (`src/utils/configManager.ts`)
 - Reads `ioc.config.json` files from project directories
 - Supports modular configuration with module groupings
 - CLI options override config file settings
-
-**CLI Commands** (`src/commands/`):
-- `generate` - Main command for generating IoC containers
-- `analyze` - Analyzes projects and reports dependency information
-- `visualize` - Provides dependency visualization
 
 ### Project Structure
 - **Monorepo**: Uses pnpm workspaces with Turbo for build orchestration
@@ -65,12 +76,12 @@ This is a TypeScript IoC container generator CLI tool built as a monorepo using 
 
 ### Testing Strategy
 - Uses Vitest for unit testing
-- Integration tests via example projects
-- AST parsing tests for TypeScript analysis
+- `TsMorphTypeParser` has 16 unit tests using in-memory ts-morph Project (no filesystem)
+- Integration tests via example projects (20 examples covering all features)
 - Coverage reporting available
 
 ### Key Dependencies
-- `@ast-grep/napi` - Fast TypeScript AST parsing (Rust-based)
+- `ts-morph` - TypeScript compiler API wrapper for AST parsing
 - `commander` - CLI framework
 - `glob` - File pattern matching
 - `minimatch` - Advanced glob pattern matching

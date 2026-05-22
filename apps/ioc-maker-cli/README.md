@@ -15,6 +15,10 @@ A command-line tool that automatically generates type-safe IoC (Inversion of Con
   - [Instance Factories](#instance-factories)
   - [External & Monorepo Types](#external--monorepo-types)
 - [Usage in Your Code](#usage-in-your-code)
+- [Architecture](#architecture)
+  - [Layer Overview](#layer-overview)
+  - [Key Components](#key-components)
+  - [Design Decisions](#design-decisions)
 - [Development](#development)
 - [Limitations](#limitations)
 - [Contributing](#contributing)
@@ -258,6 +262,89 @@ const todoService = container.resolve(TodoService);
 const todos = await todoService.getAllTodos();
 ```
 
+## Architecture
+
+The CLI is structured into four strict layers. Inner layers never import from outer layers, and each unit is independently testable via constructor injection.
+
+### Layer Overview
+
+```
+src/
+├── domain/             Pure value types — no dependencies on any other layer
+│   └── types.ts        ClassInfo, FactoryInfo, ValueInfo, RawClassData, ParsedFile, …
+│
+├── application/        Use-cases and the two layer-boundary interfaces
+│   ├── IFileDiscovery.ts
+│   ├── ICodeWriter.ts
+│   ├── AnalyzeProjectUseCase.ts
+│   ├── GenerateContainerUseCase.ts
+│   ├── DetectCyclesUseCase.ts
+│   └── ValidateOutputUseCase.ts
+│
+├── analysis/           Pure analysis logic — no I/O, no AST library
+│   ├── ClassAnalyzer.ts
+│   ├── FactoryAnalyzer.ts
+│   ├── ValueAnalyzer.ts
+│   ├── DependencyResolver.ts
+│   └── ModuleDependencyResolver.ts
+│
+├── infrastructure/     Concrete I/O and third-party integrations
+│   ├── parser/
+│   │   └── TsMorphTypeParser.ts   ts-morph AST extraction
+│   ├── generator/
+│   │   ├── RegistrationPlanner.ts
+│   │   ├── ImportCollector.ts
+│   │   ├── ContainerCodePrinter.ts
+│   │   ├── ModuleCodePrinter.ts
+│   │   └── TypeDeclarationPrinter.ts
+│   ├── discovery/
+│   │   └── GlobFileDiscovery.ts
+│   └── writer/
+│       └── FsCodeWriter.ts
+│
+├── commands/           Thin CLI wiring — instantiate and invoke use-cases
+├── utils/              Logger, naming helpers, topological sort, config manager
+├── container.ts        Internal DI wiring (buildContainer factory)
+└── index.ts            Entry point
+```
+
+### Key Components
+
+**`TsMorphTypeParser`** (`infrastructure/parser/`)  
+Replaces the old ast-grep god-class. Uses the `ts-morph` typed AST API to extract raw data from each source file: class declarations, constructor parameters, factory functions (with `@factory` JSDoc), value constants (with `@value` JSDoc), interface names, type aliases, and import mappings. The `parseContent(path, source)` method accepts in-memory source strings, making it fully unit-testable without touching the filesystem.
+
+**Analysis layer** (`analysis/`)  
+Receives `ParsedFile[]` and a global token inventory (all interface names, class names, abstract class names collected across the project). Returns strongly-typed domain objects (`ClassInfo[]`, `FactoryInfo[]`, `ValueInfo[]`). No I/O, no AST library — pure data transformation that can be tested with plain object inputs.
+
+**Generator pipeline** (`infrastructure/generator/`)  
+Code generation is split into five focused, stateless components:
+
+| Component | Responsibility |
+|---|---|
+| `RegistrationPlanner` | Builds token sets (interface/abstract/class names); checks name collisions |
+| `ImportCollector` | Collects all needed imports from class/factory/value file paths; returns an import block string |
+| `ContainerCodePrinter` | Produces the flat `container.gen.ts` file |
+| `ModuleCodePrinter` | Produces modular output: one `*.module.ts` per module + a thin main file |
+| `TypeDeclarationPrinter` | Produces the `.gen.d.ts` `ContainerRegistry` interface |
+
+Each component is a static method that takes plain data and returns a string — no disk I/O, fully testable in isolation.
+
+**Use-cases** (`application/`)  
+Each use-case owns one slice of orchestration and receives its dependencies via constructor:
+
+- `AnalyzeProjectUseCase` — discover files → parse → build token inventory → classify → validate uniqueness
+- `GenerateContainerUseCase` — run the generator pipeline → write files via `ICodeWriter`
+- `DetectCyclesUseCase` — topological sort on class graph and module graph
+- `ValidateOutputUseCase` — run ts-morph diagnostics on generated files
+
+### Design Decisions
+
+**Only two interfaces** — `IFileDiscovery` and `ICodeWriter` — exist at layer boundaries. These are the only points where swapping an implementation matters for testing (replace glob with a stub list; replace `fs.writeFile` with an in-memory map). Everything else uses plain constructor injection with concrete types — no `ports/` folder, no interface-per-class.
+
+**ts-morph instead of ast-grep** — ts-morph wraps the TypeScript compiler API and provides a fully typed, navigable AST. Method calls like `cls.getImplements()`, `ctor.getParameters()`, and `fn.getJsDocs()` replace brittle pattern strings and are unaffected by formatting differences.
+
+**Two-pass analysis** — The first pass collects the global token inventory (all interface names, class names, factory names) from every file. The second pass classifies each class/function against that complete inventory, so cross-file dependency resolution is always correct regardless of file discovery order.
+
 ## Development
 
 ```bash
@@ -266,6 +353,12 @@ pnpm run dev
 
 # Build for production
 pnpm run build
+
+# Run unit tests
+pnpm run test:run
+
+# Run with coverage
+pnpm run test:coverage
 ```
 
 ## Limitations
