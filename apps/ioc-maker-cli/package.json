@@ -72,7 +72,6 @@
     "access": "public"
   },
   "dependencies": {
-    "@ast-grep/napi": "^0.20.0",
     "@notjustcoders/di-container": "workspace:*",
     "@notjustcoders/one-logger-client-sdk": "^1.0.10",
     "commander": "^11.1.0",
