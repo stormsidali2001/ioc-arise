@@ -1,6 +1,6 @@
 import { Command } from 'commander';
-import { resolve } from 'path';
-import { existsSync } from 'fs';
+import { resolve, basename, dirname } from 'path';
+import { existsSync, writeFileSync } from 'fs';
 import { ConfigManager } from '../utils/configManager';
 import { ConfigValidator } from '../utils/configValidator';
 import { ErrorFactory } from '../errors/errorFactory';
@@ -10,6 +10,7 @@ import { TsConfigPathsResolver } from '../utils/tsConfigPathsResolver';
 import { Logger } from '../utils/logger';
 import { ClassInfo, FactoryInfo, ValueInfo } from '../domain/types';
 import { buildContainer } from '../container';
+import { HtmlReportPrinter } from '../infrastructure/generator/HtmlReportPrinter';
 
 export const generateCommand = new Command('generate')
   .description('Generate IoC container from TypeScript classes')
@@ -28,6 +29,7 @@ export const generateCommand = new Command('generate')
   .option('--check-cycles', 'Only check for circular dependencies without generating')
   .option('--no-validate', 'Disable validation of generated code')
   .option('--verbose', 'Enable verbose logging')
+  .option('--report [path]', 'Generate a standalone HTML report (default: container.gen.report.html next to the output file)')
   .action(async (options) => {
     try {
       Logger.initialize({ verbose: options.verbose ?? false });
@@ -190,6 +192,29 @@ export const generateCommand = new Command('generate')
         } catch {
           Logger.error('Validation failed. Generated code may be invalid.');
         }
+      }
+
+      // Report generation
+      if (options.report !== undefined && options.report !== false) {
+        const reportPath =
+          typeof options.report === 'string'
+            ? resolve(options.report)
+            : resolve(dirname(outputPath), basename(outputPath).replace(/\.ts$/, '') + '.report.html');
+
+        const projectName = basename(resolve(initialSourceDir));
+        const html = HtmlReportPrinter.print({
+          classes,
+          factories: factories ?? [],
+          values: values ?? [],
+          moduleGroupedClasses,
+          moduleGroupedFactories,
+          moduleGroupedValues,
+          isModular: moduleResolver !== null,
+          projectName,
+        });
+
+        writeFileSync(reportPath, html, 'utf8');
+        Logger.log(Logger.colorizeText(`   📊 ${reportPath}`, Logger.getColors().cyan));
       }
 
       const statParts: string[] = [];

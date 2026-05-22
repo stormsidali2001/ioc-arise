@@ -15,6 +15,7 @@ export interface IoCConfig {
   modules?: Record<string, string[]>;
   factoryPattern?: string;
   valuePattern?: string;
+  report?: string | boolean;
 }
 
 export class ConfigManager {
