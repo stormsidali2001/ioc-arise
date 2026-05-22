@@ -1,4 +1,4 @@
-import { ClassInfo } from '../types';
+import { ClassInfo } from '../domain/types';
 import { TopologicalSorter } from './topological-sorter';
 
 export class CircularDependencyDetector {

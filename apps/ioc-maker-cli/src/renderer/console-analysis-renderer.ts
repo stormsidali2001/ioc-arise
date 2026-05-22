@@ -1,5 +1,5 @@
 import { RenderAnalysis, AnalysisResults } from './render-analysis.interface';
-import { ClassInfo } from '../types';
+import { ClassInfo } from '../domain/types';
 
 // ANSI color codes for beautiful console output
 const colors = {

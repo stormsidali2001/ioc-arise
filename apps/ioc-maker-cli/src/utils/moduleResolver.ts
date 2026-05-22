@@ -1,6 +1,6 @@
 import { minimatch } from 'minimatch';
 import { relative, normalize } from 'path';
-import { ClassInfo, FactoryInfo, ValueInfo } from '../types';
+import { ClassInfo, FactoryInfo, ValueInfo } from '../domain/types';
 import { ErrorFactory } from '../errors/errorFactory';
 import { IoCError } from '../errors/IoCError';
 

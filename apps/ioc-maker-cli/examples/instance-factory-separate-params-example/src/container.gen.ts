@@ -6,8 +6,8 @@ import { Container, Lifecycle } from '@notjustcoders/di-container';
 import type { ContainerRegistry } from './container.gen.d';
 import { ProductService } from './services/ProductService';
 import { createProductRepository } from './repositories/createProductRepository';
-import { consoleLogger } from './logger/consoleLogger';
 import { appConfig } from './config/appConfig';
+import { consoleLogger } from './logger/consoleLogger';
 
 export const container = new Container<ContainerRegistry>();
 
@@ -23,12 +23,12 @@ container.register('IProductRepository', {
   lifecycle: Lifecycle.Transient,
 });
 
-container.register('ILogger', {
-  useValue: consoleLogger,
+container.register('IAppConfig', {
+  useValue: appConfig,
   lifecycle: Lifecycle.Singleton,
 });
 
-container.register('IAppConfig', {
-  useValue: appConfig,
+container.register('ILogger', {
+  useValue: consoleLogger,
   lifecycle: Lifecycle.Singleton,
 });

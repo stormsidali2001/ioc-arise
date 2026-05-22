@@ -4,20 +4,20 @@
  */
 import { Container, Lifecycle } from '@notjustcoders/di-container';
 import type { ContainerRegistry } from './container.gen.d';
-import { TodoService } from './services/TodoService';
 import { Todo } from './entities/Todo';
+import { TodoService } from './services/TodoService';
 import { InMemoryTodoRepository } from './repositories/InMemoryTodoRepository';
 
 export const container = new Container<ContainerRegistry>();
 
-container.register('ITodoService', {
-  useClass: TodoService,
-  dependencies: ['ITodoRepository'],
+container.register(Todo, {
+  useClass: Todo,
   lifecycle: Lifecycle.Singleton,
 });
 
-container.register(Todo, {
-  useClass: Todo,
+container.register('ITodoService', {
+  useClass: TodoService,
+  dependencies: ['ITodoRepository'],
   lifecycle: Lifecycle.Singleton,
 });
 

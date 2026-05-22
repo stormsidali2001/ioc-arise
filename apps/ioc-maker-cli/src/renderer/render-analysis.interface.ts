@@ -1,4 +1,4 @@
-import { ClassInfo } from '../types';
+import { ClassInfo } from '../domain/types';
 
 export interface AnalysisResults {
   classes: ClassInfo[];

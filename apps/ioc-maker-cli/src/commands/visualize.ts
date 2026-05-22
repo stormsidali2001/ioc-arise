@@ -1,7 +1,7 @@
 import { Command } from 'commander';
 import { resolve } from 'path';
 import { existsSync } from 'fs';
-import { analyzeProject } from '../analyser';
+import { buildContainer } from '../container';
 import { CircularDependencyDetector } from '../utils/circular-dependency-detector';
 import { ConsoleAnalysisRenderer } from '../renderer/console-analysis-renderer';
 import type { RenderAnalysis, AnalysisResults } from '../renderer/render-analysis.interface';
@@ -51,11 +51,11 @@ export const visualizeCommand = new Command('visualize')
       }
       Logger.custom('🔍', `Analyzing directory: ${sourceDir}`, Logger.getColors().cyan + Logger.getColors().bright);
 
-      // Perform analysis
-      const classes = await analyzeProject(sourceDir, {
+      const services = buildContainer(sourceDir, mergedOptions.interface);
+      const { classes } = await services.analyzeProject.execute({
         sourceDir,
         interfacePattern: mergedOptions.interface,
-        excludePatterns: mergedOptions.exclude
+        excludePatterns: mergedOptions.exclude,
       });
 
       if (classes.length === 0) {

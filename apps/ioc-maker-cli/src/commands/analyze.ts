@@ -1,7 +1,7 @@
 import { Command } from 'commander';
 import { resolve } from 'path';
 import { existsSync } from 'fs';
-import { analyzeProject } from '../analyser';
+import { buildContainer } from '../container';
 import { CircularDependencyDetector } from '../utils/circular-dependency-detector';
 import { ConfigManager } from '../utils/configManager';
 import { ConfigValidator } from '../utils/configValidator';
@@ -48,10 +48,11 @@ export const analyzeCommand = new Command('analyze')
       }
       Logger.custom('🔍', `Analyzing directory: ${sourceDir}`, Logger.getColors().cyan + Logger.getColors().bright);
 
-      const classes = await analyzeProject(sourceDir, {
+      const services = buildContainer(sourceDir, mergedOptions.interface);
+      const { classes } = await services.analyzeProject.execute({
         sourceDir,
         interfacePattern: mergedOptions.interface,
-        excludePatterns: mergedOptions.exclude
+        excludePatterns: mergedOptions.exclude,
       });
 
       if (classes.length === 0) {
